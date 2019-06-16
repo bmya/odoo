@@ -174,25 +174,34 @@ class HrExpense(models.Model):
         return total, total_currency, account_move_lines
 
     @api.multi
+    def _prepare_move_values(self):
+        """
+        This function prepares move values related to an expense
+        """
+        self.ensure_one()
+        journal = self.sheet_id.bank_journal_id if self.payment_mode == 'company_account' else self.sheet_id.journal_id
+        acc_date = self.sheet_id.accounting_date or self.date
+        move_values = {
+            'journal_id': journal.id,
+            'company_id': self.env.user.company_id.id,
+            'date': acc_date,
+            'ref': self.sheet_id.name,
+            # force the name to the default value, to avoid an eventual 'default_name' in the context
+            # to set it to '' which cause no number to be given to the account.move when posted.
+            'name': '/',
+        }
+        return move_values
+
+    @api.multi
     def action_move_create(self):
         '''
         main function that is called when trying to create the accounting entries related to an expense
         '''
         move_group_by_sheet = {}
         for expense in self:
-            journal = expense.sheet_id.bank_journal_id if expense.payment_mode == 'company_account' else expense.sheet_id.journal_id
-            #create the move that will contain the accounting entries
-            acc_date = expense.sheet_id.accounting_date or expense.date
-            if not expense.sheet_id.id in move_group_by_sheet:
-                move = self.env['account.move'].create({
-                    'journal_id': journal.id,
-                    'company_id': self.env.user.company_id.id,
-                    'date': acc_date,
-                    'ref': expense.sheet_id.name,
-                    # force the name to the default value, to avoid an eventual 'default_name' in the context
-                    # to set it to '' which cause no number to be given to the account.move when posted.
-                    'name': '/',
-                })
+            # create the move that will contain the accounting entries
+            if expense.sheet_id.id not in move_group_by_sheet:
+                move = self.env['account.move'].create(expense._prepare_move_values())
                 move_group_by_sheet[expense.sheet_id.id] = move
             else:
                 move = move_group_by_sheet[expense.sheet_id.id]
@@ -203,7 +212,7 @@ class HrExpense(models.Model):
 
             #create one more move line, a counterline for the total on payable account
             payment_id = False
-            total, total_currency, move_lines = expense._compute_expense_totals(company_currency, move_lines, acc_date)
+            total, total_currency, move_lines = expense._compute_expense_totals(company_currency, move_lines, move.date)
             if expense.payment_mode == 'company_account':
                 if not expense.sheet_id.bank_journal_id.default_credit_account_id:
                     raise UserError(_("No credit account found for the %s journal, please configure one.") % (expense.sheet_id.bank_journal_id.name))
@@ -236,7 +245,7 @@ class HrExpense(models.Model):
                     'name': aml_name,
                     'price': total,
                     'account_id': emp_account,
-                    'date_maturity': acc_date,
+                    'date_maturity': move.date,
                     'amount_currency': diff_currency_p and total_currency or False,
                     'currency_id': diff_currency_p and expense.currency_id.id or False,
                     'payment_id': payment_id,
@@ -331,14 +340,14 @@ class HrExpense(models.Model):
 
     @api.model
     def get_empty_list_help(self, help_message):
-        if help_message:
+        if help_message and help_message.find("oe_view_nocontent_create") == -1:
             use_mailgateway = self.env['ir.config_parameter'].sudo().get_param('hr_expense.use_mailgateway')
             alias_record = use_mailgateway and self.env.ref('hr_expense.mail_alias_expense') or False
             if alias_record and alias_record.alias_domain and alias_record.alias_name:
                 link = "<a id='o_mail_test' href='mailto:%(email)s?subject=Lunch%%20with%%20customer%%3A%%20%%2412.32'>%(email)s</a>" % {
                     'email': '%s@%s' % (alias_record.alias_name, alias_record.alias_domain)
                 }
-                return '<p class="oe_view_nocontent_create">%s<br/>%s</p>%s' % (
+                return '<p class="oe_view_nocontent_create oe_view_nocontent_alias">%s<br/>%s</p>%s' % (
                     _('Click to add a new expense,'),
                     _('or send receipts by email to %s.') % (link,),
                     help_message)
@@ -372,6 +381,7 @@ class HrExpense(models.Model):
             expense_description = expense_description.replace(product_code.group(), '')
             products = self.env['product.product'].search([('default_code', 'ilike', product_code.group(1))]) or default_product
             product = products.filtered(lambda p: p.default_code == product_code.group(1)) or products[0]
+        account = product.product_tmpl_id._get_product_accounts()['expense']
 
         pattern = '[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?'
         # Match the last occurence of a float in the string
@@ -394,10 +404,13 @@ class HrExpense(models.Model):
             'employee_id': employee.id,
             'product_id': product.id,
             'product_uom_id': product.uom_id.id,
+            'tax_ids': [(4, tax.id, False) for tax in product.supplier_taxes_id],
             'quantity': 1,
             'unit_amount': price,
             'company_id': employee.company_id.id,
         })
+        if account:
+            custom_values['account_id'] = account.id
         return super(HrExpense, self).message_new(msg_dict, custom_values)
 
 class HrExpenseSheet(models.Model):

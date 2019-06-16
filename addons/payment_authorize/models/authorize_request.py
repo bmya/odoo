@@ -4,12 +4,14 @@ import requests
 from lxml import etree, objectify
 from xml.etree import ElementTree as ET
 from uuid import uuid4
+import logging
 
-from odoo import _
+from odoo.addons.payment.models.payment_acquirer import _partner_split_name
 from odoo.exceptions import ValidationError, UserError
 from odoo import _
 
 XMLNS = 'AnetApi/xml/v1/schema/AnetApiSchema.xsd'
+_logger = logging.getLogger(__name__)
 
 
 def strip_ns(xml, ns):
@@ -134,10 +136,16 @@ class AuthorizeAPI():
         root = self._base_tree('createCustomerProfileRequest')
         profile = etree.SubElement(root, "profile")
         etree.SubElement(profile, "merchantCustomerId").text = 'ODOO-%s-%s' % (partner.id, uuid4().hex[:8])
-        etree.SubElement(profile, "email").text = partner.email
+        etree.SubElement(profile, "email").text = partner.email or ''
         payment_profile = etree.SubElement(profile, "paymentProfiles")
         etree.SubElement(payment_profile, "customerType").text = 'business' if partner.is_company else 'individual'
         billTo = etree.SubElement(payment_profile, "billTo")
+        if partner.is_company:
+            etree.SubElement(billTo, "firstName").text = ' '
+            etree.SubElement(billTo, "lastName").text = partner.name
+        else:
+            etree.SubElement(billTo, "firstName").text = _partner_split_name(partner.name)[0]
+            etree.SubElement(billTo, "lastName").text = _partner_split_name(partner.name)[1]
         etree.SubElement(billTo, "address").text = (partner.street or '' + (partner.street2 if partner.street2 else '')) or None
         
         missing_fields = [partner._fields[field].string for field in ['city', 'country_id'] if not partner[field]]
@@ -203,6 +211,12 @@ class AuthorizeAPI():
         etree.SubElement(customer, "email").text = partner.email or ''
         response = self._authorize_request(root)
         res = dict()
+        if not response.find('customerProfileId'):
+            _logger.warning(
+                'Unable to create customer payment profile, data missing from transaction. Transaction_id: %s - Partner_id: %s'
+                % (transaction_id, partner)
+            )
+            return res
         res['profile_id'] = response.find('customerProfileId').text
         res['payment_profile_id'] = response.find('customerPaymentProfileIdList/numericString').text
         root_profile = self._base_tree('getCustomerPaymentProfileRequest')

@@ -3,26 +3,28 @@
 # * pos_cache
 # 
 # Translators:
-# Martin Trigaux, 2017
+# Martin Trigaux, 2018
+# trendspotter <j.podhorecky@volny.cz>, 2019
+# 
 msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 11.0\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2018-02-19 13:43+0000\n"
-"PO-Revision-Date: 2018-02-19 13:43+0000\n"
-"Last-Translator: Martin Trigaux, 2017\n"
+"PO-Revision-Date: 2017-09-20 10:21+0000\n"
+"Last-Translator: trendspotter <j.podhorecky@volny.cz>, 2019\n"
 "Language-Team: Czech (https://www.transifex.com/odoo/teams/41243/cs/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
 "Language: cs\n"
-"Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
+"Plural-Forms: nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;\n"
 
 #. module: pos_cache
 #: model:ir.model.fields,field_description:pos_cache.field_pos_cache_cache
 #: model:ir.model.fields,field_description:pos_cache.field_pos_config_cache_ids
 msgid "Cache"
-msgstr ""
+msgstr "Mezipaměť"
 
 #. module: pos_cache
 #: model:ir.model.fields,field_description:pos_cache.field_pos_cache_compute_user_id
@@ -32,7 +34,7 @@ msgstr ""
 #. module: pos_cache
 #: model:ir.model.fields,field_description:pos_cache.field_pos_cache_config_id
 msgid "Config"
-msgstr ""
+msgstr "Konfigurace"
 
 #. module: pos_cache
 #: model:ir.model.fields,field_description:pos_cache.field_pos_cache_create_uid
@@ -79,7 +81,7 @@ msgstr "Naposled upraveno"
 #: code:addons/pos_cache/static/src/js/pos_cache.js:36
 #, python-format
 msgid "Loading"
-msgstr ""
+msgstr "načítání"
 
 #. module: pos_cache
 #: model:ir.model.fields,field_description:pos_cache.field_pos_config_oldest_cache_time
@@ -96,7 +98,7 @@ msgstr ""
 #. module: pos_cache
 #: model:ir.model.fields,field_description:pos_cache.field_pos_cache_product_domain
 msgid "Product Domain"
-msgstr ""
+msgstr "Doména produktu"
 
 #. module: pos_cache
 #: model:ir.model.fields,field_description:pos_cache.field_pos_cache_product_fields
@@ -111,4 +113,4 @@ msgstr ""
 #. module: pos_cache
 #: model:ir.model,name:pos_cache.model_pos_config
 msgid "pos.config"
-msgstr ""
+msgstr "pos.config"

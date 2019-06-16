@@ -180,15 +180,16 @@ def _eval_xml(self, node, env):
     elif node.tag == "function":
         args = []
         a_eval = node.get('eval')
+        model_str = node.get('model')
         # FIXME: should probably be exclusive
         if a_eval:
-            self.idref['ref'] = self.id_get
-            args = safe_eval(a_eval, self.idref)
+            idref2 = _get_idref(self, env, model_str, self.idref)
+            args = safe_eval(a_eval, idref2)
         for n in node:
             return_val = _eval_xml(self, n, env)
             if return_val is not None:
                 args.append(return_val)
-        model = env[node.get('model')]
+        model = env[model_str]
         method = node.get('name')
         # this one still depends on the old API
         return odoo.api.call_kw(model, method, args, {})
@@ -427,11 +428,14 @@ form: module.record_id""" % (xml_id,)
 
         if rec.get('target'):
             res['target'] = rec.get('target','')
+        if rec.get('multi'):
+            res['multi'] = safe_eval(rec.get('multi', 'False'))
         if src_model:
             res['binding_model_id'] = self.env['ir.model']._get(src_model).id
             res['binding_type'] = 'report' if rec.get('key2') == 'client_print_multi' else 'action'
-        if rec.get('multi'):
-            res['multi'] = safe_eval(rec.get('multi', 'False'))
+            if rec.get('key2') in (None, 'client_action_relate'):
+                if not res.get('multi'):
+                    res['binding_type'] = 'action_form_only'
         id = self.env['ir.model.data']._update('ir.actions.act_window', self.module, res, xml_id, noupdate=self.isnoupdate(data_node), mode=self.mode)
         self.idref[xml_id] = int(id)
 

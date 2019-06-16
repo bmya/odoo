@@ -5,6 +5,7 @@ import base64
 import datetime
 import logging
 import psycopg2
+import smtplib
 import threading
 
 from collections import defaultdict
@@ -63,7 +64,18 @@ class MailMail(models.Model):
             values['notification'] = True
         if not values.get('mail_message_id'):
             self = self.with_context(message_create_from_mail_mail=True)
-        return super(MailMail, self).create(values)
+        new_mail = super(MailMail, self).create(values)
+        if values.get('attachment_ids'):
+            new_mail.attachment_ids.check(mode='read')
+        return new_mail
+
+    @api.multi
+    def write(self, vals):
+        res = super(MailMail, self).write(vals)
+        if vals.get('attachment_ids'):
+            for mail in self:
+                mail.attachment_ids.check(mode='read')
+        return res
 
     @api.multi
     def unlink(self):
@@ -104,16 +116,21 @@ class MailMail(models.Model):
                                 messages to send (by default all 'outgoing'
                                 messages are sent).
         """
-        if not self.ids:
-            filters = ['&',
-                       ('state', '=', 'outgoing'),
-                       '|',
-                       ('scheduled_date', '<', datetime.datetime.now()),
-                       ('scheduled_date', '=', False)]
-            if 'filters' in self._context:
-                filters.extend(self._context['filters'])
-            # TODO: make limit configurable
-            ids = self.search(filters, limit=10000).ids
+        filters = ['&',
+                   ('state', '=', 'outgoing'),
+                   '|',
+                   ('scheduled_date', '<', datetime.datetime.now()),
+                   ('scheduled_date', '=', False)]
+        if 'filters' in self._context:
+            filters.extend(self._context['filters'])
+        # TODO: make limit configurable
+        filtered_ids = self.search(filters, limit=10000).ids
+        if not ids:
+            ids = filtered_ids
+        else:
+            ids = list(set(filtered_ids) & set(ids))
+        ids.sort()
+
         res = None
         try:
             # auto-commit except in testing mode
@@ -136,6 +153,7 @@ class MailMail(models.Model):
         if notif_emails:
             notifications = self.env['mail.notification'].search([
                 ('mail_message_id', 'in', notif_emails.mapped('mail_message_id').ids),
+                ('res_partner_id', 'in', notif_emails.mapped('recipient_ids').ids),
                 ('is_email', '=', True)])
             if mail_sent:
                 notifications.write({
@@ -303,6 +321,20 @@ class MailMail(models.Model):
                 })
                 mail_sent = False
 
+                # Update notification in a transient exception state to avoid concurrent
+                # update in case an email bounces while sending all emails related to current
+                # mail record.
+                notifs = self.env['mail.notification'].search([
+                    ('is_email', '=', True),
+                    ('mail_message_id', 'in', mail.mapped('mail_message_id').ids),
+                    ('res_partner_id', 'in', mail.mapped('recipient_ids').ids),
+                    ('email_status', 'not in', ('sent', 'canceled'))
+                ])
+                if notifs:
+                    notifs.sudo().write({
+                        'email_status': 'exception',
+                    })
+
                 # build an RFC2822 email.message.Message object and send it without queuing
                 res = None
                 for email in email_list:
@@ -350,11 +382,12 @@ class MailMail(models.Model):
                     'MemoryError while processing mail with ID %r and Msg-Id %r. Consider raising the --limit-memory-hard startup option',
                     mail.id, mail.message_id)
                 raise
-            except psycopg2.Error:
-                # If an error with the database occurs, chances are that the cursor is unusable.
-                # This will lead to an `psycopg2.InternalError` being raised when trying to write
-                # `state`, shadowing the original exception and forbid a retry on concurrent
-                # update. Let's bubble it.
+            except (psycopg2.Error, smtplib.SMTPServerDisconnected):
+                # If an error with the database or SMTP session occurs, chances are that the cursor
+                # or SMTP session are unusable, causing further errors when trying to save the state.
+                _logger.exception(
+                    'Exception while processing mail with ID %r and Msg-Id %r.',
+                    mail.id, mail.message_id)
                 raise
             except Exception as e:
                 failure_reason = tools.ustr(e)

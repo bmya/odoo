@@ -22,6 +22,8 @@ from odoo.tools import ustr, pycompat
 _logger = logging.getLogger(__name__)
 _test_logger = logging.getLogger('odoo.tests')
 
+SMTP_TIMEOUT = 60
+
 
 class MailDeliveryException(except_orm):
     """Specific exception subclass for mail delivery errors"""
@@ -117,10 +119,18 @@ def encode_rfc2822_address_header(header_text):
         # Header as a string, using an unlimited line length.", the old one
         # was "A synonym for Header.encode()." so call encode() directly?
         name = Header(pycompat.to_text(name)).encode()
-        return formataddr((name, email))
+        # if the from does not follow the (name <addr>),* convention, we might
+        # try to encode meaningless strings as address, as getaddresses is naive
+        # note it would also fail on real addresses with non-ascii characters
+        try:
+            return formataddr((name, email))
+        except UnicodeEncodeError:
+            _logger.warning(_('Failed to encode the address %s\n'
+                              'from mail header:\n%s') % addr, header_text)
+            return ""
 
     addresses = getaddresses([pycompat.to_native(ustr(header_text))])
-    return COMMASPACE.join(encode_addr(a) for a in addresses)
+    return COMMASPACE.join(a for a in (encode_addr(addr) for addr in addresses) if a)
 
 
 class IrMailServer(models.Model):
@@ -225,9 +235,9 @@ class IrMailServer(models.Model):
                       "You could use STARTTLS instead. "
                        "If SSL is needed, an upgrade to Python 2.6 on the server-side "
                        "should do the trick."))
-            connection = smtplib.SMTP_SSL(smtp_server, smtp_port)
+            connection = smtplib.SMTP_SSL(smtp_server, smtp_port, timeout=SMTP_TIMEOUT)
         else:
-            connection = smtplib.SMTP(smtp_server, smtp_port)
+            connection = smtplib.SMTP(smtp_server, smtp_port, timeout=SMTP_TIMEOUT)
         connection.set_debuglevel(smtp_debug)
         if smtp_encryption == 'starttls':
             # starttls() will perform ehlo() if needed first
@@ -451,15 +461,15 @@ class IrMailServer(models.Model):
         try:
             message_id = message['Message-Id']
             smtp = smtp_session
-            try:
-                smtp = smtp or self.connect(
-                    smtp_server, smtp_port, smtp_user, smtp_password,
-                    smtp_encryption, smtp_debug, mail_server_id=mail_server_id)
-                smtp.sendmail(smtp_from, smtp_to_list, message.as_string())
-            finally:
-                # do not quit() a pre-established smtp_session
-                if smtp is not None and not smtp_session:
-                    smtp.quit()
+            smtp = smtp or self.connect(
+                smtp_server, smtp_port, smtp_user, smtp_password,
+                smtp_encryption, smtp_debug, mail_server_id=mail_server_id)
+            smtp.sendmail(smtp_from, smtp_to_list, message.as_string())
+            # do not quit() a pre-established smtp_session
+            if not smtp_session:
+                smtp.quit()
+        except smtplib.SMTPServerDisconnected:
+            raise
         except Exception as e:
             params = (ustr(smtp_server), e.__class__.__name__, ustr(e))
             msg = _("Mail delivery failed via SMTP server '%s'.\n%s: %s") % params

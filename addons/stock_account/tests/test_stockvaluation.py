@@ -14,6 +14,7 @@ class TestStockValuation(TransactionCase):
         self.stock_location = self.env.ref('stock.stock_location_stock')
         self.customer_location = self.env.ref('stock.stock_location_customers')
         self.supplier_location = self.env.ref('stock.stock_location_suppliers')
+        self.inventory_location = self.env.ref('stock.location_inventory')
         self.partner = self.env['res.partner'].create({'name': 'xxx'})
         self.owner1 = self.env['res.partner'].create({'name': 'owner1'})
         self.uom_unit = self.env.ref('product.product_uom_unit')
@@ -2046,6 +2047,8 @@ class TestStockValuation(TransactionCase):
 
         self.assertEqual(len(move1.account_move_ids), 1)
 
+        self.assertAlmostEqual(self.product1.qty_available, 10.0)
+        self.assertAlmostEqual(self.product1.qty_at_date, 10.0)
         self.assertEqual(self.product1.stock_value, 100)
 
         # ---------------------------------------------------------------------
@@ -2088,6 +2091,8 @@ class TestStockValuation(TransactionCase):
 
         self.assertEqual(len(move2.account_move_ids), 1)
 
+        self.assertAlmostEqual(self.product1.qty_available, 20.0)
+        self.assertAlmostEqual(self.product1.qty_at_date, 20.0)
         self.assertEqual(self.product1.stock_value, 220)
 
         # ---------------------------------------------------------------------
@@ -2132,6 +2137,8 @@ class TestStockValuation(TransactionCase):
 
         self.assertEqual(len(move3.account_move_ids), 1)
 
+        self.assertAlmostEqual(self.product1.qty_available, 12.0)
+        self.assertAlmostEqual(self.product1.qty_at_date, 12.0)
         self.assertEqual(self.product1.stock_value, 140)
 
         # ---------------------------------------------------------------------
@@ -2165,6 +2172,7 @@ class TestStockValuation(TransactionCase):
         # Ending
         # ---------------------------------------------------------------------
         self.assertEqual(self.product1.qty_available, 6)
+        self.assertAlmostEqual(self.product1.qty_at_date, 6.0)
         self.assertEqual(self.product1.stock_value, 72)
         self.assertEqual(sum(self._get_stock_input_move_lines().mapped('debit')), 0)
         self.assertEqual(sum(self._get_stock_input_move_lines().mapped('credit')), 220)
@@ -2489,6 +2497,189 @@ class TestStockValuation(TransactionCase):
         move2.move_line_ids.qty_done = 0
         self.assertEqual(self.product1.stock_value, -187.5)
 
+    def test_average_perpetual_4(self):
+        self.product1.product_tmpl_id.cost_method = 'average'
+
+        move1 = self.env['stock.move'].create({
+            'name': 'Receive 1 unit at 10',
+            'location_id': self.supplier_location.id,
+            'location_dest_id': self.stock_location.id,
+            'product_id': self.product1.id,
+            'product_uom': self.uom_unit.id,
+            'product_uom_qty': 1.0,
+            'price_unit': 10,
+        })
+        move1._action_confirm()
+        move1._action_assign()
+        move1.move_line_ids.qty_done = 1.0
+        move1._action_done()
+
+        move2 = self.env['stock.move'].create({
+            'name': 'Receive 3 units at 5',
+            'location_id': self.supplier_location.id,
+            'location_dest_id': self.stock_location.id,
+            'product_id': self.product1.id,
+            'product_uom': self.uom_unit.id,
+            'product_uom_qty': 3.0,
+            'price_unit': 5,
+        })
+        move2._action_confirm()
+        move2._action_assign()
+        move2.move_line_ids.qty_done = 1.0
+        move2._action_done()
+
+        self.assertAlmostEqual(self.product1.qty_available, 2.0)
+        self.assertAlmostEqual(self.product1.qty_at_date, 2.0)
+        self.assertAlmostEqual(self.product1.standard_price, 7.5)
+
+    def test_average_perpetual_5(self):
+        ''' Set owner on incoming move => no valuation '''
+        self.product1.product_tmpl_id.cost_method = 'average'
+
+        move1 = self.env['stock.move'].create({
+            'name': 'Receive 1 unit at 10',
+            'location_id': self.supplier_location.id,
+            'location_dest_id': self.stock_location.id,
+            'product_id': self.product1.id,
+            'product_uom': self.uom_unit.id,
+            'product_uom_qty': 1.0,
+            'price_unit': 10,
+        })
+        move1._action_confirm()
+        move1._action_assign()
+        move1.move_line_ids.qty_done = 1.0
+        move1.move_line_ids.owner_id = self.owner1.id
+        move1._action_done()
+
+        self.assertAlmostEqual(self.product1.qty_available, 1.0)
+        self.assertAlmostEqual(self.product1.qty_at_date, 0.0)
+        self.assertAlmostEqual(self.product1.stock_value, 0.0)
+
+    def test_average_perpetual_6(self):
+        self.product1.product_tmpl_id.cost_method = 'average'
+
+        move1 = self.env['stock.move'].create({
+            'name': 'Receive 1 unit at 10',
+            'location_id': self.supplier_location.id,
+            'location_dest_id': self.stock_location.id,
+            'product_id': self.product1.id,
+            'product_uom': self.uom_unit.id,
+            'product_uom_qty': 1.0,
+            'price_unit': 10,
+        })
+        move1._action_confirm()
+        move1._action_assign()
+        move1.move_line_ids.qty_done = 1.0
+
+        move2 = self.env['stock.move'].create({
+            'name': 'Receive 1 units at 5',
+            'location_id': self.supplier_location.id,
+            'location_dest_id': self.stock_location.id,
+            'product_id': self.product1.id,
+            'product_uom': self.uom_unit.id,
+            'product_uom_qty': 1.0,
+            'price_unit': 5,
+        })
+        move2._action_confirm()
+        move2._action_assign()
+        move2.move_line_ids.qty_done = 1.0
+
+        # Receive both at the same time
+        (move1 | move2)._action_done()
+
+        self.assertAlmostEqual(self.product1.standard_price, 7.5)
+
+    def test_average_perpetual_7(self):
+        """ Test edit in the past. Receive 5@10, receive 10@20, edit the first move to receive
+        15 instead.
+        """
+        self.product1.product_tmpl_id.cost_method = 'average'
+
+        move1 = self.env['stock.move'].create({
+            'name': 'IN 5@10',
+            'location_id': self.supplier_location.id,
+            'location_dest_id': self.stock_location.id,
+            'product_id': self.product1.id,
+            'product_uom': self.uom_unit.id,
+            'product_uom_qty': 5,
+            'price_unit': 10,
+        })
+        move1._action_confirm()
+        move1.quantity_done = 5
+        move1._action_done()
+
+        self.assertAlmostEqual(self.product1.standard_price, 10)
+
+        move2 = self.env['stock.move'].create({
+            'name': 'IN 10@20',
+            'location_id': self.supplier_location.id,
+            'location_dest_id': self.stock_location.id,
+            'product_id': self.product1.id,
+            'product_uom': self.uom_unit.id,
+            'product_uom_qty': 10,
+            'price_unit': 20,
+        })
+        move2._action_confirm()
+        move2.quantity_done = 10
+        move2._action_done()
+
+        self.assertAlmostEqual(self.product1.standard_price, 16.67)
+
+        move1.move_line_ids.qty_done = 15
+
+        self.assertAlmostEqual(self.product1.standard_price, 14.0)
+
+    def test_average_perpetual_8(self):
+        """ Receive 1@10, then dropship 1@20, finally return the dropship. Dropship should not
+            impact the price.
+        """
+        self.product1.product_tmpl_id.cost_method = 'average'
+
+        move1 = self.env['stock.move'].create({
+            'name': 'IN 1@10',
+            'location_id': self.supplier_location.id,
+            'location_dest_id': self.stock_location.id,
+            'product_id': self.product1.id,
+            'product_uom': self.uom_unit.id,
+            'product_uom_qty': 1,
+            'price_unit': 10,
+        })
+        move1._action_confirm()
+        move1.quantity_done = 1
+        move1._action_done()
+
+        self.assertAlmostEqual(self.product1.standard_price, 10)
+
+        move2 = self.env['stock.move'].create({
+            'name': 'IN 1@20',
+            'location_id': self.supplier_location.id,
+            'location_dest_id': self.customer_location.id,
+            'product_id': self.product1.id,
+            'product_uom': self.uom_unit.id,
+            'product_uom_qty': 1,
+            'price_unit': 20,
+        })
+        move2._action_confirm()
+        move2.quantity_done = 1
+        move2._action_done()
+
+        self.assertAlmostEqual(self.product1.standard_price, 10.0)
+
+        move3 = self.env['stock.move'].create({
+            'name': 'IN 1@20',
+            'location_id': self.customer_location.id,
+            'location_dest_id': self.supplier_location.id,
+            'product_id': self.product1.id,
+            'product_uom': self.uom_unit.id,
+            'product_uom_qty': 1,
+            'price_unit': 20,
+        })
+        move3._action_confirm()
+        move3.quantity_done = 1
+        move3._action_done()
+
+        self.assertAlmostEqual(self.product1.standard_price, 10.0)
+
     def test_average_negative_1(self):
         """ Test edit in the past. Receive 10, send 20, edit the second move to only send 10.
         """
@@ -2777,6 +2968,77 @@ class TestStockValuation(TransactionCase):
         self.assertEqual(move7.value, 100.0)
         self.assertEqual(self.product1.standard_price, 10)
 
+    def test_average_manual_1(self):
+        ''' Set owner on incoming move => no valuation '''
+        self.product1.product_tmpl_id.cost_method = 'average'
+        self.product1.product_tmpl_id.valuation = 'manual_periodic'
+
+        move1 = self.env['stock.move'].create({
+            'name': 'Receive 1 unit at 10',
+            'location_id': self.supplier_location.id,
+            'location_dest_id': self.stock_location.id,
+            'product_id': self.product1.id,
+            'product_uom': self.uom_unit.id,
+            'product_uom_qty': 1.0,
+            'price_unit': 10,
+        })
+        move1._action_confirm()
+        move1._action_assign()
+        move1.move_line_ids.qty_done = 1.0
+        move1.move_line_ids.owner_id = self.owner1.id
+        move1._action_done()
+
+        self.assertAlmostEqual(self.product1.qty_available, 1.0)
+        self.assertAlmostEqual(self.product1.qty_at_date, 0.0)
+        self.assertAlmostEqual(self.product1.stock_value, 0.0)
+
+    def test_standard_perpetual_1(self):
+        ''' Set owner on incoming move => no valuation '''
+        self.product1.product_tmpl_id.cost_method = 'standard'
+
+        move1 = self.env['stock.move'].create({
+            'name': 'Receive 1 unit at 10',
+            'location_id': self.supplier_location.id,
+            'location_dest_id': self.stock_location.id,
+            'product_id': self.product1.id,
+            'product_uom': self.uom_unit.id,
+            'product_uom_qty': 1.0,
+            'price_unit': 10,
+        })
+        move1._action_confirm()
+        move1._action_assign()
+        move1.move_line_ids.qty_done = 1.0
+        move1.move_line_ids.owner_id = self.owner1.id
+        move1._action_done()
+
+        self.assertAlmostEqual(self.product1.qty_available, 1.0)
+        self.assertAlmostEqual(self.product1.qty_at_date, 0.0)
+        self.assertAlmostEqual(self.product1.stock_value, 0.0)
+
+    def test_standard_manual_1(self):
+        ''' Set owner on incoming move => no valuation '''
+        self.product1.product_tmpl_id.cost_method = 'standard'
+        self.product1.product_tmpl_id.valuation = 'manual_periodic'
+
+        move1 = self.env['stock.move'].create({
+            'name': 'Receive 1 unit at 10',
+            'location_id': self.supplier_location.id,
+            'location_dest_id': self.stock_location.id,
+            'product_id': self.product1.id,
+            'product_uom': self.uom_unit.id,
+            'product_uom_qty': 1.0,
+            'price_unit': 10,
+        })
+        move1._action_confirm()
+        move1._action_assign()
+        move1.move_line_ids.qty_done = 1.0
+        move1.move_line_ids.owner_id = self.owner1.id
+        move1._action_done()
+
+        self.assertAlmostEqual(self.product1.qty_available, 1.0)
+        self.assertAlmostEqual(self.product1.qty_at_date, 0.0)
+        self.assertAlmostEqual(self.product1.stock_value, 0.0)
+
     def test_change_cost_method_1(self):
         """ Change the cost method from FIFO to AVCO.
         """
@@ -2829,6 +3091,8 @@ class TestStockValuation(TransactionCase):
         move3.move_line_ids.qty_done = 1.0
         move3._action_done()
 
+        self.assertAlmostEqual(self.product1.qty_available, 19)
+        self.assertAlmostEqual(self.product1.qty_at_date, 19)
         self.assertEqual(self.product1.stock_value, 240)
 
         # ---------------------------------------------------------------------
@@ -2897,6 +3161,8 @@ class TestStockValuation(TransactionCase):
         move3.move_line_ids.qty_done = 1.0
         move3._action_done()
 
+        self.assertAlmostEqual(self.product1.qty_available, 19)
+        self.assertAlmostEqual(self.product1.qty_at_date, 19)
         self.assertEqual(self.product1.stock_value, 240)
 
         # ---------------------------------------------------------------------
@@ -2970,6 +3236,8 @@ class TestStockValuation(TransactionCase):
         self.assertEqual(move1.value, 10)
         self.assertEqual(move1.remaining_value, 10)
         self.assertEqual(move1.remaining_qty, 1)
+        self.assertAlmostEqual(self.product1.qty_available, 0.0)
+        self.assertAlmostEqual(self.product1.qty_at_date, 1.0)
         self.assertEqual(self.product1.stock_value, 10)
         self.assertTrue(len(move1.account_move_ids), 1)
 
@@ -3119,8 +3387,10 @@ class TestStockValuation(TransactionCase):
         move1.move_line_ids.qty_done = 10
         move1._action_done()
         move1.date = date2
+        move1.account_move_ids.write({'date': date2})
 
         self.assertEqual(self.product1.qty_available, 10)
+        self.assertAlmostEqual(self.product1.qty_at_date, 10.0)
         self.assertEqual(self.product1.stock_value, 100)
 
         # receive 20
@@ -3137,8 +3407,10 @@ class TestStockValuation(TransactionCase):
         move2.move_line_ids.qty_done = 20
         move2._action_done()
         move2.date = date3
+        move2.account_move_ids.write({'date': date3})
 
         self.assertEqual(self.product1.qty_available, 30)
+        self.assertAlmostEqual(self.product1.qty_at_date, 30.0)
         self.assertEqual(self.product1.stock_value, 300)
 
         # send 15
@@ -3155,8 +3427,10 @@ class TestStockValuation(TransactionCase):
         move3.move_line_ids.qty_done = 15
         move3._action_done()
         move3.date = date4
+        move3.account_move_ids.write({'date': date4})
 
         self.assertEqual(self.product1.qty_available, 15)
+        self.assertAlmostEqual(self.product1.qty_at_date, 15.0)
         self.assertEqual(self.product1.stock_value, 150)
 
         # set the standard price to 5
@@ -3164,6 +3438,7 @@ class TestStockValuation(TransactionCase):
         self.env['product.price.history'].search([('product_id', '=', self.product1.id)], order='datetime desc, id DESC', limit=1).datetime = date5
 
         self.assertEqual(self.product1.qty_available, 15)
+        self.assertAlmostEqual(self.product1.qty_at_date, 15.0)
         self.assertEqual(self.product1.stock_value, 75)
 
         # send 20
@@ -3180,8 +3455,10 @@ class TestStockValuation(TransactionCase):
         move4.move_line_ids.qty_done = 20
         move4._action_done()
         move4.date = date6
+        move4.account_move_ids.write({'date': date6})
 
         self.assertEqual(self.product1.qty_available, -5)
+        self.assertAlmostEqual(self.product1.qty_at_date, -5.0)
         self.assertEqual(self.product1.stock_value, -25)
 
         # set the standard price to 7.5
@@ -3202,11 +3479,13 @@ class TestStockValuation(TransactionCase):
         move5.move_line_ids.qty_done = 100
         move5._action_done()
         move5.date = date8
+        move5.account_move_ids.write({'date': date8})
 
         self.assertEqual(self.product1.qty_available, 95)
+        self.assertAlmostEqual(self.product1.qty_at_date, 95.0)
         self.assertEqual(self.product1.stock_value, 712.5)
 
-        # Quantity at date
+        # Quantity available at date
         self.assertEqual(self.product1.with_context(to_date=Date.to_string(date1)).qty_available, 0)
         self.assertEqual(self.product1.with_context(to_date=Date.to_string(date2)).qty_available, 10)
         self.assertEqual(self.product1.with_context(to_date=Date.to_string(date3)).qty_available, 30)
@@ -3224,12 +3503,25 @@ class TestStockValuation(TransactionCase):
         self.assertEqual(self.product1.with_context(to_date=Date.to_string(date6)).stock_value, -25)
         self.assertEqual(self.product1.with_context(to_date=Date.to_string(date8)).stock_value, 712.5)
 
+        # Quantity at date
+        self.assertAlmostEqual(self.product1.with_context(to_date=Date.to_string(date1)).qty_at_date, 0.0)
+        self.assertAlmostEqual(self.product1.with_context(to_date=Date.to_string(date2)).qty_at_date, 10.0)
+        self.assertAlmostEqual(self.product1.with_context(to_date=Date.to_string(date3)).qty_at_date, 30.0)
+        self.assertAlmostEqual(self.product1.with_context(to_date=Date.to_string(date4)).qty_at_date, 15.0)
+        self.assertAlmostEqual(self.product1.with_context(to_date=Date.to_string(date5)).qty_at_date, 15.0)
+        self.assertAlmostEqual(self.product1.with_context(to_date=Date.to_string(date6)).qty_at_date, -5.0)
+        self.assertAlmostEqual(self.product1.with_context(to_date=Date.to_string(date7)).qty_at_date, -5.0)
+        self.assertAlmostEqual(self.product1.with_context(to_date=Date.to_string(date8)).qty_at_date, 95.0)
+
         # edit the done quantity of move1, decrease it
         self.assertEqual(self.product1.with_context(to_date=Date.to_string(date2)).qty_available, 10)
+        self.assertAlmostEqual(self.product1.with_context(to_date=Date.to_string(date2)).qty_at_date, 10.0)
         move1.quantity_done = 5
+        move1.account_move_ids.write({'date': date2})
 
         # the quantity at date will reflect the change directly
         self.assertEqual(self.product1.with_context(to_date=Date.to_string(date2)).qty_available, 5)
+        self.assertAlmostEqual(self.product1.with_context(to_date=Date.to_string(date2)).qty_at_date, 5.0)
 
         # as when we decrease a quantity on a recreipt, we consider it as a out move with the price
         # of today, the value will be decrease of 100 - (5*7.5)
@@ -3241,12 +3533,17 @@ class TestStockValuation(TransactionCase):
 
         # edit move 4, send 15 instead of 20
         # we now have +5 + 20 - 15 -20 = -10 * a standard price of 5
+        self.assertAlmostEqual(self.product1.with_context(to_date=Date.to_string(date6)).qty_available, -10.0)
+        self.assertAlmostEqual(self.product1.with_context(to_date=Date.to_string(date6)).qty_at_date, -10.0)
         self.assertEqual(self.product1.with_context(to_date=Date.to_string(date6)).stock_value, -50)
         move4.quantity_done = 15
+        move4.account_move_ids.write({'date': date6})
 
         # -(20*5) + (5*7.5)
         self.assertEqual(move4.value, -62.5)
         # we now have +5 + 20 - 15 -15 = -5 * a standard price of 5
+        self.assertAlmostEqual(self.product1.with_context(to_date=Date.to_string(date6)).qty_available, -5.0)
+        self.assertAlmostEqual(self.product1.with_context(to_date=Date.to_string(date6)).qty_at_date, -5.0)
         self.assertEqual(self.product1.with_context(to_date=Date.to_string(date6)).stock_value, -25)
 
     def test_at_date_fifo_1(self):
@@ -3282,6 +3579,7 @@ class TestStockValuation(TransactionCase):
         move1.account_move_ids.write({'date': date1})
 
         self.assertEqual(self.product1.qty_available, 10)
+        self.assertAlmostEqual(self.product1.qty_at_date, 10.0)
         self.assertEqual(self.product1.stock_value, 100)
 
         # receive 10@12
@@ -3302,6 +3600,7 @@ class TestStockValuation(TransactionCase):
         move2.account_move_ids.write({'date': date2})
 
         self.assertEqual(self.product1.qty_available, 20)
+        self.assertAlmostEqual(self.product1.qty_at_date, 20)
         self.assertEqual(self.product1.stock_value, 220)
 
         # send 15
@@ -3321,6 +3620,7 @@ class TestStockValuation(TransactionCase):
         move3.account_move_ids.write({'date': date3})
 
         self.assertEqual(self.product1.qty_available, 5)
+        self.assertAlmostEqual(self.product1.qty_at_date, 5.0)
         self.assertEqual(self.product1.stock_value, 60)
 
         # send 20
@@ -3340,6 +3640,7 @@ class TestStockValuation(TransactionCase):
         move4.account_move_ids.write({'date': date4})
 
         self.assertEqual(self.product1.qty_available, -15)
+        self.assertAlmostEqual(self.product1.qty_at_date, -15.0)
         self.assertEqual(self.product1.stock_value, -180)
 
         # receive 100@15
@@ -3360,6 +3661,7 @@ class TestStockValuation(TransactionCase):
         move5.account_move_ids.write({'date': date5})
 
         self.assertEqual(self.product1.qty_available, 85)
+        self.assertAlmostEqual(self.product1.qty_at_date, 85.0)
         self.assertEqual(self.product1.stock_value, 1320)
 
         # run the vacuum to compensate the negative stock move
@@ -3367,6 +3669,7 @@ class TestStockValuation(TransactionCase):
         move4.account_move_ids[0].write({'date': date6})
 
         self.assertEqual(self.product1.qty_available, 85)
+        self.assertAlmostEqual(self.product1.qty_at_date, 85.0)
         self.assertEqual(self.product1.stock_value, 1275)
 
         # Edit the quantity done of move1, increase it.
@@ -3439,6 +3742,7 @@ class TestStockValuation(TransactionCase):
         move1.account_move_ids.write({'date': date1})
 
         self.assertEqual(self.product1.qty_available, 10)
+        self.assertAlmostEqual(self.product1.qty_at_date, 10.0)
         self.assertEqual(self.product1.stock_value, 100)
 
         # receive 10@15
@@ -3459,6 +3763,7 @@ class TestStockValuation(TransactionCase):
         move2.account_move_ids.write({'date': date2})
 
         self.assertEqual(self.product1.qty_available, 20)
+        self.assertAlmostEqual(self.product1.qty_at_date, 20.0)
         self.assertEqual(self.product1.stock_value, 250)
 
         # send 30
@@ -3478,6 +3783,7 @@ class TestStockValuation(TransactionCase):
         move3.account_move_ids.write({'date': date3})
 
         self.assertEqual(self.product1.qty_available, -10)
+        self.assertAlmostEqual(self.product1.qty_at_date, -10.0)
         self.assertEqual(self.product1.stock_value, -150)
 
         # receive 10@20
@@ -3498,6 +3804,7 @@ class TestStockValuation(TransactionCase):
         move4.account_move_ids.write({'date': date4})
 
         self.assertEqual(self.product1.qty_available, 0)
+        self.assertAlmostEqual(self.product1.qty_at_date, 0.0)
         self.assertEqual(self.product1.stock_value, 50)
 
         # receive 10@10
@@ -3518,6 +3825,7 @@ class TestStockValuation(TransactionCase):
         move5.account_move_ids.write({'date': date5})
 
         self.assertEqual(self.product1.qty_available, 10)
+        self.assertAlmostEqual(self.product1.qty_at_date, 10.0)
         self.assertEqual(self.product1.stock_value, 150)
 
         # run the vacuum to compensate the negative stock move
@@ -3525,6 +3833,7 @@ class TestStockValuation(TransactionCase):
         move3.account_move_ids[0].write({'date': date6})
 
         self.assertEqual(self.product1.qty_available, 10)
+        self.assertAlmostEqual(self.product1.qty_at_date, 10.0)
         self.assertEqual(self.product1.stock_value, 100)
 
          # ---------------------------------------------------------------------
@@ -3564,3 +3873,47 @@ class TestStockValuation(TransactionCase):
         self.assertEqual(self.product1.with_context(to_date=Date.to_string(date6)).stock_value, 100)
         self.assertEqual(self.product1.qty_at_date, 10)
         self.assertEqual(self.product1.stock_value, 100)
+
+    def test_inventory_fifo_1(self):
+        """ Make an inventory from a location with a company set, and ensure the product has a stock
+        value. When the product is sold, ensure there is no remaining quantity on the original move
+        and no stock value.
+        """
+        self.product1.standard_price = 15
+        self.product1.product_tmpl_id.cost_method = 'fifo'
+        self.inventory_location.company_id = self.env.user.company_id.id
+
+        # Start Inventory: 12 units
+        move1 = self.env['stock.move'].create({
+            'name': 'Adjustment of 12 units',
+            'location_id': self.inventory_location.id,
+            'location_dest_id': self.stock_location.id,
+            'product_id': self.product1.id,
+            'product_uom': self.uom_unit.id,
+            'product_uom_qty': 12.0,
+        })
+        move1._action_confirm()
+        move1._action_assign()
+        move1.move_line_ids.qty_done = 12.0
+        move1._action_done()
+
+        self.assertAlmostEqual(move1.value, 180.0)
+        self.assertAlmostEqual(move1.remaining_qty, 12.0)
+        self.assertAlmostEqual(self.product1.stock_value, 180.0)
+
+        # Sell the 12 units
+        move2 = self.env['stock.move'].create({
+            'name': 'Sell 12 units',
+            'location_id': self.stock_location.id,
+            'location_dest_id': self.customer_location.id,
+            'product_id': self.product1.id,
+            'product_uom': self.uom_unit.id,
+            'product_uom_qty': 12.0,
+        })
+        move2._action_confirm()
+        move2._action_assign()
+        move2.move_line_ids.qty_done = 12.0
+        move2._action_done()
+
+        self.assertAlmostEqual(move1.remaining_qty, 0.0)
+        self.assertAlmostEqual(self.product1.stock_value, 0.0)

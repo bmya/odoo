@@ -678,6 +678,7 @@ registry.gallery = Animation.extend({
      * @param {Event} ev
      */
     _onClickImg: function (ev) {
+        var self = this;
         var $cur = $(ev.currentTarget);
 
         var urls = [];
@@ -722,7 +723,12 @@ registry.gallery = Animation.extend({
         $modal.find('.modal-content, .modal-body.o_slideshow').css('height', '100%');
         $modal.appendTo(document.body);
 
-        this.carousel = new registry.gallery_slider($modal.find('.carousel').carousel());
+        $modal.one('shown.bs.modal', function () {
+            self.trigger_up('animation_start_demand', {
+                editableMode: false,
+                $target: $modal.find('.modal-body.o_slideshow'),
+            });
+        });
     },
 });
 
@@ -797,6 +803,10 @@ registry.gallerySlider = Animation.extend({
      */
     destroy: function () {
         this._super.apply(this, arguments);
+
+        if (!this.$indicator) {
+            return;
+        }
 
         this.$prev.prependTo(this.$indicator);
         this.$next.appendTo(this.$indicator);

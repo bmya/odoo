@@ -28,7 +28,7 @@ SAFE_EVAL_BASE = {
 def make_compute(text, deps):
     """ Return a compute function from its code body and dependencies. """
     func = lambda self: safe_eval(text, SAFE_EVAL_BASE, {'self': self}, mode="exec")
-    deps = [arg.strip() for arg in (deps or "").split(",")]
+    deps = [arg.strip() for arg in deps.split(",")] if deps else []
     return api.depends(*deps)(func)
 
 
@@ -179,6 +179,9 @@ class IrModel(models.Model):
                     raise UserError(_("Model '%s' contains module data and cannot be removed!") % model.name)
                 # prevent screwing up fields that depend on these models' fields
                 model.field_id._prepare_update()
+
+        # delete fields whose comodel is being removed
+        self.env['ir.model.fields'].search([('relation', 'in', self.mapped('model'))]).unlink()
 
         self._drop_table()
         res = super(IrModel, self).unlink()
@@ -366,6 +369,11 @@ class IrModelFields(models.Model):
             raise UserError(_("The Selection Options expression is not a valid Pythonic expression. "
                               "Please provide an expression in the [('key','Label'), ...] format."))
 
+    @api.constrains('domain')
+    def _check_domain(self):
+        for field in self:
+            safe_eval(field.domain or '[]')
+
     @api.constrains('name', 'state')
     def _check_name(self):
         for field in self:
@@ -546,22 +554,32 @@ class IrModelFields(models.Model):
             This method prevents the modification/deletion of many2one fields
             that have an inverse one2many, for instance.
         """
+        failed_dependencies = []
+        for rec in self:
+            model = self.env[rec.model]
+            if rec.name in model._fields:
+                field = model._fields[rec.name]
+            else:
+                # field hasn't been loaded (yet?)
+                continue
+            for dependant, path in model._field_triggers.get(field, ()):
+                if dependant.manual:
+                    failed_dependencies.append((field, dependant))
+            for inverse in model._field_inverses.get(field, ()):
+                if inverse.manual and inverse.type == 'one2many':
+                    failed_dependencies.append((field, inverse))
+
+        if not self._context.get(MODULE_UNINSTALL_FLAG) and failed_dependencies:
+            msg = _("The field '%s' cannot be removed because the field '%s' depends on it.")
+            raise UserError(msg % failed_dependencies[0])
+        elif failed_dependencies:
+            dependants = {rel[1] for rel in failed_dependencies}
+            to_unlink = [self._get(field.model_name, field.name) for field in dependants]
+            self.browse().union(*to_unlink).unlink()
+
         self = self.filtered(lambda record: record.state == 'manual')
         if not self:
             return
-
-        for record in self:
-            model = self.env[record.model]
-            field = model._fields[record.name]
-            if field.type == 'many2one' and model._field_inverses.get(field):
-                if self._context.get(MODULE_UNINSTALL_FLAG):
-                    # automatically unlink the corresponding one2many field(s)
-                    inverses = self.search([('relation', '=', field.model_name),
-                                            ('relation_field', '=', field.name)])
-                    inverses.unlink()
-                    continue
-                msg = _("The field '%s' cannot be removed because the field '%s' depends on it.")
-                raise UserError(msg % (field, model._field_inverses[field][0]))
 
         # remove fields from registry, and check that views are not broken
         fields = [self.env[record.model]._pop_field(record.name) for record in self]
@@ -571,11 +589,17 @@ class IrModelFields(models.Model):
             for view in views:
                 view._check_xml()
         except Exception:
-            raise UserError("\n".join([
-                _("Cannot rename/delete fields that are still present in views:"),
-                _("Fields: %s") % ", ".join(str(f) for f in fields),
-                _("View: %s") % view.name,
-            ]))
+            if not self._context.get(MODULE_UNINSTALL_FLAG):
+                raise UserError("\n".join([
+                    _("Cannot rename/delete fields that are still present in views:"),
+                    _("Fields: %s") % ", ".join(str(f) for f in fields),
+                    _("View: %s") % view.name,
+                ]))
+            else:
+                # uninstall mode
+                _logger.warn("The following fields were force-deleted to prevent a registry crash "
+                        + ", ".join(str(f) for f in fields)
+                        + " the following view might be broken %s" % view.name)
         finally:
             # the registry has been modified, restore it
             self.pool.setup_models(self._cr)
@@ -673,7 +697,7 @@ class IrModelFields(models.Model):
                     item._prepare_update()
                     if column_rename:
                         raise UserError(_('Can only rename one field at a time!'))
-                    column_rename = (obj._table, item.name, vals['name'], item.index)
+                    column_rename = (obj._table, item.name, vals['name'], item.index, item.store)
 
                 # We don't check the 'state', because it might come from the context
                 # (thus be set for multiple fields) and will be ignored anyway.
@@ -691,10 +715,11 @@ class IrModelFields(models.Model):
 
         if column_rename:
             # rename column in database, and its corresponding index if present
-            table, oldname, newname, index = column_rename
-            self._cr.execute('ALTER TABLE "%s" RENAME COLUMN "%s" TO "%s"' % (table, oldname, newname))
-            if index:
-                self._cr.execute('ALTER INDEX "%s_%s_index" RENAME TO "%s_%s_index"' % (table, oldname, table, newname))
+            table, oldname, newname, index, stored = column_rename
+            if stored:
+                self._cr.execute('ALTER TABLE "%s" RENAME COLUMN "%s" TO "%s"' % (table, oldname, newname))
+                if index:
+                    self._cr.execute('ALTER INDEX "%s_%s_index" RENAME TO "%s_%s_index"' % (table, oldname, table, newname))
 
         if column_rename or patched_models:
             # setup models, this will reload all manual fields in registry
@@ -736,10 +761,12 @@ class IrModelFields(models.Model):
             'index': bool(field.index),
             'store': bool(field.store),
             'copy': bool(field.copy),
+            'on_delete': getattr(field, 'ondelete', None),
             'related': ".".join(field.related) if field.related else None,
             'readonly': bool(field.readonly),
             'required': bool(field.required),
             'selectable': bool(field.search or field.store),
+            'size': getattr(field, 'size', None),
             'translate': bool(field.translate),
             'relation_field': field.inverse_name if field.type == 'one2many' else None,
             'relation_table': field.relation if field.type == 'many2many' else None,
