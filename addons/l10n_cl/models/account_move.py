@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
-from odoo import models
+
+from odoo import fields, models
 
 
 class AccountMove(models.Model):
@@ -49,3 +50,6 @@ class AccountMove(models.Model):
     #         rec.l10n_latam_document_number = sequence
     #         rec._get_sequence().next_by_id(sequence_date=rec.date)
     #     return super().post()
+
+    l10n_latam_document_type_id_code = fields.Char(related='l10n_latam_document_type_id.code', string='Doc Type')
+    partner_id_vat = fields.Char(related='partner_id.vat', string='VAT No')
