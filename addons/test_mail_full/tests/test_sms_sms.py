@@ -18,20 +18,13 @@ class LinkTrackerMock(common.BaseCase):
     def setUp(self):
         super(LinkTrackerMock, self).setUp()
 
-        def _compute_favicon():
-            # 1px to avoid real request
-            return 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg=='
-
         def _get_title_from_url(u):
             return "Test_TITLE"
 
         self.env['ir.config_parameter'].sudo().set_param('web.base.url', 'https://test.odoo.com')
 
-        link_tracker_favicon_patch = patch('odoo.addons.link_tracker.models.link_tracker.LinkTracker._compute_favicon', wraps=_compute_favicon)
         link_tracker_title_patch = patch('odoo.addons.link_tracker.models.link_tracker.LinkTracker._get_title_from_url', wraps=_get_title_from_url)
-        link_tracker_favicon_patch.start()
         link_tracker_title_patch.start()
-        self.addCleanup(link_tracker_favicon_patch.stop)
         self.addCleanup(link_tracker_title_patch.stop)
 
         self.utm_c = self.env.ref('utm.utm_campaign_fall_drive')
@@ -78,11 +71,16 @@ class TestSMSPost(test_mail_full_common.BaseFunctionalTest, sms_common.MockSMS, 
         link = self.env['link.tracker'].search([('url', '=', link)])
         self.assertIn(link.short_url, new_body)
 
-        link = 'https://test.odoo.com/my/super_page'
+        link = 'https://test.odoo.com/my/super_page?test[0]=42&toto=áâà#title3'
         self.env['link.tracker'].search([('url', '=', link)]).unlink()
         new_body = self.env['link.tracker']._convert_links_text('Welcome to %s !' % link, self.tracker_values)
         self.assertNotIn(link, new_body)
-        self.assertLinkTracker(link, {'utm_campaign': self.utm_c.name, 'utm_medium': self.utm_m.name})
+        self.assertLinkTracker(link, {
+            'utm_campaign': self.utm_c.name,
+            'utm_medium': self.utm_m.name,
+            'test[0]': '42',
+            'toto': 'áâà',
+        })
         link = self.env['link.tracker'].search([('url', '=', link)])
         self.assertIn(link.short_url, new_body)
 
@@ -102,7 +100,7 @@ class TestSMSPost(test_mail_full_common.BaseFunctionalTest, sms_common.MockSMS, 
 
     def test_sms_body_link_shorten_suffix(self):
         mailing = self.env['mailing.mailing'].create({
-            'name': 'Minimal mailing',
+            'subject': 'Minimal mailing',
             'mailing_model_id': self.env['ir.model']._get('mail.test.sms').id,
             'mailing_type': 'sms',
         })

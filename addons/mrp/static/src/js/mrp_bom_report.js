@@ -108,8 +108,8 @@ var MrpBomReport = stock_report_generic.extend({
     },
     renderSearch: function () {
         this.$buttonPrint = $(QWeb.render('mrp.button'));
-        this.$buttonPrint.filter('.o_mrp_bom_print').on('click', this._onClickPrint.bind(this));
-        this.$buttonPrint.filter('.o_mrp_bom_print_unfolded').on('click', this._onClickPrint.bind(this));
+        this.$buttonPrint.find('.o_mrp_bom_print').on('click', this._onClickPrint.bind(this));
+        this.$buttonPrint.find('.o_mrp_bom_print_unfolded').on('click', this._onClickPrint.bind(this));
         this.$searchView = $(QWeb.render('mrp.report_bom_search', _.omit(this.data, 'lines')));
         this.$searchView.find('.o_mrp_bom_report_qty').on('change', this._onChangeQty.bind(this));
         this.$searchView.find('.o_mrp_bom_report_variants').on('change', this._onChangeVariants.bind(this));
@@ -169,6 +169,9 @@ var MrpBomReport = stock_report_generic.extend({
             type: 'ir.actions.act_window',
             res_model: $(ev.currentTarget).data('model'),
             res_id: $(ev.currentTarget).data('res-id'),
+            context: {
+                'active_id': $(ev.currentTarget).data('res-id')
+            },
             views: [[false, 'form']],
             target: 'current'
         });

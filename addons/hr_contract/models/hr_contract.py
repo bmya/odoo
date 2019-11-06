@@ -16,9 +16,9 @@ class Contract(models.Model):
 
     name = fields.Char('Contract Reference', required=True)
     active = fields.Boolean(default=True)
-    employee_id = fields.Many2one('hr.employee', string='Employee', tracking=True)
-    department_id = fields.Many2one('hr.department', string="Department")
-    job_id = fields.Many2one('hr.job', string='Job Position')
+    employee_id = fields.Many2one('hr.employee', string='Employee', tracking=True, domain="['|', ('company_id', '=', False), ('company_id', '=', company_id)]")
+    department_id = fields.Many2one('hr.department', domain="['|', ('company_id', '=', False), ('company_id', '=', company_id)]", string="Department")
+    job_id = fields.Many2one('hr.job', domain="['|', ('company_id', '=', False), ('company_id', '=', company_id)]", string='Job Position')
     date_start = fields.Date('Start Date', required=True, default=fields.Date.today,
         help="Start date of the contract.")
     date_end = fields.Date('End Date',
@@ -27,7 +27,8 @@ class Contract(models.Model):
         help="End date of the trial period (if there is one).")
     resource_calendar_id = fields.Many2one(
         'resource.calendar', 'Working Schedule',
-        default=lambda self: self.env.company.resource_calendar_id.id)
+        default=lambda self: self.env.company.resource_calendar_id.id, copy=False,
+        domain="['|', ('company_id', '=', False), ('company_id', '=', company_id)]")
     wage = fields.Monetary('Wage', required=True, tracking=True, help="Employee's monthly gross wage.")
     advantages = fields.Text('Advantages')
     notes = fields.Text('Notes')
@@ -36,9 +37,9 @@ class Contract(models.Model):
         ('open', 'Running'),
         ('close', 'Expired'),
         ('cancel', 'Cancelled')
-    ], string='Status', group_expand='_expand_states',
+    ], string='Status', group_expand='_expand_states', copy=False,
        tracking=True, help='Status of the contract', default='draft')
-    company_id = fields.Many2one('res.company', default=lambda self: self.env.company)
+    company_id = fields.Many2one('res.company', default=lambda self: self.env.company, required=True)
     """
         kanban_state:
             * draft + green = "Incoming" state (will be set as Open once the contract has started)
@@ -46,10 +47,10 @@ class Contract(models.Model):
             * red = Shows a warning on the employees kanban view
     """
     kanban_state = fields.Selection([
-        ('normal', 'Grey'), 
+        ('normal', 'Grey'),
         ('done', 'Green'),
         ('blocked', 'Red')
-    ], string='Kanban State', default='normal', tracking=True)
+    ], string='Kanban State', default='normal', tracking=True, copy=False)
     currency_id = fields.Many2one(string="Currency", related='company_id.currency_id', readonly=True)
     permit_no = fields.Char('Work Permit No', related="employee_id.permit_no", readonly=False)
     visa_no = fields.Char('Visa No', related="employee_id.visa_no", readonly=False)
@@ -73,6 +74,7 @@ class Contract(models.Model):
             self.job_id = self.employee_id.job_id
             self.department_id = self.employee_id.department_id
             self.resource_calendar_id = self.employee_id.resource_calendar_id
+            self.company_id = self.employee_id.company_id
 
     @api.constrains('employee_id', 'state', 'kanban_state', 'date_start', 'date_end')
     def _check_current_contract(self):

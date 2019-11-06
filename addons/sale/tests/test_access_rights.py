@@ -87,7 +87,7 @@ class TestAccessRights(TestCommonSaleNoChart):
         self.assertIn(india_channel.id, self.env['crm.team'].search([]).ids, 'Sales manager should be able to create a Sales Team')
         # Manager can edit a Sales Team
         india_channel.with_user(self.user_manager).write({'name': 'new_india'})
-        self.assertEquals(india_channel.name, 'new_india', 'Sales manager should be able to edit a Sales Team')
+        self.assertEqual(india_channel.name, 'new_india', 'Sales manager should be able to edit a Sales Team')
         # Manager can delete a Sales Team
         india_channel.with_user(self.user_manager).unlink()
         self.assertNotIn(india_channel.id, self.env['crm.team'].search([]).ids, 'Sales manager should be able to delete a Sales Team')
@@ -103,8 +103,7 @@ class TestAccessRights(TestCommonSaleNoChart):
         # Salesperson can change a Sales Team of SO
         self.order.with_user(self.user_salesperson_1).write({'team_id': self.sales_channel.id})
         # Salesperson can't create the SO of other salesperson
-        # raise ValidationError instead of AccessError due to constraint
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(AccessError):
             self.env['sale.order'].with_user(self.user_salesperson_1).create({
                 'partner_id': self.partner_customer_usd.id,
                 'user_id': self.user_salesperson.id

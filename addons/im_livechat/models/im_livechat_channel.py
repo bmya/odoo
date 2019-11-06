@@ -33,6 +33,10 @@ class ImLivechatChannel(models.Model):
     default_message = fields.Char('Welcome Message', default='How may I help you?',
         help="This is an automated 'welcome' message that your visitor will see when they initiate a new conversation.")
     input_placeholder = fields.Char('Chat Input Placeholder', help='Text that prompts the user to initiate the chat.')
+    header_background_color = fields.Char(default="#875A7B", help="Default background color of the channel header once open")
+    title_color = fields.Char(default="#FFFFFF", help="Default title color of the channel once open")
+    button_background_color = fields.Char(default="#878787", help="Default background color of the Livechat button")
+    button_text_color = fields.Char(default="#FFFFFF", help="Default text color of the Livechat button")
 
     # computed fields
     web_page = fields.Char('Web Page', compute='_compute_web_page_link', store=False, readonly=True,
@@ -70,8 +74,10 @@ class ImLivechatChannel(models.Model):
 
     @api.depends('channel_ids')
     def _compute_nbr_channel(self):
+        data = self.env['mail.channel'].read_group([('livechat_channel_id', 'in', self._ids)], ['__count'], ['livechat_channel_id'], lazy=False)
+        channel_count = {x['livechat_channel_id'][0]: x['__count'] for x in data}
         for record in self:
-            record.nbr_channel = len(record.channel_ids)
+            record.nbr_channel = channel_count.get(record.id, 0)
 
     # --------------------------
     # Action Methods
@@ -104,7 +110,28 @@ class ImLivechatChannel(models.Model):
         self.ensure_one()
         return self.user_ids.filtered(lambda user: user.im_status == 'online')
 
-    def _get_mail_channel(self, anonymous_name, previous_operator_id=None, user_id=None, country_id=None):
+    def _get_livechat_mail_channel_vals(self, anonymous_name, operator, user_id=None, country_id=None):
+        # partner to add to the mail.channel
+        operator_partner_id = operator.partner_id.id
+        channel_partner_to_add = [(4, operator_partner_id)]
+        visitor_user = False
+        if user_id:
+            visitor_user = self.env['res.users'].browse(user_id)
+            if visitor_user and visitor_user.active:  # valid session user (not public)
+                channel_partner_to_add.append((4, visitor_user.partner_id.id))
+        return {
+            'channel_partner_ids': channel_partner_to_add,
+            'livechat_operator_id': operator_partner_id,
+            'livechat_channel_id': self.id,
+            'anonymous_name': False if user_id else anonymous_name,
+            'country_id': country_id,
+            'channel_type': 'livechat',
+            'name': ', '.join([visitor_user.display_name if visitor_user else anonymous_name, operator.livechat_username if operator.livechat_username else operator.name]),
+            'public': 'private',
+            'email_send': False,
+        }
+
+    def _open_livechat_mail_channel(self, anonymous_name, previous_operator_id=None, user_id=None, country_id=None):
         """ Return a mail.channel given a livechat channel. It creates one with a connected operator, or return false otherwise
             :param anonymous_name : the name of the anonymous person of the channel
             :param previous_operator_id : partner_id.id of the previous operator that this visitor had in the past
@@ -118,7 +145,6 @@ class ImLivechatChannel(models.Model):
             the system will first try to assign that operator if he's available (to improve user experience).
         """
         self.ensure_one()
-
         operator = False
         if previous_operator_id:
             available_users = self._get_available_users()
@@ -131,27 +157,10 @@ class ImLivechatChannel(models.Model):
             # no one available
             return False
 
-        operator_partner_id = operator.partner_id.id
-        # partner to add to the mail.channel
-        channel_partner_to_add = [(4, operator_partner_id)]
-        visitor_user = False
-        if user_id:
-            visitor_user = self.env['res.users'].browse(user_id)
-            if visitor_user and visitor_user.active:  # valid session user (not public)
-                channel_partner_to_add.append((4, visitor_user.partner_id.id))
         # create the session, and add the link with the given channel
-        mail_channel = self.env["mail.channel"].with_context(mail_create_nosubscribe=False).sudo().create({
-            'channel_partner_ids': channel_partner_to_add,
-            'livechat_operator_id': operator_partner_id,
-            'livechat_channel_id': self.id,
-            'anonymous_name': False if user_id else anonymous_name,
-            'country_id': country_id,
-            'channel_type': 'livechat',
-            'name': ', '.join([visitor_user.name if visitor_user else anonymous_name, operator.livechat_username if operator.livechat_username else operator.name]),
-            'public': 'private',
-            'email_send': False,
-        })
-        mail_channel._broadcast([operator_partner_id])
+        mail_channel_vals = self._get_livechat_mail_channel_vals(anonymous_name, operator, user_id=user_id, country_id=country_id)
+        mail_channel = self.env["mail.channel"].with_context(mail_create_nosubscribe=False).sudo().create(mail_channel_vals)
+        mail_channel._broadcast([operator.partner_id.id])
         return mail_channel.sudo().channel_info()[0]
 
     def _get_random_operator(self):
@@ -199,6 +208,10 @@ class ImLivechatChannel(models.Model):
         self.ensure_one()
 
         return {
+            'header_background_color': self.header_background_color,
+            'button_background_color': self.button_background_color,
+            'title_color': self.title_color,
+            'button_text_color': self.button_text_color,
             'button_text': self.button_text,
             'input_placeholder': self.input_placeholder,
             'default_message': self.default_message,

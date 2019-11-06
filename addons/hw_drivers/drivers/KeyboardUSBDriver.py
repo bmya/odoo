@@ -4,7 +4,6 @@
 import ctypes
 import evdev
 import json
-from keysym_to_ucs import keysym_mapping
 import logging
 from lxml import etree
 import os
@@ -13,6 +12,7 @@ import subprocess
 import time
 from threading import Lock
 from usb import util
+import urllib3
 try:
     from queue import Queue, Empty
 except ImportError:
@@ -20,6 +20,7 @@ except ImportError:
 
 from odoo import http, _
 from odoo.addons.hw_proxy.controllers.main import drivers as old_drivers
+from odoo.addons.hw_drivers.tools import helpers
 from odoo.addons.hw_drivers.controllers.driver import event_manager, Driver, iot_devices
 
 _logger = logging.getLogger(__name__)
@@ -29,6 +30,7 @@ xlib = ctypes.cdll.LoadLibrary('libX11.so.6')
 class KeyboardUSBDriver(Driver):
     connection_type = 'usb'
     keyboard_layout_groups = []
+    available_layouts = []
 
     def __init__(self, device):
         if not hasattr(KeyboardUSBDriver, 'display'):
@@ -40,6 +42,10 @@ class KeyboardUSBDriver(Driver):
         self._device_connection = 'direct'
         self._device_name = self._set_name()
         self.load_layout()
+
+        if not KeyboardUSBDriver.available_layouts:
+            KeyboardUSBDriver.load_layouts_list()
+        KeyboardUSBDriver.send_layouts_list()
 
         for device in [evdev.InputDevice(path) for path in evdev.list_devices()]:
             if (self.dev.idVendor == device.info.vendor) and (self.dev.idProduct == device.info.product):
@@ -65,6 +71,39 @@ class KeyboardUSBDriver(Driver):
         """Allows `hw_proxy.Proxy` to retrieve the status of the scanners"""
         status = 'connected' if any(iot_devices[d].device_type == "scanner" for d in iot_devices) else 'disconnected'
         return {'status': status, 'messages': ''}
+
+    @classmethod
+    def send_layouts_list(cls):
+        server = helpers.get_odoo_server_url()
+        if server:
+            urllib3.disable_warnings()
+            pm = urllib3.PoolManager(cert_reqs='CERT_NONE')
+            server = server + '/iot/keyboard_layouts'
+            try:
+                pm.request('POST', server, fields={'available_layouts': json.dumps(cls.available_layouts)})
+            except Exception as e:
+                _logger.error('Could not reach configured server')
+                _logger.error('A error encountered : %s ' % e)
+
+    @classmethod
+    def load_layouts_list(cls):
+        tree = etree.parse("/usr/share/X11/xkb/rules/base.xml", etree.XMLParser(ns_clean=True, recover=True))
+        layouts = tree.xpath("//layout")
+        for layout in layouts:
+            layout_name = layout.xpath("./configItem/name")[0].text
+            layout_description = layout.xpath("./configItem/description")[0].text
+            KeyboardUSBDriver.available_layouts.append({
+                'name': layout_description,
+                'layout': layout_name,
+            })
+            for variant in layout.xpath("./variantList/variant"):
+                variant_name = variant.xpath("./configItem/name")[0].text
+                variant_description = variant.xpath("./configItem/description")[0].text
+                KeyboardUSBDriver.available_layouts.append({
+                    'name': variant_description,
+                    'layout': layout_name,
+                    'variant': variant_name,
+                })
 
     def _set_name(self):
         try:
@@ -141,9 +180,7 @@ class KeyboardUSBDriver(Driver):
         else:
             data = {}
         data[self.device_identifier] = layout
-        subprocess.check_call(["sudo", "mount", "-o", "remount,rw", "/"])
-        file_path.write_text(json.dumps(data))
-        subprocess.check_call(["sudo", "mount", "-o", "remount,ro", "/"])
+        helpers.write_file('odoo-keyboard-layouts.conf', json.dumps(data))
 
     def load_layout(self):
         """Read the layout from the saved filed and set it as current layout.
@@ -209,14 +246,7 @@ class KeyboardUSBDriver(Driver):
         key_pressed = ctypes.create_string_buffer(5)
         xlib.XkbTranslateKeySym(KeyboardUSBDriver.display, ctypes.byref(keysym), 0, ctypes.byref(key_pressed), 5, ctypes.byref(ctypes.c_int()))
         if key_pressed.value:
-            # Latin-1
-            return key_pressed.value.decode('latin1')
-        elif (keysym.value & 0xff000000) == 0x01000000:
-            # Already UCS
-            return chr(keysym.value & 0x00ffffff)
-        elif keysym.value in keysym_mapping:
-            # Other encodings
-            return chr(keysym_mapping[keysym.value])
+            return key_pressed.value.decode('utf-8')
         return ''
 
     def _get_active_modifiers(self, scancode):
@@ -279,25 +309,3 @@ class KeyboardUSBController(http.Controller):
             return scanners[0].read_next_barcode()
         time.sleep(5)
         return None
-
-    @http.route('/hw_proxy/load_keyboard_layouts', type='json', auth='none', cors='*')
-    def load_keyboard_layouts(self):
-        available_layouts = []
-        tree = etree.parse("/usr/share/X11/xkb/rules/base.xml", etree.XMLParser(ns_clean=True, recover=True))
-        layouts = tree.xpath("//layout")
-        for layout in layouts:
-            layout_name = layout.xpath("./configItem/name")[0].text
-            layout_description = layout.xpath("./configItem/description")[0].text
-            available_layouts.append({
-                'name': layout_description,
-                'layout': layout_name,
-            })
-            for variant in layout.xpath("./variantList/variant"):
-                variant_name = variant.xpath("./configItem/name")[0].text
-                variant_description = variant.xpath("./configItem/description")[0].text
-                available_layouts.append({
-                    'name': variant_description,
-                    'layout': layout_name,
-                    'variant': variant_name,
-                })
-        return available_layouts

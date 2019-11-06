@@ -9,36 +9,24 @@ class TestBankStatementReconciliation(AccountingTestCase):
         super(TestBankStatementReconciliation, self).setUp()
         self.bs_model = self.env['account.bank.statement']
         self.bsl_model = self.env['account.bank.statement.line']
-        self.reconciliation_widget = self.env['account.reconciliation.widget']
         self.partner = self.env['res.partner'].create({'name': 'test'})
         self.currency_usd_id = self.env.ref("base.USD").id
         self.currency_euro_id = self.env.ref("base.EUR").id
 
-    def test_reconciliation_proposition(self):
-        rcv_mv_line = self.create_invoice(100)
-        st_line = self.create_statement_line(100)
-
-        # exact amount match
-        rec_prop = self.reconciliation_widget.get_bank_statement_line_data(st_line.ids)['lines']
-        prop = rec_prop[0]['reconciliation_proposition']
-
-        self.assertEqual(len(prop), 1)
-        self.assertEqual(prop[0]['id'], rcv_mv_line.id)
-
     def test_full_reconcile(self):
-        self._reconcile_invoice_with_statement(False)
+        self._reconcile_invoice_with_statement('pay_val')
 
     def test_post_at_bank_rec_full_reconcile(self):
         """ Test the full reconciliation of a bank statement directly with an invoice.
         """
-        self._reconcile_invoice_with_statement(True)
+        self._reconcile_invoice_with_statement('bank_rec')
 
-    def _reconcile_invoice_with_statement(self, post_at_bank_rec):
+    def _reconcile_invoice_with_statement(self, post_at):
         """ Tests the reconciliation of an invoice with a bank statement, using
         the provided 'post at bank reconciliation' value for the bank journal
         where to generate the statement.
         """
-        self.bs_model.with_context(journal_type='bank')._default_journal().post_at_bank_reconciliation = post_at_bank_rec
+        self.bs_model.with_context(journal_type='bank')._default_journal().post_at_bank_reconciliation = post_at == 'bank_rec'
         rcv_mv_line = self.create_invoice(100)
         st_line = self.create_statement_line(100)
         # reconcile

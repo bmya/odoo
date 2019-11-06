@@ -109,6 +109,7 @@ class Registry(Mapping):
         self._init = True
         self._assertion_report = assertion_report.assertion_report()
         self._fields_by_model = None
+        self._ordinary_tables = None
         self._post_init_queue = deque()
 
         # modules fully loaded (maintained during init phase by `loading` module)
@@ -183,25 +184,6 @@ class Registry(Mapping):
         """ Add or replace a model in the registry."""
         self.models[model_name] = model
 
-    @lazy_property
-    def field_sequence(self):
-        """ Return a function mapping a field to an integer. The value of a
-            field is guaranteed to be strictly greater than the value of the
-            field's dependencies.
-        """
-        # map fields on their dependents
-        dependents = {
-            field: set(dep for dep, _ in model._field_triggers[field] if dep != field)
-            for model in self.values()
-            for field in model._fields.values()
-        }
-        # sort them topologically, and associate a sequence number to each field
-        mapping = {
-            field: num
-            for num, field in enumerate(reversed(topological_sort(dependents)))
-        }
-        return mapping.get
-
     def descendants(self, model_names, *kinds):
         """ Return the models corresponding to ``model_names`` and all those
         that inherit/inherits from them.
@@ -266,6 +248,44 @@ class Registry(Mapping):
         for model in models:
             model._setup_fields()
 
+        # determine field dependencies
+        Model = odoo.models.Model
+        dependencies = {
+            field: set(field.resolve_depends(model))
+            for model in models
+            if isinstance(model, Model)
+            for field in model._fields.values()
+        }
+
+        # determine transitive dependencies
+        def transitive_dependencies(field, seen=[]):
+            if field in seen:
+                return
+            for seq1 in dependencies[field]:
+                yield seq1
+                for seq2 in transitive_dependencies(seq1[-1], seen + [field]):
+                    yield concat(seq1[:-1], seq2)
+
+        def concat(seq1, seq2):
+            if seq1 and seq2:
+                f1, f2 = seq1[-1], seq2[0]
+                if f1.type == 'one2many' and f2.type == 'many2one' and \
+                        f1.model_name == f2.comodel_name and f1.inverse_name == f2.name:
+                    return concat(seq1[:-1], seq2[1:])
+            return seq1 + seq2
+
+        # determine triggers based on transitive dependencies
+        triggers = {}
+        for field in dependencies:
+            for path in transitive_dependencies(field):
+                if path:
+                    tree = triggers
+                    for label in reversed(path):
+                        tree = tree.setdefault(label, {})
+                    tree.setdefault(None, set()).add(field)
+
+        self.field_triggers = triggers
+
         for model in models:
             model._setup_complete()
 
@@ -296,12 +316,13 @@ class Registry(Mapping):
             model._auto_init()
             model.init()
 
+        self._ordinary_tables = None
+
         while self._post_init_queue:
             func = self._post_init_queue.popleft()
             func()
 
-        if models:
-            models[0].recompute()
+        env['base'].flush()
 
         # make sure all tables are present
         self.check_tables_exist(cr)
@@ -317,12 +338,11 @@ class Registry(Mapping):
         if missing_tables:
             missing = {table2model[table] for table in missing_tables}
             _logger.info("Models have no table: %s.", ", ".join(missing))
-            # recreate missing tables following model dependencies
-            deps = {name: model._depends for name, model in env.items()}
-            for name in topological_sort(deps):
-                if name in missing:
-                    _logger.info("Recreate table of model %s.", name)
-                    env[name].init()
+            # recreate missing tables
+            for name in missing:
+                _logger.info("Recreate table of model %s.", name)
+                env[name].init()
+            env['base'].flush()
             # check again, and log errors if tables are still missing
             missing_tables = set(table2model).difference(existing_tables(cr, table2model))
             for table in missing_tables:
@@ -345,6 +365,24 @@ class Registry(Mapping):
         """
         for model in self.models.values():
             model.clear_caches()
+
+    def is_an_ordinary_table(self, model):
+        """ Return whether the given model has an ordinary table. """
+        if self._ordinary_tables is None:
+            cr = model.env.cr
+            query = """
+                SELECT c.relname
+                  FROM pg_class c
+                  JOIN pg_namespace n ON (n.oid = c.relnamespace)
+                 WHERE c.relname IN %s
+                   AND c.relkind = 'r'
+                   AND n.nspname = 'public'
+            """
+            tables = tuple(m._table for m in self.models.values())
+            cr.execute(query, [tables])
+            self._ordinary_tables = {row[0] for row in cr.fetchall()}
+
+        return model._table in self._ordinary_tables
 
     def setup_signaling(self):
         """ Setup the inter-process signaling on this registry. """

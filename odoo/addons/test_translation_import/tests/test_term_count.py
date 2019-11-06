@@ -36,16 +36,6 @@ class TestTermCount(common.TransactionCase):
         field = self.env['ir.model.fields'].search([('model', '=', 'test.translation.import'), ('name', '=', 'name')])
         self.assertEqual(translations[1].res_id, field.id)
 
-        translations = self.env['ir.translation'].search([
-            ('lang', '=', 'fr_FR'),
-            ('type', '=', 'selection'),
-            ('module', '=', 'test_translation_import'),
-        ], order='src')
-        self.assertEqual(len(translations), 2)
-        self.assertEqual(translations[0].name, 'test.translation.import,import_type')
-        self.assertEqual(translations[0].res_id, 0)
-
-
     def test_count_term_module(self):
         """
         Just make sure we have as many translation entries as we wanted and module deducted from file content
@@ -161,7 +151,7 @@ class TestTermCount(common.TransactionCase):
     def test_import_from_po_file(self):
         """Test the import from a single po file works"""
         with file_open('test_translation_import/i18n/tlh.po', 'rb') as f:
-            po_file = base64.encodestring(f.read())
+            po_file = base64.encodebytes(f.read())
 
         import_tlh = self.env["base.language.import"].create({
             'name': 'Klingon',
@@ -184,7 +174,7 @@ class TestTermCount(common.TransactionCase):
     def test_lazy_translation(self):
         """Test the import from a single po file works"""
         with file_open('test_translation_import/i18n/tlh.po', 'rb') as f:
-            po_file = base64.encodestring(f.read())
+            po_file = base64.encodebytes(f.read())
 
         import_tlh = self.env["base.language.import"].create({
             'name': 'Klingon',
@@ -210,7 +200,7 @@ class TestTermCount(common.TransactionCase):
     def test_import_from_csv_file(self):
         """Test the import from a single CSV file works"""
         with file_open('test_translation_import/i18n/dot.csv', 'rb') as f:
-            po_file = base64.encodestring(f.read())
+            po_file = base64.encodebytes(f.read())
 
         import_tlh = self.env["base.language.import"].create({
             'name': 'Dothraki',

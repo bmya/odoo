@@ -71,6 +71,7 @@ class EventTicket(models.Model):
     name = fields.Char(string='Name', required=True, translate=True)
     event_type_id = fields.Many2one('event.type', string='Event Category', ondelete='cascade')
     event_id = fields.Many2one('event.event', string="Event", ondelete='cascade')
+    company_id = fields.Many2one('res.company', related='event_id.company_id')
     product_id = fields.Many2one('product.product', string='Product',
         required=True, domain=[("event_ok", "=", True)],
         default=_default_product_id)
@@ -95,7 +96,7 @@ class EventTicket(models.Model):
     def _compute_is_expired(self):
         for record in self:
             if record.deadline:
-                current_date = fields.Date.context_today(record.with_context({'tz': record.event_id.date_tz}))
+                current_date = fields.Date.context_today(record.with_context(tz=record.event_id.date_tz))
                 record.is_expired = record.deadline < current_date
             else:
                 record.is_expired = False
@@ -132,6 +133,7 @@ class EventTicket(models.Model):
                         WHERE event_ticket_id IN %s AND state IN ('draft', 'open', 'done')
                         GROUP BY event_ticket_id, state
                     """
+            self.env['event.registration'].flush(['event_id', 'event_ticket_id', 'state'])
             self.env.cr.execute(query, (tuple(self.ids),))
             for event_ticket_id, state, num in self.env.cr.fetchall():
                 ticket = self.browse(event_ticket_id)

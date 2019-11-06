@@ -36,10 +36,6 @@ tour.STEPS.SHOW_APPS_MENU_ITEM,
     content: "select the pricelist",
     trigger: 'ul.ui-autocomplete > li > a:contains(Public Pricelist)',
 }, {
-    content: "wait for pricelist to be set",
-    trigger: 'div.o_with_button[name="pricelist_id"]',
-    run: function () {},
-}, {
     trigger: "a:contains('Add a product')"
 }, {
     trigger: 'div[name="product_template_id"] input',
@@ -70,7 +66,7 @@ tour.STEPS.SHOW_APPS_MENU_ITEM,
     trigger: '.o_sale_product_configurator_add:not(.disabled)'
 }, {
     content: "check we are on the add modal",
-    trigger: '.td-product_name:contains("Customizable Desk (Steel, White)")',
+    trigger: '.td-product_name:contains("Customizable Desk (CONFIG) (Steel, White)")',
     extra_trigger: '.oe_optional_products_modal',
     run: 'click'
 }, {

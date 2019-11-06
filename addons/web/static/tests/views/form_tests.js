@@ -1,6 +1,7 @@
 odoo.define('web.form_tests', function (require) {
 "use strict";
 
+var AbstractStorageService = require('web.AbstractStorageService');
 var BasicModel = require('web.BasicModel');
 var concurrency = require('web.concurrency');
 var core = require('web.core');
@@ -9,6 +10,7 @@ var FormView = require('web.FormView');
 var mixins = require('web.mixins');
 var NotificationService = require('web.NotificationService');
 var pyUtils = require('web.py_utils');
+var RamStorage = require('web.RamStorage');
 var testUtils = require('web.test_utils');
 var widgetRegistry = require('web.widget_registry');
 var Widget = require('web.Widget');
@@ -101,6 +103,19 @@ QUnit.module('Views', {
                     {id: 12, display_name: "gold", color: 2},
                     {id: 14, display_name: "silver", color: 5},
                 ]
+            },
+            "ir.translation": {
+                fields: {
+                    lang_code: {type: "char"},
+                    value: {type: "char"},
+                    res_id: {type: "integer"}
+                },
+                records: [{
+                    id: 99,
+                    res_id: 12,
+                    value: '',
+                    lang_code: 'en_US'
+                }]
             },
         };
         this.actions = [{
@@ -475,8 +490,10 @@ QUnit.module('Views', {
                             'The correct _view_ref should have been sent to the server, first time');
                     }
                     if (args.model === 'partner_type') {
-                        assert.deepEqual(context, {tree_view_ref: 'some_other_tree_view'},
-                            'The correct _view_ref should have been sent to the server for the subview');
+                        assert.deepEqual(context, {
+                            base_model_name: 'product',
+                            tree_view_ref: 'some_other_tree_view',
+                        }, 'The correct _view_ref should have been sent to the server for the subview');
                     }
                 }
                 return this._super.apply(this, arguments);
@@ -3307,6 +3324,74 @@ QUnit.module('Views', {
         form.destroy();
     });
 
+    QUnit.test('properly apply onchange on one2many fields direct click', async function (assert) {
+        assert.expect(3);
+
+        var def = testUtils.makeTestPromise();
+
+        this.data.partner.records[0].p = [2, 4];
+        this.data.partner.onchanges = {
+            int_field: function (obj) {
+                obj.p = [
+                    [5],
+                    [1, 2, {display_name: "updated record 1", int_field: obj.int_field}],
+                    [1, 4, {display_name: "updated record 2", int_field: obj.int_field * 2}],
+                ];
+            },
+        };
+
+        var form = await createView({
+            View: FormView,
+            model: 'partner',
+            data: this.data,
+            arch: '<form string="Partners">' +
+                    '<group>' +
+                        '<field name="foo"/>' +
+                        '<field name="int_field"/>' +
+                    '</group>' +
+                    '<field name="p">' +
+                        '<tree>' +
+                            '<field name="display_name"/>' +
+                            '<field name="int_field"/>' +
+                        '</tree>' +
+                    '</field>' +
+                '</form>',
+            res_id: 1,
+            mockRPC: function (route, args) {
+                if (args.method === 'onchange') {
+                    var self = this;
+                    var my_args = arguments;
+                    var my_super = this._super;
+                    return def.then(() => {
+                        return my_super.apply(self, my_args)
+                    });
+                }
+                return this._super.apply(this, arguments);
+            },
+            archs: {
+                'partner,false,form': '<form><group><field name="display_name"/><field name="int_field"/></group></form>'
+            },
+            viewOptions: {
+                mode: 'edit',
+            },
+        });
+        // Trigger the onchange
+        await testUtils.fields.editInput(form.$('input[name=int_field]'), '2');
+
+        // Open first record in one2many
+        await testUtils.dom.click(form.$('.o_data_row:first'));
+
+        assert.containsNone(document.body, '.modal');
+
+        def.resolve();
+        await testUtils.nextTick();
+
+        assert.containsOnce(document.body, '.modal');
+        assert.strictEqual($('.modal').find('input[name=int_field]').val(), '2');
+
+        form.destroy();
+    });
+
     QUnit.test('update many2many value in one2many after onchange', async function (assert) {
         assert.expect(2);
 
@@ -4557,6 +4642,89 @@ QUnit.module('Views', {
         form.destroy();
     });
 
+    QUnit.test('oe_read_only className is handled in list views', async function (assert) {
+        assert.expect(7);
+
+        var form = await createView({
+            View: FormView,
+            model: 'partner',
+            data: this.data,
+            arch: '<form string="Partners">' +
+                    '<sheet>' +
+                        '<field name="p">' +
+                            '<tree editable="top">' +
+                                '<field name="foo"/>' +
+                                '<field name="display_name" class="oe_read_only"/>' +
+                                '<field name="bar"/>' +
+                            '</tree>' +
+                        '</field>' +
+                    '</sheet>' +
+                '</form>',
+            res_id: 1,
+        });
+
+        assert.hasClass(form.$('.o_form_view'), 'o_form_readonly',
+            'form should be in readonly mode');
+        assert.isVisible(form.$('.o_field_one2many .o_list_view thead th[data-name="display_name"]'),
+            'display_name cell should be visible in readonly mode');
+
+        await testUtils.form.clickEdit(form);
+
+        assert.strictEqual(form.el.querySelector('th[data-name="foo"]').style.width, '100%',
+            'As the only visible char field, "foo" should take 100% of the remaining space');
+        assert.strictEqual(form.el.querySelector('th.oe_read_only').style.width, '0px',
+            '"oe_read_only" in edit mode should have a 0px width');
+
+        assert.hasClass(form.$('.o_form_view'), 'o_form_editable',
+            'form should be in edit mode');
+        assert.isNotVisible(form.$('.o_field_one2many .o_list_view thead th[data-name="display_name"]'),
+            'display_name cell should not be visible in edit mode');
+
+        await testUtils.dom.click(form.$('.o_field_x2many_list_row_add a'));
+        assert.hasClass(form.$('.o_form_view .o_list_view tbody tr:first input[name="display_name"]'),
+            'oe_read_only', 'display_name input should have oe_read_only class');
+
+        form.destroy();
+    });
+
+    QUnit.test('oe_edit_only className is handled in list views', async function (assert) {
+        assert.expect(5);
+        var form = await createView({
+            View: FormView,
+            model: 'partner',
+            data: this.data,
+            arch: '<form string="Partners">' +
+                    '<sheet>' +
+                        '<field name="p">' +
+                            '<tree editable="top">' +
+                                '<field name="foo"/>' +
+                                '<field name="display_name" class="oe_edit_only"/>' +
+                                '<field name="bar"/>' +
+                            '</tree>' +
+                        '</field>' +
+                    '</sheet>' +
+                '</form>',
+            res_id: 1,
+        });
+
+        assert.hasClass(form.$('.o_form_view'), 'o_form_readonly',
+            'form should be in readonly mode');
+        assert.isNotVisible(form.$('.o_field_one2many .o_list_view thead th[data-name="display_name"]'),
+            'display_name cell should not be visible in readonly mode');
+
+        await testUtils.form.clickEdit(form);
+        assert.hasClass(form.$('.o_form_view'), 'o_form_editable',
+            'form should be in edit mode');
+        assert.isVisible(form.$('.o_field_one2many .o_list_view thead th[data-name="display_name"]'),
+            'display_name cell should be visible in edit mode');
+
+        await testUtils.dom.click(form.$('.o_field_x2many_list_row_add a'));
+        assert.hasClass(form.$('.o_form_view .o_list_view tbody tr:first input[name="display_name"]'),
+            'oe_edit_only', 'display_name input should have oe_edit_only class');
+
+        form.destroy();
+    });
+
     QUnit.test('*_view_ref in context are passed correctly', async function (assert) {
         var done = assert.async();
         assert.expect(3);
@@ -4595,6 +4763,35 @@ QUnit.module('Views', {
             form.destroy();
             done();
         });
+    });
+
+    QUnit.test('non inline subview and create=0 in action context', async function (assert) {
+        // the create=0 should apply on the main view (form), but not on subviews
+        assert.expect(2);
+
+        const form = await createView({
+            View: FormView,
+            model: 'partner',
+            data: this.data,
+            arch: '<form><field name="product_ids" mode="kanban"/></form>',
+            archs: {
+                "product,false,kanban": `<kanban>
+                                            <templates><t t-name="kanban-box">
+                                                <div><field name="name"/></div>
+                                            </t></templates>
+                                        </kanban>`,
+            },
+            res_id: 1,
+            viewOptions: {
+                context: {create: false},
+                mode: 'edit',
+            },
+        });
+
+        assert.containsNone(form, '.o_form_button_create');
+        assert.containsOnce(form, '.o-kanban-button-new');
+
+        form.destroy();
     });
 
     QUnit.test('readonly fields with modifiers may be saved', async function (assert) {
@@ -4892,6 +5089,49 @@ QUnit.module('Views', {
             "foo field should have focus");
 
         form.destroy();
+    });
+
+    QUnit.test('correct amount of buttons', async function (assert) {
+        assert.expect(7);
+
+        var self = this;
+        var buttons = Array(8).join(
+            '<button type="object" class="oe_stat_button" icon="fa-check-square">' +
+                '<field name="bar"/>' +
+            '</button>'
+        );
+        var statButtonSelector = '.oe_stat_button:not(.dropdown-item, .dropdown-toggle)';
+
+        var createFormWithDeviceSizeClass = async function (size_class) {
+            return await createView({
+                View: FormView,
+                model: 'partner',
+                data: self.data,
+                arch: '<form>' +
+                    '<div name="button_box" class="oe_button_box">'
+                        + buttons +
+                    '</div>' +
+                '</form>',
+                res_id: 2,
+                config: {
+                    device: {size_class: size_class},
+                },
+            });
+        }
+
+        var assertFormContainsNButtonsWithSizeClass = async function (size_class, n) {
+            var form = await createFormWithDeviceSizeClass(size_class);
+            assert.containsN(form, statButtonSelector, n, 'The form has the expected amount of buttons');
+            form.destroy();
+        }
+
+        await assertFormContainsNButtonsWithSizeClass(0, 2);
+        await assertFormContainsNButtonsWithSizeClass(1, 2);
+        await assertFormContainsNButtonsWithSizeClass(2, 2);
+        await assertFormContainsNButtonsWithSizeClass(3, 4);
+        await assertFormContainsNButtonsWithSizeClass(4, 7);
+        await assertFormContainsNButtonsWithSizeClass(5, 7);
+        await assertFormContainsNButtonsWithSizeClass(6, 7);
     });
 
     QUnit.module('focus and scroll test', async function () {
@@ -5988,10 +6228,17 @@ QUnit.module('Views', {
             mockRPC: function (route, args) {
                 if (route === '/web/dataset/call_kw/product/get_formview_id') {
                     return Promise.resolve(false);
-                } else if (route === "/web/dataset/call_button" && args.method === 'translate_fields') {
+                }
+                if (route === "/web/dataset/call_button" && args.method === 'translate_fields') {
                     assert.deepEqual(args.args, ["product",37,"name"], 'should call "call_button" route');
                     nbTranslateCalls++;
-                    return Promise.resolve();
+                    return Promise.resolve({
+                        domain: [],
+                        context: {search_default_name: 'partnes,foo'},
+                    });
+                }
+                if (route === "/web/dataset/call_kw/res.lang/get_installed") {
+                    return Promise.resolve([["en_US"], ["fr_BE"]]);
                 }
                 return this._super.apply(this, arguments);
             },
@@ -5999,12 +6246,10 @@ QUnit.module('Views', {
 
         await testUtils.form.clickEdit(form);
         await testUtils.dom.click(form.$('[name="product_id"] .o_external_button'));
-
-        assert.strictEqual($('.modal-body .o_field_translate').length, 1,
+        assert.containsOnce($('.modal-body'), 'span.o_field_translate',
             "there should be a translate button in the modal");
 
-        await testUtils.dom.click($('.modal-body .o_field_translate'));
-
+        await testUtils.dom.click($('.modal-body span.o_field_translate'));
         assert.strictEqual(nbTranslateCalls, 1, "should call_button translate once");
 
         form.destroy();
@@ -6438,6 +6683,25 @@ QUnit.module('Views', {
         await testUtils.form.clickEdit(form);
         assert.hasAttrValue(form.$('input[name="display_name"]'), 'autocomplete', 'coucou',
             "attribute autocomplete should be set");
+        form.destroy();
+    });
+
+    QUnit.test('input autocomplete attribute set to none by default', async function (assert) {
+        assert.expect(1);
+
+        var form = await createView({
+            View: FormView,
+            model: 'partner',
+            data: this.data,
+            arch: '<form string="Partners">' +
+                        '<field name="display_name"/>' +
+                '</form>',
+            res_id: 1,
+        });
+
+        await testUtils.form.clickEdit(form);
+        assert.hasAttrValue(form.$('input[name="display_name"]'), 'autocomplete', 'none',
+            "attribute autocomplete should be set to none by default");
         form.destroy();
     });
 
@@ -7867,6 +8131,46 @@ QUnit.module('Views', {
         form.destroy();
     });
 
+    QUnit.test('edit a record in readonly and switch to edit before it is actually saved', async function (assert) {
+        assert.expect(3);
+
+        const prom = testUtils.makeTestPromise();
+        const form = await createView({
+            View: FormView,
+            model: 'partner',
+            data: this.data,
+            arch: `<form>
+                    <field name="foo"/>
+                    <field name="bar" widget="toggle_button"/>
+                </form>`,
+            mockRPC: function (route, args) {
+                const result = this._super.apply(this, arguments);
+                if (args.method === 'write') { // delay the write RPC
+                    assert.deepEqual(args.args[1], {bar: false});
+                    return prom.then(_.constant(result));
+                }
+                return result;
+            },
+            res_id: 1,
+        });
+
+        // edit the record (in readonly) with toogle_button widget (and delay the write RPC)
+        await testUtils.dom.click(form.$('.o_field_widget[name=bar]'));
+
+        // switch to edit mode
+        await testUtils.form.clickEdit(form);
+
+        assert.hasClass(form.$('.o_form_view'), 'o_form_readonly'); // should wait for the RPC to return
+
+        // make write RPC return
+        prom.resolve();
+        await testUtils.nextTick();
+
+        assert.hasClass(form.$('.o_form_view'), 'o_form_editable');
+
+        form.destroy();
+    });
+
     QUnit.test('"bare" buttons in template should not trigger button click', async function (assert) {
         assert.expect(3);
 
@@ -7889,6 +8193,161 @@ QUnit.module('Views', {
         assert.verifySteps(['execute_action']);
         await testUtils.dom.click(form.$('.o_form_view button.mybutton'));
         assert.verifySteps([]);
+        form.destroy();
+    });
+
+    QUnit.test('form view with inline tree view with optional fields and local storage mock', async function (assert) {
+        assert.expect(12);
+
+        var Storage = RamStorage.extend({
+            getItem: function (key) {
+                assert.step('getItem ' + key);
+                return this._super.apply(this, arguments);
+            },
+            setItem: function (key, value) {
+                assert.step('setItem ' + key + ' to ' + value);
+                return this._super.apply(this, arguments);
+            },
+        });
+
+        var RamStorageService = AbstractStorageService.extend({
+            storage: new Storage(),
+        });
+
+        var form = await createView({
+            View: FormView,
+            model: 'partner',
+            data: this.data,
+            arch: '<form string="Partners">' +
+                    '<field name="qux"/>' +
+                    '<field name="p">' +
+                        '<tree>' +
+                            '<field name="foo"/>' +
+                            '<field name="bar" optional="hide"/>' +
+                        '</tree>' +
+                    '</field>' +
+                '</form>',
+            services: {
+                local_storage: RamStorageService,
+            },
+            view_id: 27,
+        });
+
+        var localStorageKey = 'optional_fields,partner,form,27,p,list,undefined,bar,foo';
+
+        assert.verifySteps(['getItem ' + localStorageKey]);
+
+        assert.containsN(form, 'th', 2,
+            "should have 2 th, 1 for selector, 1 for foo column");
+
+        assert.ok(form.$('th:contains(Foo)').is(':visible'),
+            "should have a visible foo field");
+
+        assert.notOk(form.$('th:contains(Bar)').is(':visible'),
+            "should not have a visible bar field");
+
+        // optional fields
+        await testUtils.dom.click(form.$('table .o_optional_columns_dropdown_toggle'));
+        assert.containsN(form, 'div.o_optional_columns div.dropdown-item', 1,
+            "dropdown have 1 optional field");
+
+        // enable optional field
+        await testUtils.dom.click(form.$('div.o_optional_columns div.dropdown-item input'));
+
+        assert.verifySteps([
+            'setItem ' + localStorageKey + ' to ["bar"]',
+            'getItem ' + localStorageKey,
+        ]);
+
+        assert.containsN(form, 'th', 3,
+            "should have 3 th, 1 for selector, 2 for columns");
+
+        assert.ok(form.$('th:contains(Foo)').is(':visible'),
+            "should have a visible foo field");
+
+        assert.ok(form.$('th:contains(Bar)').is(':visible'),
+            "should have a visible bar field");
+
+        form.destroy();
+    });
+
+    QUnit.test('form view with tree_view_ref with optional fields and local storage mock', async function (assert) {
+        assert.expect(12);
+
+        var Storage = RamStorage.extend({
+            getItem: function (key) {
+                assert.step('getItem ' + key);
+                return this._super.apply(this, arguments);
+            },
+            setItem: function (key, value) {
+                assert.step('setItem ' + key + ' to ' + value);
+                return this._super.apply(this, arguments);
+            },
+        });
+
+        var RamStorageService = AbstractStorageService.extend({
+            storage: new Storage(),
+        });
+
+        var form = await createView({
+            View: FormView,
+            model: 'partner',
+            data: this.data,
+            arch: '<form string="Partners">' +
+                    '<field name="qux"/>' +
+                    '<field name="p" context="{\'tree_view_ref\': \'34\'}"/>' +
+                '</form>',
+            archs: {
+                "partner,nope_not_this_one,list": '<tree>' +
+                    '<field name="foo"/>' +
+                    '<field name="bar"/>' +
+                    '</tree>',
+                "partner,34,list": '<tree>' +
+                        '<field name="foo" optional="hide"/>' +
+                        '<field name="bar"/>' +
+                    '</tree>',
+            },
+            services: {
+                local_storage: RamStorageService,
+            },
+            view_id: 27,
+        });
+
+        var localStorageKey = 'optional_fields,partner,form,27,p,list,34,bar,foo';
+
+        assert.verifySteps(['getItem ' + localStorageKey]);
+
+        assert.containsN(form, 'th', 2,
+            "should have 2 th, 1 for selector, 1 for foo column");
+
+        assert.notOk(form.$('th:contains(Foo)').is(':visible'),
+            "should have a visible foo field");
+
+        assert.ok(form.$('th:contains(Bar)').is(':visible'),
+            "should not have a visible bar field");
+
+        // optional fields
+        await testUtils.dom.click(form.$('table .o_optional_columns_dropdown_toggle'));
+        assert.containsN(form, 'div.o_optional_columns div.dropdown-item', 1,
+            "dropdown have 1 optional field");
+
+        // enable optional field
+        await testUtils.dom.click(form.$('div.o_optional_columns div.dropdown-item input'));
+
+        assert.verifySteps([
+            'setItem ' + localStorageKey + ' to ["foo"]',
+            'getItem ' + localStorageKey,
+        ]);
+
+        assert.containsN(form, 'th', 3,
+            "should have 3 th, 1 for selector, 2 for columns");
+
+        assert.ok(form.$('th:contains(Foo)').is(':visible'),
+            "should have a visible foo field");
+
+        assert.ok(form.$('th:contains(Bar)').is(':visible'),
+            "should have a visible bar field");
+
         form.destroy();
     });
 

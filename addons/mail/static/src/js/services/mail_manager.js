@@ -46,6 +46,7 @@ var PREVIEW_MSG_MAX_SIZE = 350;  // optimal for native english speakers
 
 var MailManager =  AbstractService.extend({
     dependencies: ['ajax', 'bus_service', 'local_storage'],
+    _isReady: false,
     _ODOOBOT_ID: ["ODOOBOT", "ODOOBOT"], // authorID for transient messages
 
     /**
@@ -85,7 +86,7 @@ var MailManager =  AbstractService.extend({
     addMessage: function (data, options) {
         options = options || {};
         var message = this.getMessage(data.id);
-        var prom = Promise.resolve();
+        var prom;
         if (!message) {
             prom = this._addNewMessage(data, options);
         } else {
@@ -95,6 +96,7 @@ var MailManager =  AbstractService.extend({
                 });
             }
             this._addMessageToThreads(message, options);
+            prom = Promise.resolve(message);
         }
         return prom;
     },
@@ -293,7 +295,7 @@ var MailManager =  AbstractService.extend({
      * This is the case when it has fetched the initial state from the server,
      * by means of the route 'mail/init_messaging'
      *
-     * @returns {Promise}
+     * @returns {boolean}
      */
     isReady: function () {
         return this._isReady;
@@ -426,7 +428,6 @@ var MailManager =  AbstractService.extend({
         return this._rpc({
             model: 'mail.message',
             method: 'unstar_all',
-            args: [[]]
         });
     },
 
@@ -635,7 +636,7 @@ var MailManager =  AbstractService.extend({
      */
     _fetchMailStateFromServer: function () {
         var self = this;
-        this._isReady = session.is_bound.then(function () {
+        session.is_bound.then(function () {
             var context = _.extend(
                 { isMobile: config.device.isMobile },
                 session.user_context
@@ -647,6 +648,8 @@ var MailManager =  AbstractService.extend({
         }).then(function (result) {
             self._updateInternalStateFromServer(result);
             self.call('bus_service', 'startPolling');
+            self._isReady = true;
+            self._mailBus.trigger('messaging_ready');
         });
     },
     /**

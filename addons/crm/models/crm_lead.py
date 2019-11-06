@@ -52,7 +52,7 @@ CRM_LEAD_FIELDS_TO_MERGE = [
 class Lead(models.Model):
     _name = "crm.lead"
     _description = "Lead/Opportunity"
-    _order = "priority desc,activity_date_deadline,id desc"
+    _order = "priority desc, id desc"
     _inherit = ['mail.thread.cc', 'mail.thread.blacklist', 'mail.activity.mixin',
                 'utm.mixin', 'format.address.mixin', 'phone.validation.mixin']
     _primary_email = 'email_from'
@@ -73,7 +73,7 @@ class Lead(models.Model):
 
     name = fields.Char('Opportunity', required=True, index=True)
     partner_id = fields.Many2one('res.partner', string='Customer', tracking=10, index=True,
-        help="Linked partner (optional). Usually created when converting the lead. You can find a partner by its Name, TIN, Email or Internal Reference.")
+        domain="['|', ('company_id', '=', False), ('company_id', '=', company_id)]", help="Linked partner (optional). Usually created when converting the lead. You can find a partner by its Name, TIN, Email or Internal Reference.")
     active = fields.Boolean('Active', default=True, tracking=True)
     date_action_last = fields.Datetime('Last Action', readonly=True)
     email_from = fields.Char('Email', help="Email address of the contact", tracking=40, index=True)
@@ -92,7 +92,7 @@ class Lead(models.Model):
     priority = fields.Selection(crm_stage.AVAILABLE_PRIORITIES, string='Priority', index=True, default=crm_stage.AVAILABLE_PRIORITIES[0][0])
     date_closed = fields.Datetime('Closed Date', readonly=True, copy=False)
 
-    stage_id = fields.Many2one('crm.stage', string='Stage', ondelete='restrict', tracking=True, index=True,
+    stage_id = fields.Many2one('crm.stage', string='Stage', ondelete='restrict', tracking=True, index=True, copy=False,
         domain="['|', ('team_id', '=', False), ('team_id', '=', team_id)]",
         group_expand='_read_group_stage_ids', default=lambda self: self._default_stage_id())
     user_id = fields.Many2one('res.users', string='Salesperson', index=True, tracking=True, default=lambda self: self.env.user)
@@ -105,17 +105,15 @@ class Lead(models.Model):
     date_conversion = fields.Datetime('Conversion Date', readonly=True)
 
     # Probability - Only used for type opportunity
-    probability = fields.Float('Probability', group_operator="avg", default=10.0)
+    probability = fields.Float('Probability', group_operator="avg", copy=False)
     automated_probability = fields.Float('Automated Probability', readonly=True)
     is_automated_probability = fields.Boolean('Is automated probability?', compute="_compute_is_automated_probability")
     phone_state = fields.Selection([
         ('correct', 'Correct'),
-        ('incorrect', 'Incorrect'),
-        ('empty', 'Empty')], string='Phone Quality', default="empty", compute="_compute_phone_state", store=True)
+        ('incorrect', 'Incorrect')], string='Phone Quality', compute="_compute_phone_state", store=True)
     email_state = fields.Selection([
         ('correct', 'Correct'),
-        ('incorrect', 'Incorrect'),
-        ('empty', 'Empty')], string='Email quality', default="empty", compute="_compute_email_state", store=True)
+        ('incorrect', 'Incorrect')], string='Email Quality', compute="_compute_email_state", store=True)
 
     # Only used for type opportunity
     planned_revenue = fields.Monetary('Expected Revenue', currency_field='company_currency', tracking=True)
@@ -137,6 +135,7 @@ class Lead(models.Model):
     city = fields.Char('City')
     state_id = fields.Many2one("res.country.state", string='State')
     country_id = fields.Many2one('res.country', string='Country')
+    lang_id = fields.Many2one('res.lang', string='Language', help="Language of the lead.")
     phone = fields.Char('Phone', tracking=50)
     mobile = fields.Char('Mobile')
     function = fields.Char('Job Position')
@@ -191,7 +190,10 @@ class Lead(models.Model):
     @api.depends('date_open')
     def _compute_day_open(self):
         """ Compute difference between create date and open date """
-        for lead in self.filtered(lambda l: l.date_open and l.create_date):
+        leads = self.filtered(lambda l: l.date_open and l.create_date)
+        others = self - leads
+        others.day_open = None
+        for lead in leads:
             date_create = fields.Datetime.from_string(lead.create_date)
             date_open = fields.Datetime.from_string(lead.date_open)
             lead.day_open = abs((date_open - date_create).days)
@@ -199,7 +201,10 @@ class Lead(models.Model):
     @api.depends('date_closed')
     def _compute_day_close(self):
         """ Compute difference between current date and log date """
-        for lead in self.filtered(lambda l: l.date_closed and l.create_date):
+        leads = self.filtered(lambda l: l.date_closed and l.create_date)
+        others = self - leads
+        others.day_close = None
+        for lead in leads:
             date_create = fields.Datetime.from_string(lead.create_date)
             date_close = fields.Datetime.from_string(lead.date_closed)
             lead.day_close = abs((date_close - date_create).days)
@@ -215,7 +220,7 @@ class Lead(models.Model):
     @api.depends('phone', 'country_id.code')
     def _compute_phone_state(self):
         for lead in self:
-            phone_status = 'empty'
+            phone_status = False
             if lead.phone:
                 country_code = lead.country_id.code if lead.country_id and lead.country_id.code else None
                 try:
@@ -228,11 +233,11 @@ class Lead(models.Model):
     @api.depends('email_from')
     def _compute_email_state(self):
         for lead in self:
-            email_state = 'empty'
+            email_state = False
             if lead.email_from:
                 email_state = 'incorrect'
                 for email in email_split(lead.email_from):
-                    if tools.email_validate(email):
+                    if tools.email_normalize(email):
                         email_state = 'correct'
                         break
             lead.email_state = email_state
@@ -358,6 +363,10 @@ class Lead(models.Model):
             res['domain']['state_id'] = [('country_id', '=', self.country_id.id)]
         return res
 
+    @api.onchange('lang_id')
+    def _onchange_lang_id(self):
+        self._onchange_compute_probability(optional_field_name='lang_id')
+
     # Phone Validation
     # ----------------
     @api.onchange('phone', 'country_id', 'company_id')
@@ -472,9 +481,24 @@ class Lead(models.Model):
     # Actions Methods
     # ----------------------------------------
 
-    def action_set_lost(self):
+    def _rebuild_pls_frequency_table_threshold(self):
+        """ Called by action_set_lost and action_set_won.
+         Will run the cron to update the frequency table only if the number of lead is above
+         a specified value (from config_parameter) for onboarding purpose.
+         Once the threshold is reached, the config_param is set to 0 to avoid re-run the cron
+         and, mainly, to avoid making useless search_count in the future."""
+        pls_threshold = int(self.env['ir.config_parameter'].sudo().get_param('crm.pls_rebuild_threshold'))
+        if pls_threshold:
+            lead_count = self.env['crm.lead'].sudo().search_count([])
+            if lead_count < pls_threshold:
+                self.sudo()._cron_update_automated_probabilities()
+            else:
+                self.env['ir.config_parameter'].sudo().set_param('crm.pls_rebuild_threshold', 0)
+
+    def action_set_lost(self, **additional_values):
         """ Lost semantic: probability = 0 or active = False """
-        result = self.write({'active': False, 'probability': 0})
+        result = self.write({'active': False, 'probability': 0, **additional_values})
+        self._rebuild_pls_frequency_table_threshold()
         return result
 
     def action_set_won(self):
@@ -482,6 +506,7 @@ class Lead(models.Model):
         for lead in self:
             stage_id = lead._stage_find(domain=[('is_won', '=', True)])
             lead.write({'stage_id': stage_id.id, 'probability': 100})
+        self._rebuild_pls_frequency_table_threshold()
         return True
 
     def action_set_automated_probability(self):
@@ -555,21 +580,6 @@ class Lead(models.Model):
             'default_name': self.name,
         }
         return action
-
-    def close_dialog(self):
-        return {'type': 'ir.actions.act_window_close'}
-
-    def edit_dialog(self):
-        form_view = self.env.ref('crm.crm_case_form_view_oppor')
-        return {
-            'name': _('Opportunity'),
-            'res_model': 'crm.lead',
-            'res_id': self.id,
-            'views': [(form_view.id, 'form'),],
-            'type': 'ir.actions.act_window',
-            'target': 'inline',
-            'context': {'default_type': 'opportunity'}
-        }
 
     # ----------------------------------------
     # Business Methods
@@ -768,12 +778,7 @@ class Lead(models.Model):
         if len(self.ids) <= 1:
             raise UserError(_('Please select more than one element (lead or opportunity) from the list view.'))
 
-        # Sorting the leads/opps according to the confidence level of its stage, which relates to the probability of winning it
-        # The confidence level increases with the stage sequence
-        # An Opportunity always has higher confidence level than a lead
-        def opps_key(opportunity):
-            return opportunity.type == 'opportunity', opportunity.stage_id.sequence, -opportunity.id
-        opportunities = self.sorted(key=opps_key, reverse=True)
+        opportunities = self._sort_by_confidence_level(reverse=True)
 
         # get SORTED recordset of head and tail, and complete list
         opportunities_head = opportunities[0]
@@ -806,6 +811,16 @@ class Lead(models.Model):
         opportunities_tail.sudo().unlink()
 
         return opportunities_head
+
+    def _sort_by_confidence_level(self, reverse=False):
+        """ Sorting the leads/opps according to the confidence level of its stage, which relates to the probability of winning it
+        The confidence level increases with the stage sequence
+        An Opportunity always has higher confidence level than a lead
+        """
+        def opps_key(opportunity):
+            return opportunity.type == 'opportunity', opportunity.stage_id.sequence, -opportunity._origin.id
+
+        return self.sorted(key=opps_key, reverse=reverse)
 
     def get_duplicated_leads(self, partner_id, include_lost=False):
         """ Search for opportunities that have the same partner and that arent done or cancelled
@@ -840,23 +855,22 @@ class Lead(models.Model):
             :param customer : res.partner record
             :param team_id : identifier of the Sales Team to determine the stage
         """
-        if not team_id:
-            team_id = self.team_id.id if self.team_id else False
-        value = {
-            'planned_revenue': self.planned_revenue,
-            'probability': self.probability,
-            'name': self.name,
+        new_team_id = team_id if team_id else self.team_id.id
+        upd_values = {}
+        if customer:
+            upd_values.update(self._onchange_partner_id_values(customer and customer.id))
+        upd_values['email_from'] = upd_values['email_from'] if upd_values.get('email_from') else self.email_from
+        upd_values['phone'] = upd_values['phone'] if upd_values.get('phone') else self.phone
+        upd_values.update({
             'partner_id': customer.id if customer else False,
             'type': 'opportunity',
             'date_open': fields.Datetime.now(),
-            'email_from': customer and customer.email or self.email_from,
-            'phone': customer and customer.phone or self.phone,
             'date_conversion': fields.Datetime.now(),
-        }
+        })
         if not self.stage_id:
-            stage = self._stage_find(team_id=team_id)
-            value['stage_id'] = stage.id
-        return value
+            stage = self._stage_find(team_id=new_team_id)
+            upd_values['stage_id'] = stage.id
+        return upd_values
 
     def convert_opportunity(self, partner_id, user_ids=False, team_id=False):
         customer = False
@@ -975,48 +989,17 @@ class Lead(models.Model):
                 lead.write(value)
         return True
 
-    def redirect_opportunity_view(self):
+    def redirect_lead_opportunity_view(self):
         self.ensure_one()
-        # Get opportunity views
-        form_view = self.env.ref('crm.crm_case_form_view_oppor')
-        tree_view = self.env.ref('crm.crm_case_tree_view_oppor')
         return {
-            'name': _('Opportunity'),
-            'view_mode': 'tree, form',
+            'name': _('Lead or Opportunity'),
+            'view_mode': 'form',
             'res_model': 'crm.lead',
-            'domain': [('type', '=', 'opportunity')],
+            'domain': [('type', '=', self.type)],
             'res_id': self.id,
             'view_id': False,
-            'views': [
-                (form_view.id, 'form'),
-                (tree_view.id, 'tree'),
-                (False, 'kanban'),
-                (False, 'calendar'),
-                (False, 'graph')
-            ],
             'type': 'ir.actions.act_window',
-            'context': {'default_type': 'opportunity'}
-        }
-
-    def redirect_lead_view(self):
-        self.ensure_one()
-        # Get lead views
-        form_view = self.env.ref('crm.crm_case_form_view_leads')
-        tree_view = self.env.ref('crm.crm_case_tree_view_leads')
-        return {
-            'name': _('Lead'),
-            'view_mode': 'tree, form',
-            'res_model': 'crm.lead',
-            'domain': [('type', '=', 'lead')],
-            'res_id': self.id,
-            'view_id': False,
-            'views': [
-                (form_view.id, 'form'),
-                (tree_view.id, 'tree'),
-                (False, 'calendar'),
-                (False, 'graph')
-            ],
-            'type': 'ir.actions.act_window',
+            'context': {'default_type': self.type}
         }
 
     @api.model
@@ -1189,10 +1172,12 @@ class Lead(models.Model):
         self.ensure_one()
         if 'stage_id' in init_values and self.probability == 100 and self.stage_id:
             return self.env.ref('crm.mt_lead_won')
-        elif 'active' in init_values and self.probability == 0 and not self.active:
+        elif 'lost_reason' in init_values:
             return self.env.ref('crm.mt_lead_lost')
         elif 'stage_id' in init_values:
             return self.env.ref('crm.mt_lead_stage')
+        elif 'active' in init_values and self.active:
+            return self.env.ref('crm.mt_lead_restored')
         return super(Lead, self)._track_subtype(init_values)
 
     def _notify_get_groups(self):
@@ -1230,13 +1215,6 @@ class Lead(models.Model):
         if leftover:
             res.update(super(Lead, leftover)._notify_get_reply_to(default=default, records=None, company=company, doc_names=doc_names))
         return res
-
-    def get_formview_id(self, access_uid=None):
-        if self.type == 'opportunity':
-            view_id = self.env.ref('crm.crm_case_form_view_oppor').id
-        else:
-            view_id = super(Lead, self).get_formview_id()
-        return view_id
 
     def _message_get_default_recipients(self):
         return {r.id: {
@@ -1308,7 +1286,7 @@ class Lead(models.Model):
                 emails = email_re.findall(partner_info['full_name'] or '')
                 email = emails and emails[0] or ''
                 if email and self.email_from and email.lower() == self.email_from.lower():
-                    partner_info['full_name'] = '%s <%s>' % (self.contact_name or self.partner_name, email)
+                    partner_info['full_name'] = tools.formataddr((self.contact_name or self.partner_name, email))
                     break
         return result
 
@@ -1355,6 +1333,7 @@ class Lead(models.Model):
 
         # get stages
         first_stage_id = self.env['crm.stage'].search([], order='sequence', limit=1)
+        won_stage_ids = self.env['crm.stage'].search([('is_won', '=', True)]).ids
 
         # Get all leads values, no matter the team_id
         leads_values_dict = self._pls_get_lead_pls_values(batch_mode=batch_mode)
@@ -1363,8 +1342,11 @@ class Lead(models.Model):
 
         # Get unique couples to search in frequency table
         leads_values = set()
-        for values in leads_values_dict.values():
+        won_leads = set()
+        for lead_id, values in leads_values_dict.items():
             for couple in values['values']:
+                if couple[0] == 'stage_id' and couple[1] in won_stage_ids:
+                    won_leads.add(lead_id)
                 leads_values.add(couple)
 
         # get all variable related records from frequency table, no matter the team_id
@@ -1409,6 +1391,16 @@ class Lead(models.Model):
         save_team_id = None
         p_won, p_lost = 1, 1
         for lead_id, lead_values in leads_values_dict.items():
+            # if stage_id is null, return 0 and bypass computation
+            lead_fields = [value[0] for value in lead_values.get('values', [])]
+            if not 'stage_id' in lead_fields:
+                lead_probabilities[lead_id] = 0
+                continue
+            # if lead stage is won, return 100
+            elif lead_id in won_leads:
+                lead_probabilities[lead_id] = 100
+                continue
+
             lead_team_id = lead_values['team_id'] if lead_values['team_id'] else 0  # team_id = None -> Convert to 0
             lead_team_id = lead_team_id if lead_team_id in result else -1  # team_id not in frequency Table -> convert to -1
             if lead_team_id != save_team_id:
@@ -1463,15 +1455,24 @@ class Lead(models.Model):
 
         # Recompute all the leads. Won : probability = 100 | Lost : probability = 0 or inactive
         # Here, inactive won't be returned anyway
+        # Get also all the lead without probability --> These are the new leads. Activate auto probability on them.
         pls_start_date = self._pls_get_safe_start_date()
         if pls_start_date:
-            pending_lead_domain = [('probability', '<', 100), ('probability', '>', 0), ('create_date', '>', pls_start_date)]
+            pending_lead_domain = ['&', '&', ('stage_id', '!=', False), ('create_date', '>', pls_start_date),
+                                   '|', ('probability', '=', False), '&', ('probability', '<', 100), ('probability', '>', 0)]
             leads_to_update = self.env['crm.lead'].search(pending_lead_domain)
             lead_probabilities = leads_to_update._pls_get_naive_bayes_probabilities(batch_mode=True)
 
             # Update in execute batch to avoid server roundtrips + page_size to 10000 to avoid memory errors
-            sql = "update crm_lead set automated_probability = %s where id = %s"
-            batch_params = [(lead_probabilities[lead.id], lead.id) for lead in leads_to_update if lead.id in lead_probabilities]
+            # Update both probability and automated_probability if they were equal, else, update only automated_probability
+            sql = """UPDATE crm_lead
+                        SET automated_probability = %s,
+                            probability = CASE WHEN (ROUND(probability::numeric, 2) = ROUND(automated_probability::numeric, 2) or probability is null)
+                                               THEN (%s)
+                                               ELSE (probability)
+                                               END
+                        WHERE id = %s"""
+            batch_params = [(lead_probabilities[lead.id], lead_probabilities[lead.id], lead.id) for lead in leads_to_update if lead.id in lead_probabilities]
             extras.execute_batch(self._cr, sql, batch_params, page_size=10000)
             _logger.info("Predictive Lead Scoring : all automated probability updated (count: %d)" % (len(leads_to_update)))
 
@@ -1499,7 +1500,7 @@ class Lead(models.Model):
             that are defined on the model. """
         pls_fields_config = self.env['ir.config_parameter'].sudo().get_param('crm.pls_fields')
         pls_fields = pls_fields_config.split(',') if pls_fields_config else []
-        pls_safe_fields = [field for field in pls_fields if field in self._fields]
+        pls_safe_fields = [field for field in pls_fields if field in self._fields.keys()]
         return pls_safe_fields
 
     # Rebuild Frequency Table Tools
@@ -1541,6 +1542,7 @@ class Lead(models.Model):
         args = [sql.Identifier(field) for field in fields] * 2
 
         #   Build sql query in safe mode
+        self.flush(['probability', 'active'])
         query = """select probability, active, %s, count(probability) as count
                     from crm_lead l
                     where (probability = 0 or probability >= 100)
@@ -1559,7 +1561,7 @@ class Lead(models.Model):
             lost = result['count'] if result['probability'] == 0 else 0
             for field in fields:
                 value = result[field]
-                if value:
+                if value or field in ('email_state', 'phone_state'):
                     if field == 'stage_id':
                         if won:  # increment all stages if won
                             stages_to_increment = [stage['id'] for stage in stage_ids]
@@ -1576,6 +1578,7 @@ class Lead(models.Model):
 
     def _pls_update_frequency_table_tag(self, frequencies, team_id, pls_start_date):
         # get all tag_ids won / lost count
+        self.flush(['probability', 'active'])
         query = """select l.probability, l.active, t.id, count(l.probability) as count
                     from crm_lead_tag_rel rel
                     inner join crm_lead_tag t on rel.tag_id = t.id
@@ -1630,9 +1633,10 @@ class Lead(models.Model):
             str_fields = ", ".join(["{}"] * len(fields))
             args = [sql.Identifier(field) for field in fields]
             #   Build sql query in safe mode
+            self.flush(['probability'])
             query = """SELECT id, %s
                         FROM crm_lead l
-                        WHERE probability > 0 AND probability < 100 AND active = True AND id in %%s order by team_id asc"""
+                        WHERE ((probability > 0 AND probability < 100) OR probability is null) AND active = True AND id in %%s order by team_id asc"""
             query = sql.SQL(query % str_fields).format(*args)
 
             self._cr.execute(query, [tuple(self.ids)])
@@ -1642,7 +1646,7 @@ class Lead(models.Model):
                         FROM crm_lead l
                         LEFT JOIN crm_lead_tag_rel rel ON l.id = rel.lead_id
                         LEFT JOIN crm_lead_tag t ON rel.tag_id = t.id
-                        WHERE l.probability > 0 AND l.probability < 100 AND l.active = True AND l.id in %s order by l.team_id asc"""
+                        WHERE ((l.probability > 0 AND l.probability < 100) OR l.probability is null) AND l.active = True AND l.id in %s order by l.team_id asc"""
             self._cr.execute(query, [tuple(self.ids)])
             tag_results = self._cr.dictfetchall()
 
@@ -1653,7 +1657,7 @@ class Lead(models.Model):
                     if field == 'team_id':  # ignore team_id as stored separately in leads_values_dict[lead_id][team_id]
                         continue
                     value = lead[field]
-                    if value:
+                    if value or field in ('email_state', 'phone_state'):
                         lead_values.append((field, value))
                 leads_values_dict[lead['id']] = {'values': lead_values, 'team_id': lead['team_id']}
 
@@ -1668,7 +1672,7 @@ class Lead(models.Model):
                     if field == 'team_id':  # ignore team_id as stored separately in leads_values_dict[lead_id][team_id]
                         continue
                     value = lead[field].id if isinstance(lead[field], models.BaseModel) else lead[field]
-                    if value:
+                    if value or field in ('email_state', 'phone_state'):
                         lead_values.append((field, value))
                 for tag in lead.tag_ids:
                     lead_values.append(('tag_id', tag.id))
@@ -1684,7 +1688,7 @@ class Lead(models.Model):
         :param first_stage_id: stage with smallest sequence
         :return: won count, lost count and total count for all records in frequencies
         """
-        if str(first_stage_id.id) not in team_results['stage_id']:
+        if str(first_stage_id.id) not in team_results.get('stage_id', []):
             return 0, 0, 0
         stage_result = team_results['stage_id'][str(first_stage_id.id)]
         return stage_result['won'], stage_result['lost'], stage_result['won'] + stage_result['lost']

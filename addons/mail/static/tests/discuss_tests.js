@@ -1,6 +1,7 @@
 odoo.define('mail.discuss_test', function (require) {
 "use strict";
 
+const Discuss = require('mail.Discuss');
 var mailTestUtils = require('mail.testUtils');
 
 var testUtils = require('web.test_utils');
@@ -64,6 +65,7 @@ QUnit.module('Discuss', {
                         type: 'integer',
                     },
                 },
+                records: [],
             },
             'res.partner': {
                 fields: {
@@ -137,6 +139,109 @@ QUnit.test('basic rendering', async function (assert) {
     var $history = $sidebar.find('.o_mail_discuss_item[data-thread-id=mailbox_history]');
     assert.strictEqual($history.length, 1,
         "should have the mailbox item 'mailbox_history' in the sidebar");
+    discuss.destroy();
+});
+
+QUnit.test('messaging not ready', async function (assert) {
+    assert.expect(9);
+
+    const messagingReadyProm = testUtils.makeTestPromise();
+    const discuss = await createDiscuss({
+        id: 1,
+        context: {},
+        params: {},
+        data: this.data,
+        services: this.services,
+        async mockRPC(route, args) {
+            if (route === '/mail/init_messaging') {
+                const _super = this._super.bind(this, ...arguments); // limitation of class.js
+                assert.step('/mail/init_messaging:pending');
+                await messagingReadyProm;
+                assert.step('/mail/init_messaging:resolved');
+                return _super();
+            }
+            return this._super(...arguments);
+        },
+    });
+
+    assert.verifySteps(['/mail/init_messaging:pending']);
+    assert.ok(
+        discuss.el,
+        "discuss should be rendered");
+    assert.strictEqual(
+        $('.o_action')[0],
+        discuss.el,
+        "should display discuss even when messaging is not ready");
+    assert.containsOnce(
+        discuss,
+        '.o_mail_discuss_sidebar .o_mail_discuss_loading',
+        "should display sidebar is loading (messaging not yet ready)");
+    assert.containsOnce(
+        discuss,
+        '.o_mail_discuss_content .o_mail_discuss_loading',
+        "should display content is loading (messaging not yet ready)");
+
+    messagingReadyProm.resolve();
+    await testUtils.nextTick();
+    assert.verifySteps(['/mail/init_messaging:resolved']);
+    assert.containsNone(
+        discuss,
+        '.o_mail_discuss_loading',
+        "should no longer display sidebar or content is loading (messaging is ready)");
+
+    discuss.destroy();
+});
+
+QUnit.test('messaging initially ready', async function (assert) {
+    assert.expect(7);
+
+    const startDiscussProm = testUtils.makeTestPromise();
+
+    testUtils.mock.patch(Discuss, {
+        /**
+         * @override
+         */
+        async start() {
+            const _super = this._super.bind(this, ...arguments); // due to limitation of class.js
+            assert.step('discuss:starting');
+            await startDiscussProm;
+            assert.step('discuss:started');
+            return _super();
+        },
+    });
+
+    const discussProm = createDiscuss({
+        id: 1,
+        context: {},
+        params: {},
+        data: this.data,
+        services: this.services,
+        mockRPC(route) {
+            if (route === '/mail/init_messaging') {
+                assert.step(route);
+            }
+            return this._super(...arguments);
+        }
+    });
+    await testUtils.nextTick();
+    assert.verifySteps([
+        '/mail/init_messaging',
+        'discuss:starting',
+    ]);
+
+    startDiscussProm.resolve();
+    await testUtils.nextTick();
+    assert.verifySteps(['discuss:started']);
+    const discuss = await discussProm;
+    assert.ok(
+        discuss.el,
+        "discuss should be rendered");
+    assert.containsNone(
+        discuss,
+        '.o_mail_discuss_loading',
+        "should not display sidebar or content is loading (messaging is ready)");
+
+    testUtils.mock.unpatch(Discuss);
     discuss.destroy();
 });
 
@@ -1118,6 +1223,53 @@ QUnit.test('drag and drop file in composer [REQUIRE NON-INCOGNITO WINDOW]', asyn
     discuss.destroy();
 });
 
+QUnit.test('non-deletable message attachments', async function (assert) {
+    assert.expect(2);
+
+    this.data['mail.message'].records = [{
+        attachment_ids: [{
+            filename: "text.txt",
+            id: 250,
+            mimetype: 'text/plain',
+            name: "text.txt",
+        }, {
+            filename: "image.png",
+            id: 251,
+            mimetype: 'image/png',
+            name: "image.png",
+        }],
+        author_id: [5, "Demo User"],
+        body: "<p>test</p>",
+        id: 1,
+        needaction: true,
+        needaction_partner_ids: [3],
+        model: 'some.document',
+        record_name: "SomeDocument",
+        res_id: 100,
+    }];
+
+    const discuss = await createDiscuss({
+        context: {},
+        data: this.data,
+        params: {},
+        services: this.services,
+        session: {
+            partner_id: 3,
+        },
+    });
+    assert.containsN(
+        discuss,
+        '.o_attachment',
+        2,
+        "should display 2 attachments");
+    assert.containsNone(
+        discuss.$('.o_attachment'),
+        'o_attachment_delete_cross',
+        "attachments should not be deletable");
+
+    discuss.destroy();
+});
+
 QUnit.test('reply to message from inbox', async function (assert) {
     assert.expect(11);
 
@@ -1517,6 +1669,70 @@ QUnit.test('custom-named DM conversation', async function (assert) {
     discuss.destroy();
 });
 
+QUnit.test('receive channel message notification then delayed needaction notification', async function (assert) {
+    assert.expect(3);
+
+    const message = {
+        author_id: [5, 'Demo User'],
+        body: '<p>test</p>',
+        channel_ids: [1],
+        id: 100,
+        model: 'mail.channel',
+        needaction: true,
+        needaction_partner_ids: [3],
+        res_id: 1,
+    };
+    this.data.initMessaging = {
+        channel_slots: {
+            channel_channel: [{
+                id: 1,
+                channel_type: 'channel',
+                name: "general",
+            }],
+        },
+    };
+
+    const discuss = await createDiscuss({
+        context: {},
+        params: {},
+        data: this.data,
+        services: this.services,
+        session: {
+            partner_id: 3
+        },
+    });
+
+    const $inbox = discuss.$('.o_mail_discuss_item[data-thread-id="mailbox_inbox"]');
+    assert.hasClass(
+        $inbox,
+        'o_active',
+        "'Inbox' should be the currently active thread");
+    assert.containsNone(
+        discuss,
+        '.o_thread_message',
+        "inbox should contain no messages initially");
+
+    // simulate new needaction message posted on channnel
+    this.data['mail.message'].records.push(message);
+    // simulate receiving channel notification
+    discuss.call('bus_service', 'trigger', 'notification', [
+        [['myDB', 'mail.channel', 1], message]
+    ]);
+    // short delay after receiving needaction notification
+    await testUtils.nextTick();
+    // simulate receiving needaction message notification after a short delay
+    discuss.call('bus_service', 'trigger', 'notification', [
+        [['myDB', 'ir.needaction', 3], message]
+    ]);
+    await testUtils.nextTick();
+    assert.containsOnce(
+        discuss,
+        '.o_thread_message',
+        "inbox should contain one message");
+
+    discuss.destroy();
+});
+
 QUnit.test('input not cleared on unresolved message_post rpc', async function (assert) {
     assert.expect(2);
     // Promise to simulate late server response on message post
@@ -1746,6 +1962,64 @@ QUnit.test('messages marked as read move to "History" mailbox', async function (
         "should fetch more messages in history for loadMore");
     assert.containsN(discuss, '.o_thread_message', 40,
         "there should be 40 messages in History");
+
+    discuss.destroy();
+});
+
+QUnit.test('save filter discuss', async function (assert) {
+    assert.expect(3);
+
+    var messageFetchCount = 0;
+    const discuss = await createDiscuss({
+        context: {},
+        params: {},
+        data: this.data,
+        services: this.services,
+        archs: {
+            'mail.message,false,search': '<search>' +
+                '<field name="body" string="Content" filter_domain="[\'|\', (\'subject\', \'ilike\', self), (\'body\', \'ilike\', self)]"/>' +
+            '</search>',
+        },
+        session: {
+            partner_id: 3
+        },
+        mockRPC: async function (route, args) {
+            if (args.method === 'message_fetch' && messageFetchCount === 1) {
+                assert.deepEqual(args.args[0], [
+                    ["needaction", "=", true],
+                    "|",
+                    ["subject", "ilike", "she was born in a hurricane"],
+                    ["body", "ilike", "she was born in a hurricane"],
+                ], 'The fetch domain is correct');
+            }
+            return this._super.apply(this,arguments);
+        },
+        intercepts: {
+            create_filter: function (ev) {
+                assert.deepEqual(
+                    JSON.parse(ev.data.filter.domain), [
+                        "|",
+                        ["subject", "ilike", "she was born in a hurricane"],
+                        ["body", "ilike", "she was born in a hurricane"]
+                    ], 'The filter should have been saved with the right domain');
+            }
+        }
+    });
+
+    assert.containsOnce(discuss, '.o_searchview_input_container', 'search view input present');
+
+    $('.o_searchview_input').val("she was born in a hurricane").trigger('keyup');
+    await testUtils.nextTick();
+
+    messageFetchCount = 1;
+    $('.o_searchview_input').trigger($.Event('keydown', { which: $.ui.keyCode.ENTER }));
+    await testUtils.nextTick();
+
+    await testUtils.dom.click(discuss.$('.o_favorites_menu_button'));
+    await testUtils.dom.click(discuss.$('.o_add_favorite'));
+
+    await testUtils.fields.editInput(discuss.$('.o_favorite_name input'), 'War');
+    await testUtils.dom.click(discuss.$('.o_save_favorite button'));
 
     discuss.destroy();
 });

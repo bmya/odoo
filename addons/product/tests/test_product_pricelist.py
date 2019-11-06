@@ -3,6 +3,7 @@
 
 from odoo.tests.common import TransactionCase
 from odoo.tools import float_compare, test_reports
+from odoo.exceptions import UserError
 
 
 class TestProductPricelist(TransactionCase):
@@ -33,14 +34,14 @@ class TestProductPricelist(TransactionCase):
             }), (0, 0, {
                 'name': '10% Discount on Assemble Computer',
                 'applied_on': '1_product',
-                'product_id': self.ipad_retina_display.id,
+                'product_tmpl_id': self.ipad_retina_display.product_tmpl_id.id,
                 'compute_price': 'formula',
                 'base': 'list_price',
                 'price_discount': 10
             }), (0, 0, {
                 'name': '1 surchange on Laptop',
                 'applied_on': '1_product',
-                'product_id': self.laptop_E5023.id,
+                'product_tmpl_id': self.laptop_E5023.product_tmpl_id.id,
                 'compute_price': 'formula',
                 'base': 'list_price',
                 'price_surcharge': 1
@@ -54,7 +55,7 @@ class TestProductPricelist(TransactionCase):
                 'price_discount': 5
             }), (0, 0, {
                 'name': '30% Discount on all products',
-                'applied_on': '0_product_variant',
+                'applied_on': '3_global',
                 'date_start': '2011-12-27',
                 'date_end': '2011-12-31',
                 'compute_price': 'formula',
@@ -124,4 +125,9 @@ class TestProductPricelist(TransactionCase):
             'qty5': 30,
             'price_list': self.customer_pricelist.id,
         }
+
+        with self.assertRaises(UserError):
+            test_reports.try_report_action(self.cr, self.uid, 'action_product_price_list', wiz_data=data_dict, context=ctx, our_module='product')
+
+        self.env.company.external_report_layout_id = self.env.ref('web.external_layout_standard').id
         test_reports.try_report_action(self.cr, self.uid, 'action_product_price_list', wiz_data=data_dict, context=ctx, our_module='product')

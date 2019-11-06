@@ -23,6 +23,7 @@ import tempfile
 import threading
 import time
 import unittest
+import difflib
 import werkzeug.urls
 from contextlib import contextmanager
 from datetime import datetime, date
@@ -32,8 +33,8 @@ from decorator import decorator
 from lxml import etree, html
 
 from odoo.models import BaseModel
-from odoo.osv.expression import normalize_domain
-from odoo.tools import single_email_re
+from odoo.osv.expression import normalize_domain, TRUE_LEAF, FALSE_LEAF
+from odoo.tools import float_compare, single_email_re
 from odoo.tools.misc import find_in_path
 from odoo.tools.safe_eval import safe_eval
 
@@ -84,37 +85,6 @@ def get_db_name():
 
 # For backwards-compatibility - get_db_name() should be used instead
 DB = get_db_name()
-
-
-def at_install(flag):
-    """ Sets the at-install state of a test, the flag is a boolean specifying
-    whether the test should (``True``) or should not (``False``) run during
-    module installation.
-
-    By default, tests are run right after installing the module, before
-    starting the installation of the next module.
-
-    .. deprecated:: 12.0
-
-        ``at_install`` is now a flag, you can use :func:`tagged` to
-        add/remove it, although ``tagged`` only works on test classes
-    """
-    return tagged('at_install' if flag else '-at_install')
-
-def post_install(flag):
-    """ Sets the post-install state of a test. The flag is a boolean
-    specifying whether the test should or should not run after a set of
-    module installations.
-
-    By default, tests are *not* run after installation of all modules in the
-    current installation set.
-
-    .. deprecated:: 12.0
-
-        ``post_install`` is now a flag, you can use :func:`tagged` to
-        add/remove it, although ``tagged`` only works on test classes
-    """
-    return tagged('post_install' if flag else '-post_install')
 
 
 def new_test_user(env, login='', groups='base.group_user', context=None, **kwargs):
@@ -242,9 +212,9 @@ class BaseCase(TreeCase, MetaCase('DummyCase', (object,), {})):
         return self.env.ref(xid)
 
     @contextmanager
-    def _assertRaises(self, exception):
+    def _assertRaises(self, exception, *, msg=None):
         """ Context manager that clears the environment upon failure. """
-        with super(BaseCase, self).assertRaises(exception) as cm:
+        with super(BaseCase, self).assertRaises(exception, msg=msg) as cm:
             if hasattr(self, 'env'):
                 with self.env.clear_upon_failure():
                     yield cm
@@ -256,10 +226,10 @@ class BaseCase(TreeCase, MetaCase('DummyCase', (object,), {})):
             with self._assertRaises(exception):
                 func(*args, **kwargs)
         else:
-            return self._assertRaises(exception)
+            return self._assertRaises(exception, **kwargs)
 
     @contextmanager
-    def assertQueryCount(self, default=0, **counters):
+    def assertQueryCount(self, default=0, flush=True, **counters):
         """ Context manager that counts queries. It may be invoked either with
             one value, or with a set of named arguments like ``login=value``::
 
@@ -276,8 +246,12 @@ class BaseCase(TreeCase, MetaCase('DummyCase', (object,), {})):
             with self.subTest(), patch('random.random', lambda: 1):
                 login = self.env.user.login
                 expected = counters.get(login, default)
+                if flush:
+                    self.env.user.flush()
                 count0 = self.cr.sql_log_count
                 yield
+                if flush:
+                    self.env.user.flush()
                 count = self.cr.sql_log_count - count0
                 if count != expected:
                     # add some info on caller to allow semi-automatic update of query count
@@ -293,6 +267,8 @@ class BaseCase(TreeCase, MetaCase('DummyCase', (object,), {})):
                         logger.info(msg, login, count, expected, funcname, filename, linenum)
         else:
             yield
+            if flush:
+                self.env.user.flush()
 
     def assertRecordValues(self, records, expected_values):
         ''' Compare a recordset with a list of dictionaries representing the expected results.
@@ -309,64 +285,95 @@ class BaseCase(TreeCase, MetaCase('DummyCase', (object,), {})):
         :param expected_values:       List of dicts expected to be exactly matched in records
         '''
 
-        def _compare_candidate(record, candidate):
-            ''' Return True if the candidate matches the given record '''
-            for field_name in candidate.keys():
+        def _compare_candidate(record, candidate, field_names):
+            ''' Compare all the values in `candidate` with a record.
+            :param record:      record being compared
+            :param candidate:   dict of values to compare
+            :return:            A dictionary will encountered difference in values.
+            '''
+            diff = {}
+            for field_name in field_names:
                 record_value = record[field_name]
-                candidate_value = candidate[field_name]
-                field_type = record._fields[field_name].type
+                field = record._fields[field_name]
+                field_type = field.type
                 if field_type == 'monetary':
                     # Compare monetary field.
                     currency_field_name = record._fields[field_name].currency_field
                     record_currency = record[currency_field_name]
-                    if record_currency.compare_amounts(candidate_value, record_value)\
-                            if record_currency else candidate_value != record_value:
-                        return False
+                    if field_name not in candidate:
+                        diff[field_name] = (record_value, None)
+                    elif record_currency:
+                        if record_currency.compare_amounts(candidate[field_name], record_value):
+                            diff[field_name] = (record_value, record_currency.round(candidate[field_name]))
+                    elif candidate[field_name] != record_value:
+                        diff[field_name] = (record_value, candidate[field_name])
+                elif field_type == 'float' and field.get_digits(record.env):
+                    prec = field.get_digits(record.env)[1]
+                    if float_compare(candidate[field_name], record_value, precision_digits=prec) != 0:
+                        diff[field_name] = (record_value, candidate[field_name])
                 elif field_type in ('one2many', 'many2many'):
                     # Compare x2many relational fields.
                     # Empty comparison must be an empty list to be True.
-                    if set(record_value.ids) != set(candidate_value):
-                        return False
+                    if field_name not in candidate:
+                        diff[field_name] = (sorted(record_value.ids), None)
+                    elif set(record_value.ids) != set(candidate[field_name]):
+                        diff[field_name] = (sorted(record_value.ids), sorted(candidate[field_name]))
                 elif field_type == 'many2one':
                     # Compare many2one relational fields.
                     # Every falsy value is allowed to compare with an empty record.
-                    if (record_value or candidate_value) and record_value.id != candidate_value:
-                        return False
-                elif (candidate_value or record_value) and record_value != candidate_value:
+                    if field_name not in candidate:
+                        diff[field_name] = (record_value.id, None)
+                    elif (record_value or candidate[field_name]) and record_value.id != candidate[field_name]:
+                        diff[field_name] = (record_value.id, candidate[field_name])
+                else:
                     # Compare others fields if not both interpreted as falsy values.
-                    return False
-            return True
+                    if field_name not in candidate:
+                        diff[field_name] = (record_value, None)
+                    elif (candidate[field_name] or record_value) and record_value != candidate[field_name]:
+                        diff[field_name] = (record_value, candidate[field_name])
+            return diff
 
-        def _repr_field_value(record, field_name):
-            record_value = record[field_name]
-            field_type = record._fields[field_name].type
-            if field_type == 'monetary':
-                currency_field_name = record._fields[field_name].currency_field
-                record_currency = record[currency_field_name]
-                return record_currency and record_currency.round(record_value) or record_value
-            elif field_type in ('one2many', 'many2many'):
-                return set(record_value.ids)
-            elif field_type == 'many2one':
-                return record_value.id
-            else:
-                return record_value
-
-        def _format_message(records, expected_values):
-            ''' Return a formatted representation of records/expected_values. '''
-            all_records_values = [{key: _repr_field_value(record, key) for key in expected_values[0]} for record in records]
-            msg1 = '\n'.join(pprint.pformat(dic) for dic in all_records_values)
-            msg2 = '\n'.join(pprint.pformat(dic) for dic in expected_values)
-            return 'Current values:\n\n%s\n\nExpected values:\n\n%s' % (msg1, msg2)
-
-        # if the length or both things to compare is different, we can already tell they're not equal
-        if len(records) != len(expected_values):
-            msg = 'Wrong number of records to compare: %d != %d.\n\n' % (len(records), len(expected_values))
-            self.fail(msg + _format_message(records, expected_values))
-
+        # Compare records with candidates.
+        different_values = []
+        field_names = list(expected_values[0].keys())
         for index, record in enumerate(records):
-            if not _compare_candidate(record, expected_values[index]):
-                msg = 'Record doesn\'t match expected values at index %d.\n\n' % index
-                self.fail(msg + _format_message(records, expected_values))
+            is_additional_record = index >= len(expected_values)
+            candidate = {} if is_additional_record else expected_values[index]
+            diff = _compare_candidate(record, candidate, field_names)
+            if diff:
+                different_values.append((index, 'additional_record' if is_additional_record else 'regular_diff', diff))
+        for index in range(len(records), len(expected_values)):
+            diff = {}
+            for field_name in field_names:
+                diff[field_name] = (None, expected_values[index][field_name])
+            different_values.append((index, 'missing_record', diff))
+
+        # Build error message.
+        if not different_values:
+            return
+
+        errors = ['The records and expected_values do not match.']
+        if len(records) != len(expected_values):
+            errors.append('Wrong number of records to compare: %d records versus %d expected values.' % (len(records), len(expected_values)))
+
+        for index, diff_type, diff in different_values:
+            if diff_type == 'regular_diff':
+                errors.append('\n==== Differences at index %s ====' % index)
+                record_diff = ['%s:%s' % (k, v[0]) for k, v in diff.items()]
+                candidate_diff = ['%s:%s' % (k, v[1]) for k, v in diff.items()]
+                errors.append('\n'.join(difflib.unified_diff(record_diff, candidate_diff)))
+            elif diff_type == 'additional_record':
+                errors += [
+                    '\n==== Additional record ====',
+                    pprint.pformat(dict((k, v[0]) for k, v in diff.items())),
+                ]
+            elif diff_type == 'missing_record':
+                errors += [
+                    '\n==== Missing record ====',
+                    pprint.pformat(dict((k, v[1]) for k, v in diff.items())),
+                ]
+
+        self.fail('\n'.join(errors))
 
     def shortDescription(self):
         return None
@@ -425,6 +432,10 @@ class SingleTransactionCase(BaseCase):
         cls.cr = cls.registry.cursor()
         cls.env = api.Environment(cls.cr, odoo.SUPERUSER_ID, {})
 
+    def setUp(self):
+        super(SingleTransactionCase, self).setUp()
+        self.env.user.flush()
+
     @classmethod
     def tearDownClass(cls):
         # rollback and close the cursor, and reset the environments
@@ -451,6 +462,11 @@ class SavepointCase(SingleTransactionCase):
         super(SavepointCase, self).setUp()
         self._savepoint_id = next(savepoint_seq)
         self.cr.execute('SAVEPOINT test_%d' % self._savepoint_id)
+        # restore environments after the test to avoid invoking flush() with an
+        # invalid environment (inexistent user id) from another test
+        envs = self.env.all.envs
+        self.addCleanup(envs.update, list(envs))
+        self.addCleanup(envs.clear)
 
     def tearDown(self):
         self.cr.execute('ROLLBACK TO SAVEPOINT test_%d' % self._savepoint_id)
@@ -560,8 +576,21 @@ class ChromeBrowser():
             '--no-default-browser-check': '',
             '--no-first-run': '',
             '--disable-extensions': '',
+            '--disable-background-networking' : '',
+            '--disable-background-timer-throttling' : '',
+            '--disable-backgrounding-occluded-windows': '',
+            '--disable-renderer-backgrounding' : '',
+            '--disable-breakpad': '',
+            '--disable-client-side-phishing-detection': '',
+            '--disable-crash-reporter': '',
+            '--disable-default-apps': '',
+            '--disable-dev-shm-usage': '',
+            '--disable-device-discovery-notifications': '',
+            '--disable-namespace-sandbox': '',
             '--user-data-dir': self.user_data_dir,
             '--disable-translate': '',
+            # required for tours that use Youtube autoplay conditions (namely website_slides' "course_tour")
+            '--autoplay-policy': 'no-user-gesture-required',
             '--window-size': self.window_size,
             '--remote-debugging-address': HOST,
             '--remote-debugging-port': str(self.devtools_port),
@@ -602,22 +631,32 @@ class ChromeBrowser():
             version : get chrome and dev tools version
             protocol : get the full protocol
         """
-        self._logger.info("Issuing json command %s", command)
         command = os.path.join('json', command).strip('/')
-        while timeout > 0:
+        url = werkzeug.urls.url_join('http://%s:%s/' % (HOST, self.devtools_port), command)
+        self._logger.info("Issuing json command %s", url)
+        delay = 0.1
+        tries = 0
+        failure_info = None
+        while tries * delay < timeout:
+            if self.chrome_process.poll() is not None:
+                self._logger.error('Chrome crashed at startup with return code', self.chrome_process.returncode)
+                break
             try:
-                url = werkzeug.urls.url_join('http://%s:%s/' % (HOST, self.devtools_port), command)
-                self._logger.info('Url : %s', url)
                 r = requests.get(url, timeout=3)
                 if r.ok:
+                    self._logger.info("Json command result in %s", tries * delay)
                     return r.json()
                 return {'status_code': r.status_code}
-            except requests.ConnectionError:
-                time.sleep(0.1)
-                timeout -= 0.1
-            except requests.exceptions.ReadTimeout:
+            except requests.ConnectionError as e:
+                failure_info = str(e)
+                time.sleep(delay)
+                tries+=1
+            except requests.exceptions.ReadTimeout as e:
+                failure_info = str(e)
                 break
-        self._logger.error('Could not connect to chrome debugger')
+        self._logger.error('Could not connect to chrome debugger after %s tries, %ss' % (tries, delay))
+        if failure_info:
+            self._logger.info(failure_info)
         raise unittest.SkipTest("Cannot connect to chrome headless")
 
     def _open_websocket(self):
@@ -734,7 +773,14 @@ class ChromeBrowser():
 
     def set_cookie(self, name, value, path, domain):
         params = {'name': name, 'value': value, 'path': path, 'domain': domain}
-        self._websocket_send('Network.setCookie', params=params)
+        _id = self._websocket_send('Network.setCookie', params=params)
+        return self._websocket_wait_id(_id)
+
+    def delete_cookie(self, name, **kwargs):
+        params = {kw:kwargs[kw] for kw in kwargs if kw in ['url', 'domain', 'path']}
+        params.update({'name': name})
+        _id = self._websocket_send('Network.deleteCookies', params=params)
+        return self._websocket_wait_id(_id)
 
     def _wait_ready(self, ready_code, timeout=60):
         self._logger.info('Evaluate ready code "%s"', ready_code)
@@ -788,7 +834,23 @@ class ChromeBrowser():
             elif res and res.get('method') == 'Runtime.consoleAPICalled' and res.get('params', {}).get('type') in ('log', 'error', 'trace'):
                 logs = res.get('params', {}).get('args')
                 log_type = res.get('params', {}).get('type')
-                content = " ".join([str(log.get('value', '')) for log in logs])
+                content = []
+                for log in logs:
+                    text = ''
+                    if log.get('type') == 'string':
+                        text = str(log.get('value', '`Empty string`'))
+                    elif log.get('type') == 'object' and 'Error' in log.get('className', '') and log.get('description'):
+                        text = str(log.get('description'))
+                    else:
+                        type_ = log.get('className') or log.get('type')
+                        properties = log.get('preview', {}).get('properties')
+                        if log.get('type') == 'object' and properties and all(p.get('name') is not None and p.get('value') is not None for p in properties):
+                            elems = ['%s:%s' % (p.get('name'), "'%s'" % p.get('value') if p.get('type') == 'string' else p.get('value')) for p in properties]
+                            text = "%s\n{%s}" % (type_, ", ".join(elems))
+                        else:
+                            text = str(log)
+                    content.append(text)
+                content = " ".join(content)
                 if log_type == 'error':
                     self.take_screenshot()
                     self._save_screencast()
@@ -830,8 +892,11 @@ class ChromeBrowser():
         if self.screencasts_dir and os.path.isdir(self.screencasts_frames_dir):
             shutil.rmtree(self.screencasts_frames_dir)
         self.screencast_frames = []
-        self._websocket_send('Page.stopLoading')
+        sl_id = self._websocket_send('Page.stopLoading')
+        self._websocket_wait_id(sl_id)
         self._logger.info('Deleting cookies and clearing local storage')
+        dc_id = self._websocket_send('Network.clearBrowserCache')
+        self._websocket_wait_id(dc_id)
         dc_id = self._websocket_send('Network.clearBrowserCookies')
         self._websocket_wait_id(dc_id)
         cl_id = self._websocket_send('Runtime.evaluate', params={'expression': 'localStorage.clear()'})
@@ -863,15 +928,20 @@ class HttpCase(TransactionCase):
             cls.browser = ChromeBrowser(cls._logger, cls.browser_size, cls.__name__)
 
     @classmethod
-    def tearDownClass(cls):
+    def terminate_browser(cls):
         if cls.browser:
             cls.browser.stop()
             cls.browser = None
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.terminate_browser()
         super(HttpCase, cls).tearDownClass()
 
     def setUp(self):
         super(HttpCase, self).setUp()
-
+        if not self.env.registry.loaded:
+            self._logger.warning('HttpCase test should be in post_install only')
         if self.registry_test_mode:
             self.registry.enter_test_mode(self.cr)
             self.addCleanup(self.registry.leave_test_mode)
@@ -885,36 +955,40 @@ class HttpCase(TransactionCase):
         self.opener.cookies['session_id'] = self.session_id
 
     def url_open(self, url, data=None, files=None, timeout=10, headers=None):
+        self.env['base'].flush()
         if url.startswith('/'):
             url = "http://%s:%s%s" % (HOST, PORT, url)
         if data or files:
             return self.opener.post(url, data=data, files=files, timeout=timeout, headers=headers)
         return self.opener.get(url, timeout=timeout, headers=headers)
 
-    def _wait_remaining_requests(self):
-        t0 = int(time.time())
-        for thread in threading.enumerate():
-            if thread.name.startswith('odoo.service.http.request.'):
-                join_retry_count = 10
-                while thread.isAlive():
-                    # Need a busyloop here as thread.join() masks signals
-                    # and would prevent the forced shutdown.
-                    thread.join(0.05)
-                    join_retry_count -= 1
-                    if join_retry_count < 0:
-                        self._logger.warning("Stop waiting for thread %s handling request for url %s",
-                                        thread.name, getattr(thread, 'url', '<UNKNOWN>'))
-                        break
-                    time.sleep(0.5)
-                    t1 = int(time.time())
-                    if t0 != t1:
-                        self._logger.info('remaining requests')
-                        odoo.tools.misc.dumpstacks()
-                        t0 = t1
+    def _wait_remaining_requests(self, timeout=10):
+
+        def get_http_request_threads():
+            return [t for t in threading.enumerate() if t.name.startswith('odoo.service.http.request.')]
+
+        start_time = time.time()
+        request_threads = get_http_request_threads()
+        self._logger.info('waiting for threads: %s', request_threads)
+
+        for thread in request_threads:
+            thread.join(timeout - (time.time() - start_time))
+
+        request_threads = get_http_request_threads()
+        for thread in request_threads:
+            self._logger.info("Stop waiting for thread %s handling request for url %s",
+                                    thread.name, getattr(thread, 'url', '<UNKNOWN>'))
+
+        if request_threads:
+            self._logger.info('remaining requests')
+            odoo.tools.misc.dumpstacks()
 
     def authenticate(self, user, password):
         # stay non-authenticated
         if user is None:
+            if self.session:
+                odoo.http.root.session_store.delete(self.session)
+            self.browser.delete_cookie('session_id', domain=HOST)
             return
 
         db = get_db_name()
@@ -965,7 +1039,13 @@ class HttpCase(TransactionCase):
             base_url = "http://%s:%s" % (HOST, PORT)
             ICP = self.env['ir.config_parameter']
             ICP.set_param('web.base.url', base_url)
-            url = "%s%s" % (base_url, url_path or '/')
+            # flush updates to the database before launching the client side,
+            # otherwise they simply won't be visible
+            ICP.flush()
+            if re.match('[a-z]*:', url_path or ''): # about:, http:, ...
+                url = url_path
+            else:
+                url = "%s%s" % (base_url, url_path or '/')
             self._logger.info('Open "%s" in browser', url)
 
             if self.browser.screencasts_dir:
@@ -993,6 +1073,7 @@ class HttpCase(TransactionCase):
         finally:
             # clear browser to make it stop sending requests, in case we call
             # the method several times in a test method
+            self.browser.delete_cookie('session_id', domain=HOST)
             self.browser.clear()
             self._wait_remaining_requests()
 
@@ -1003,9 +1084,12 @@ class HttpCase(TransactionCase):
         step_delay = ', %s' % step_delay if step_delay else ''
         code = kwargs.pop('code', "odoo.startTour('%s'%s)" % (tour_name, step_delay))
         ready = kwargs.pop('ready', "odoo.__DEBUG__.services['web_tour.tour'].tours.%s.ready" % tour_name)
-        return self.browser_js(url_path=url_path, code=code, ready=ready, **kwargs)
-
-    phantom_js = browser_js
+        res = self.browser_js(url_path=url_path, code=code, ready=ready, **kwargs)
+        # some tests read the result after the tour, and as  the tour does not
+        # use this environment's cache, invalidate it to fetch the data from the
+        # database
+        self.env.cache.invalidate()
+        return res
 
 
 def users(*logins):
@@ -1026,6 +1110,9 @@ def users(*logins):
                     # switch user and execute func
                     self.uid = user_id[login]
                     func(*args, **kwargs)
+                # Invalidate the cache between subtests, in order to not reuse
+                # the former user's cache (`test_read_mail`, `test_write_mail`)
+                self.env.cache.invalidate()
         finally:
             self.uid = old_uid
 
@@ -1040,13 +1127,16 @@ def warmup(func, *args, **kwargs):
         effects of the warmup phase are rolled back thanks to a savepoint.
     """
     self = args[0]
+    self.env['base'].flush()
+    self.env.cache.invalidate()
     # run once to warm up the caches
     self.warm = False
     self.cr.execute('SAVEPOINT test_warmup')
     func(*args, **kwargs)
+    self.env['base'].flush()
+    # run once for real
     self.cr.execute('ROLLBACK TO SAVEPOINT test_warmup')
     self.env.cache.invalidate()
-    # run once for real
     self.warm = True
     func(*args, **kwargs)
 
@@ -1255,6 +1345,10 @@ class Form(object):
                 contexts[fname] = ctx
 
             descr = fvg['fields'].get(fname) or {'type': None}
+            # FIXME: better widgets support
+            # NOTE: selection breaks because of m2o widget=selection
+            if f.get('widget') in ['many2many']:
+                descr['type'] = f.get('widget')
             if level and descr['type'] == 'one2many':
                 self._o2m_set_edition_view(descr, f, level)
 
@@ -1334,14 +1428,37 @@ class Form(object):
                 e1 = stack.pop()
                 e2 = stack.pop()
                 stack.append(e1 or e2)
-            elif isinstance(it, list):
+            elif isinstance(it, tuple):
+                if it == TRUE_LEAF:
+                    stack.append(True)
+                    continue
+                elif it == FALSE_LEAF:
+                    stack.append(False)
+                    continue
                 f, op, val = it
                 # hack-ish handling of parent.<field> modifiers
                 f, n = re.subn(r'^parent\.', '', f, 1)
-                field_val = (vals['•parent•'] if n else vals)[f]
+                if n:
+                    field_val = vals['•parent•'][f]
+                else:
+                    field_val = vals[f]
+                    # apparent artefact of JS data representation: m2m field
+                    # values are assimilated to lists of ids?
+                    # FIXME: SSF should do that internally, but the requirement
+                    #        of recursively post-processing to generate lists of
+                    #        commands on save (e.g. m2m inside an o2m) means the
+                    #        data model needs proper redesign
+                    # we're looking up the "current view" so bits might be
+                    # missing when processing o2ms in the parent (see
+                    # values_to_save:1450 or so)
+                    f_ = self._view['fields'].get(f, {'type': None})
+                    if f_['type'] == 'many2many':
+                        # field value should be [(6, _, ids)], we want just the ids
+                        field_val = field_val[0][2] if field_val else []
+
                 stack.append(self._OPS[op](field_val, val))
             else:
-                raise ValueError("Unknown domain element %s" % it)
+                raise ValueError("Unknown domain element %s" % [it])
         [result] = stack
         return result
     _OPS = {
@@ -1423,6 +1540,8 @@ class Form(object):
                 r.write(values)
         else:
             r = self._model.create(values)
+        self._model.flush()
+        self._model.invalidate_cache()
         [data] = r.read(list(self._view['fields']))
         # FIXME: process relational fields
         # alternative: iterate on record & read from it directly? pb: would
@@ -1439,8 +1558,9 @@ class Form(object):
         values = {}
         fields = self._view['fields']
         for f in fields:
+            descr = fields[f]
             v = self._values[f]
-            if self._get_modifier(f, 'required') and not fields[f]['type'] == 'boolean':
+            if self._get_modifier(f, 'required') and not (descr['type'] == 'boolean' or self._get_modifier(f, 'invisible')):
                 assert v is not False, "{} is a required field".format(f)
 
             # skip unmodified fields
@@ -1452,8 +1572,8 @@ class Form(object):
                 if not node.get('force_save'):
                     continue
 
-            if fields[f]['type'] == 'one2many':
-                view = fields[f]['views']['edition']
+            if descr['type'] == 'one2many':
+                view = descr['views']['edition']
                 modifiers = view['modifiers']
                 oldvals = v
                 v = []
@@ -1467,7 +1587,21 @@ class Form(object):
                 for (c, rid, vs) in oldvals:
                     if c in (0, 1):
                         items = list(getattr(vs, 'changed_items', vs.items)())
-                        # FIXME: should be more extensive processing of o2m defaults
+                        fields_ = view['fields']
+                        missing = fields_.keys() - vs.keys()
+                        if missing:
+                            Model = self._env[descr['relation']]
+                            if c == 0:
+                                vs.update(dict.fromkeys(missing, False))
+                                vs.update(
+                                    (k, _cleanup_from_default(fields_[k], v))
+                                    for k, v in Model.default_get(list(missing)).items()
+                                )
+                            else:
+                                vs.update(record_to_values(
+                                    {k: v for k, v in fields_.items() if k not in vs},
+                                    Model.browse(rid)
+                                ))
                         vs.setdefault('id', False)
                         vs['•parent•'] = self._values
                         vs = {
@@ -1492,6 +1626,8 @@ class Form(object):
 
         record = self._model.browse(self._values.get('id'))
         result = record.onchange(self._onchange_values(), fields, spec)
+        self._model.flush()
+        self._model.invalidate_cache()
         if result.get('warning'):
             _logger.getChild('onchange').warn("%(title)s %(message)s" % result.get('warning'))
         values = result.get('value', {})
@@ -1649,7 +1785,7 @@ class O2MForm(Form):
         values._changed.update(self._changed)
 
         for f in self._view['fields']:
-            if self._get_modifier(f, 'required'):
+            if self._get_modifier(f, 'required') and not (self._get_modifier(f, 'column_invisible') or self._get_modifier(f, 'invisible')):
                 assert self._values[f] is not False, "{} is a required field".format(f)
 
         return values
@@ -1870,6 +2006,23 @@ def record_to_values(fields, record):
             v = odoo.fields.Date.to_string(v)
         r[f] = v
     return r
+
+def _cleanup_from_default(type_, value):
+    if not value:
+        if type_ == 'many2many':
+            return [(6, False, [])]
+        elif type_ == 'one2many':
+            return []
+        elif type_ in ('integer', 'float'):
+            return 0
+        return value
+
+    if type_ == 'one2many':
+        return [c for c in value if c[0] != 6]
+    elif type_ == 'datetime' and isinstance(value, datetime):
+        return odoo.fields.Datetime.to_string(value)
+    elif type_ == 'date' and isinstance(value, date):
+        return odoo.fields.Date.to_string(value)
 
 def _get_node(view, f, *arg):
     """ Find etree node for the field ``f`` in the view's arch

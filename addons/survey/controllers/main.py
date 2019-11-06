@@ -20,6 +20,10 @@ _logger = logging.getLogger(__name__)
 
 class Survey(http.Controller):
 
+    # ------------------------------------------------------------
+    # ACCESS
+    # ------------------------------------------------------------
+
     def _fetch_from_access_token(self, survey_token, answer_token):
         """ Check that given token matches an answer from the given survey_id.
         Returns a sudo-ed browse record of survey in order to avoid access rights
@@ -181,6 +185,10 @@ class Survey(http.Controller):
             'input_type': answer.input_type,
             'deadline': answer.deadline,
         }
+
+    # ------------------------------------------------------------
+    # TAKING SURVEY ROUTES
+    # ------------------------------------------------------------
 
     @http.route('/survey/start/<string:survey_token>', type='http', auth='public', website=True)
     def survey_start(self, survey_token, answer_token=None, email=False, **post):
@@ -403,10 +411,11 @@ class Survey(http.Controller):
                     answer_tag = "%s_%s" % (survey_sudo.id, question.id)
                     request.env['survey.user_input_line'].sudo().save_lines(answer_sudo.id, question, post, answer_tag)
 
+            vals = {}
             if answer_sudo.is_time_limit_reached or survey_sudo.questions_layout == 'one_page':
                 go_back = False
                 answer_sudo._mark_done()
-            else:
+            elif 'button_submit' in post:
                 go_back = post['button_submit'] == 'previous'
                 next_page, last = request.env['survey.survey'].next_page_or_question(answer_sudo, page_or_question_id, go_back=go_back)
                 vals = {'last_displayed_page_id': page_or_question_id}
@@ -415,15 +424,24 @@ class Survey(http.Controller):
                     answer_sudo._mark_done()
                 else:
                     vals.update({'state': 'skip'})
-                answer_sudo.write(vals)
 
-            ret['redirect'] = '/survey/fill/%s/%s' % (survey_sudo.access_token, answer_token)
-            if go_back:
-                ret['redirect'] += '?prev=prev'
+            if 'breadcrumb_redirect' in post:
+                ret['redirect'] = post['breadcrumb_redirect']
+            else:
+                if vals:
+                    answer_sudo.write(vals)
+
+                ret['redirect'] = '/survey/fill/%s/%s' % (survey_sudo.access_token, answer_token)
+                if go_back:
+                    ret['redirect'] += '?prev=prev'
 
         return json.dumps(ret)
 
-    @http.route('/survey/print/<string:survey_token>', type='http', auth='public', website=True)
+    # ------------------------------------------------------------
+    # COMPLETED SURVEY ROUTES
+    # ------------------------------------------------------------
+
+    @http.route('/survey/print/<string:survey_token>', type='http', auth='public', website=True, sitemap=False)
     def survey_print(self, survey_token, review=False, answer_token=None, **post):
         '''Display an survey in printable view; if <answer_token> is set, it will
         grab the answers of the user_input_id that has <answer_token>.'''
@@ -542,19 +560,16 @@ class Survey(http.Controller):
     def _prepare_result_dict(self, survey, current_filters=None):
         """Returns dictionary having values for rendering template"""
         current_filters = current_filters if current_filters else []
-        Survey = request.env['survey.survey']
         result = {'page_ids': []}
-        for page in survey.page_ids:
-            page_dict = {'page': page, 'question_ids': []}
-            for question in page.question_ids:
-                question_dict = {
-                    'question': question,
-                    'input_summary': Survey.get_input_summary(question, current_filters),
-                    'prepare_result': Survey.prepare_result(question, current_filters),
-                    'graph_data': self._get_graph_data(question, current_filters),
-                }
+        
+        # First append questions without page
+        questions_without_page = [self._prepare_question_values(question,current_filters) for question in survey.question_ids if not question.page_id]
+        if questions_without_page:
+            result['page_ids'].append({'page': request.env['survey.question'], 'question_ids': questions_without_page})
 
-                page_dict['question_ids'].append(question_dict)
+        # Then, questions in sections
+        for page in survey.page_ids:
+            page_dict = {'page': page, 'question_ids': [self._prepare_question_values(question,current_filters) for question in page.question_ids]}
             result['page_ids'].append(page_dict)
 
         if survey.scoring_type in ['scoring_with_answers', 'scoring_without_answers']:
@@ -563,6 +578,15 @@ class Survey(http.Controller):
             result['scoring_graph_data'] = json.dumps(scoring_data['graph_data'])
 
         return result
+
+    def _prepare_question_values(self, question, current_filters):
+        Survey = request.env['survey.survey']
+        return {
+            'question': question,
+            'input_summary': Survey.get_input_summary(question, current_filters),
+            'prepare_result': Survey.prepare_result(question, current_filters),
+            'graph_data': self._get_graph_data(question, current_filters),
+        }
 
     def _get_filter_data(self, post):
         """Returns data used for filtering the result"""
@@ -639,4 +663,12 @@ class Survey(http.Controller):
         values = {'survey': survey, 'answer': answer}
         if token:
             values['token'] = token
+        if survey.scoring_type != 'no_scoring' and survey.certificate:
+            answer_perf = survey._get_answers_correctness(answer)[answer]
+            values['graph_data'] = json.dumps([
+                {"text": "Correct", "count": answer_perf['correct']},
+                {"text": "Partially", "count": answer_perf['partial']},
+                {"text": "Incorrect", "count": answer_perf['incorrect']},
+                {"text": "Unanswered", "count": answer_perf['skipped']}
+            ])
         return values

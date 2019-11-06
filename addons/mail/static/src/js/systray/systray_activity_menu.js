@@ -19,9 +19,6 @@ var ActivityMenu = Widget.extend({
         'click .o_mail_preview': '_onActivityFilterClick',
         'show.bs.dropdown': '_onActivityMenuShow',
     },
-    willStart: function () {
-        return Promise.resolve(this.call('mail_service', 'isReady'));
-    },
     start: function () {
         this._$activitiesPreview = this.$('.o_mail_systray_dropdown_items');
         this.call('mail_service', 'getMailBus').on('activity_updated', this, this._updateCounter);
@@ -70,7 +67,7 @@ var ActivityMenu = Widget.extend({
         var self = this;
         self._getActivityData().then(function (){
             self._$activitiesPreview.html(QWeb.render('mail.systray.ActivityMenu.Previews', {
-                activities : self._activities
+                widget: self
             }));
         });
     },
@@ -108,6 +105,7 @@ var ActivityMenu = Widget.extend({
      */
     _onActivityActionClick: function (ev) {
         ev.stopPropagation();
+        this.$('.dropdown-toggle').dropdown('toggle');
         var targetAction = $(ev.currentTarget);
         var actionXmlid = targetAction.data('action_xmlid');
         if (actionXmlid) {

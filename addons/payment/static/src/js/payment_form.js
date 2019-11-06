@@ -68,6 +68,9 @@ publicWidget.registry.PaymentForm = publicWidget.Widget.extend({
             $acquirerForm.append(messageResult);
         }
     },
+    hideError: function() {
+        this.$('#payment_error').remove();
+    },
     /**
      * @private
      * @param {DOMElement} element
@@ -135,6 +138,12 @@ publicWidget.registry.PaymentForm = publicWidget.Widget.extend({
         $(button).attr('disabled', false);
         $(button).children('.fa').addClass('fa-lock');
         $(button).find('span.o_loader').remove();
+    },
+    _parseError: function(e) { 
+        if (e.message.data.arguments[1]) {
+            return e.message.data.arguments[0] + e.message.data.arguments[1];
+        }
+        return e.message.data.arguments[0];
     },
 
     //--------------------------------------------------------------------------
@@ -237,13 +246,14 @@ publicWidget.registry.PaymentForm = publicWidget.Widget.extend({
                     // here we remove the 'processing' icon from the 'add a new payment' button
                     self.enableButton(button);
                 }).guardedCatch(function (error) {
+                    error.event.preventDefault();
                     // if the rpc fails, pretty obvious
                     self.enableButton(button);
 
                     self.displayError(
                         _t('Server Error'),
                         _t("We are not able to add your payment method at the moment.") +
-                            error.message.data.message
+                            self._parseError(error)
                     );
                 });
             }
@@ -290,17 +300,18 @@ publicWidget.registry.PaymentForm = publicWidget.Widget.extend({
                             );
                         }
                     }).guardedCatch(function (error) {
+                        error.event.preventDefault();
                         self.displayError(
                             _t('Server Error'),
-                            _t("We are not able to redirect you to the payment form. ") +
-                                error.message.data.message
+                            _t("We are not able to redirect you to the payment form.") + " " +
+                                self._parseError(error)
                         );
                     });
                 }
                 else {
                     // we append the form to the body and send it.
                     this.displayError(
-                        _t("Cannot set-up the payment"),
+                        _t("Cannot setup the payment"),
                         _t("We're unable to process your payment.")
                     );
                 }
@@ -417,6 +428,7 @@ publicWidget.registry.PaymentForm = publicWidget.Widget.extend({
                 $(button).children('.fa').addClass('fa-plus-circle');
                 $(button).find('span.o_loader').remove();
             }).guardedCatch(function (error) {
+                error.event.preventDefault();
                 // if the rpc fails, pretty obvious
                 $(button).attr('disabled', false);
                 $(button).children('.fa').addClass('fa-plus-circle');
@@ -425,7 +437,7 @@ publicWidget.registry.PaymentForm = publicWidget.Widget.extend({
                 self.displayError(
                     _t('Server error'),
                     _t("We are not able to add your payment method at the moment.</p>") +
-                        error.message.data.message
+                        self._parseError(error)
                 );
             });
         }

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
-from odoo import api, fields, models
+from odoo import api, fields, models, _
+from odoo.exceptions import UserError
 
 
 class ResPartner(models.Model):
@@ -35,6 +36,14 @@ class ResPartner(models.Model):
         if partner_id:  # Modifying existing partner
             self.browse(partner_id).write(partner)
         else:
-            partner['lang'] = self.env.user.lang
             partner_id = self.create(partner).id
         return partner_id
+
+    def unlink(self):
+        running_sessions = self.env['pos.session'].search([('state', '!=', 'closed')])
+        if running_sessions:
+            raise UserError(
+                _("You cannot delete contacts while there are active PoS sessions. Close the session(s) %s first.")
+                % ", ".join(session.name for session in running_sessions)
+            )
+        return super(ResPartner, self).unlink()

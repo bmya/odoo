@@ -75,6 +75,7 @@
         <link rel="stylesheet" type="text/scss" href="/web/static/src/scss/daterangepicker.scss"/>
         <link rel="stylesheet" type="text/scss" href="/web/static/src/scss/banner.scss"/>
         <link rel="stylesheet" type="text/scss" href="/web/static/src/scss/colorpicker.scss"/>
+        <link rel="stylesheet" type="text/scss" href="/web/static/src/scss/translation_dialog.scss"/>
         <link rel="stylesheet" type="text/scss" href="/web/static/src/scss/keyboard.scss"/>
         <link rel="stylesheet" type="text/scss" href="/web/static/src/scss/name_and_signature.scss"/>
         <link rel="stylesheet" type="text/scss" href="/web/static/src/scss/web.zoomodoo.scss"/>
@@ -163,6 +164,7 @@
         <script type="text/javascript" src="/web/static/src/js/widgets/notification.js"></script>
         <script type="text/javascript" src="/web/static/src/js/widgets/rainbow_man.js"></script>
         <script type="text/javascript" src="/web/static/src/js/widgets/colorpicker_dialog.js"></script>
+        <script type="text/javascript" src="/web/static/src/js/widgets/translation_dialog.js"></script>
         <script type="text/javascript" src="/web/static/src/js/libs/zoomodoo.js"></script>
     </template>
 
@@ -279,6 +281,7 @@
         <script type="text/javascript" src="/web/static/src/js/widgets/dropdown_menu.js"></script>
         <script type="text/javascript" src="/web/static/src/js/widgets/pie_chart.js"></script>
         <script type="text/javascript" src="/web/static/src/js/widgets/ribbon.js"></script>
+        <script type="text/javascript" src="/web/static/src/js/widgets/signature.js"></script>
         <script type="text/javascript" src="/web/static/src/js/apps.js"></script>
 
         <script type="text/javascript" src="/web/static/src/js/fields/abstract_field.js"></script>
@@ -321,6 +324,7 @@
         <script type="text/javascript" src="/web/static/src/js/views/search_panel.js"></script>
         <script type="text/javascript" src="/web/static/src/js/views/field_manager_mixin.js"></script>
         <script type="text/javascript" src="/web/static/src/js/views/select_create_controllers_registry.js"></script>
+        <script type="text/javascript" src="/web/static/src/js/views/signature_dialog.js"></script>
         <script type="text/javascript" src="/web/static/src/js/views/standalone_field_manager_mixin.js"></script>
         <script type="text/javascript" src="/web/static/src/js/views/view_registry.js"></script>
         <script type="text/javascript" src="/web/static/src/js/views/view_dialogs.js"></script>
@@ -349,6 +353,7 @@
         <script type="text/javascript" src="/web/static/src/js/views/list/list_renderer.js"></script>
         <script type="text/javascript" src="/web/static/src/js/views/list/list_view.js"></script>
         <script type="text/javascript" src="/web/static/src/js/views/list/list_controller.js"></script>
+        <script type="text/javascript" src="/web/static/src/js/views/list/list_confirm_dialog.js"></script>
         <script type="text/javascript" src="/web/static/src/js/views/pivot/pivot_model.js"></script>
         <script type="text/javascript" src="/web/static/src/js/views/pivot/pivot_controller.js"></script>
         <script type="text/javascript" src="/web/static/src/js/views/pivot/pivot_renderer.js"></script>
@@ -414,7 +419,6 @@
             <head>
                 <meta charset="utf-8"/>
                 <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
-                <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"/>
 
                 <title t-esc="title or 'Odoo'"/>
                 <link type="image/x-icon" rel="shortcut icon" t-att-href="x_icon or '/web/static/src/img/favicon.ico'"/>
@@ -644,6 +648,7 @@
                 <script type="text/javascript" src="/base/static/tests/base_settings_tests.js"></script>
 
                 <script type="text/javascript" src="/web/static/tests/qweb_tests.js"></script>
+                <script type="text/javascript" src="/web/static/tests/mockserver_tests.js"></script>
 
                 <script type="text/javascript" src="/web/static/tests/services/notification_service_tests.js"></script>
 
@@ -653,8 +658,8 @@
                 <script type="text/javascript" src="/web/static/tests/fields/relational_fields/field_many2many_tests.js"></script>
                 <script type="text/javascript" src="/web/static/tests/fields/relational_fields/field_many2one_tests.js"></script>
                 <script type="text/javascript" src="/web/static/tests/fields/relational_fields/field_one2many_tests.js"></script>
-                <script type="text/javascript" src="/web/static/tests/fields/signature.js"></script>
-                <script type="text/javascript" src="/web/static/tests/fields/special_fields.js"></script>
+                <script type="text/javascript" src="/web/static/tests/fields/signature_tests.js"></script>
+                <script type="text/javascript" src="/web/static/tests/fields/special_fields_tests.js"></script>
                 <script type="text/javascript" src="/web/static/tests/fields/upgrade_fields_tests.js"></script>
 
                 <script type="text/javascript" src="/web/static/tests/views/abstract_controller_tests.js"></script>
@@ -689,6 +694,7 @@
                 <script type="text/javascript" src="/web/static/tests/core/concurrency_tests.js"></script>
                 <script type="text/javascript" src="/web/static/tests/core/util_tests.js"></script>
                 <script type="text/javascript" src="/web/static/tests/core/widget_tests.js"></script>
+                <script type="text/javascript" src="/web/static/tests/core/dialog_tests.js"></script>
                 <script type="text/javascript" src="/web/static/tests/core/dom_tests.js"></script>
 
                 <script type="text/javascript" src="/web/static/tests/chrome/action_manager_tests.js"></script>
@@ -704,7 +710,7 @@
                 <script type="text/javascript" src="/web/static/tests/widgets/rainbow_man_tests.js"/>
 
                 <script type="text/javascript" src="/web/static/tests/tools/debug_manager_tests.js"/>
-                
+
                 <script type="text/javascript" src="/web/static/tests/helpers/test_utils_tests.js"></script>
             </t>
 
@@ -718,30 +724,6 @@
             <t t-set="html_data" t-value="{'style': 'height: 100%;'}"/>
             <t t-set="title">Web Mobile Tests</t>
             <t t-set="head">
-                <script>
-                    // force the config.device.isMobile key to be true so that
-                    // mobile specific files aren't rejected
-                    window.odoo = {};
-                    var odooDefine;
-                    Object.defineProperty(window.odoo, 'define', {
-                        get: function () {
-                            return odooDefine;
-                        },
-                        set: function (define) {
-                            odooDefine = function () {
-                                define.apply(this, arguments);
-                                if (arguments[0] === 'web.config') {
-                                    define.call(this, 'web.config.patch', function (require) {
-                                        var config = require('web.config');
-                                        config.device.isMobile = true;
-                                        config.device.size_class = config.device.SIZES.XS;
-                                    });
-                                }
-                            };
-                        },
-                    });
-                </script>
-
                 <t t-call="web.js_tests_assets"/>
                 <script type="text/javascript" src="/web/static/lib/jquery.touchSwipe/jquery.touchSwipe.js"></script>
 

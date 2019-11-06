@@ -248,7 +248,7 @@ var DebugWidget = PosBaseWidget.extend({
                 'body':  _t('This operation will permanently destroy all paid orders from the local storage. You will lose all the data. This operation cannot be undone.'),
                 confirm: function(){
                     self.pos.db.remove_all_orders();
-                    self.pos.set({synch: { state:'connected', pending: 0 }});
+                    self.pos.set_synch('connected', 0);
                 },
             });
         });
@@ -367,7 +367,8 @@ var ProxyStatusWidget = StatusWidget.extend({
             }
             if( this.pos.config.iface_print_via_proxy || 
                 this.pos.config.iface_cashdrawer ){
-                if(!this.is_printer_connected(status.drivers.printer)){
+                var printer = status.drivers.printer ? status.drivers.printer.status : false;
+                if (printer != 'connected' && printer != 'connecting') {
                     warning = true;
                     msg = msg ? msg + ' & ' : msg;
                     msg += _t('Printer');
@@ -385,11 +386,8 @@ var ProxyStatusWidget = StatusWidget.extend({
             msg = msg ? msg + ' ' + _t('Offline') : msg;
             this.set_status(warning ? 'warning' : 'connected', msg);
         }else{
-            this.set_status(status.status,'');
+            this.set_status(status.status, status.msg || '');
         }
-    },
-    is_printer_connected: function (printer) {
-        return printer && printer.status === 'connected';
     },
     start: function(){
         var self = this;
@@ -812,7 +810,7 @@ var Chrome = PosBaseWidget.extend(AbstractAction.prototype, {
             'name':   'sale_details',
             'widget': SaleDetailsButton,
             'append':  '.pos-rightheader',
-            'condition': function(){ return this.pos.config.use_proxy; },
+            'condition': function(){ return this.pos.proxy.printer; },
         },{
             'name':   'proxy_status',
             'widget': ProxyStatusWidget,

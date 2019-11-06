@@ -203,7 +203,7 @@ class TestAngloSaxonValuation(SavepointCase):
         # Deliver one.
         sale_order.picking_ids.move_lines.quantity_done = 1
         wiz = sale_order.picking_ids.button_validate()
-        wiz = self.env[wiz['res_model']].browse(wiz['res_id'])
+        wiz = self.env[wiz['res_model']].browse(wiz['res_id']).with_context(wiz['context'])
         wiz.process()
 
         # Invoice 1
@@ -275,15 +275,15 @@ class TestAngloSaxonValuation(SavepointCase):
         # Deliver one.
         sale_order.picking_ids.move_lines.quantity_done = 1
         wiz = sale_order.picking_ids.button_validate()
-        wiz = self.env[wiz['res_model']].browse(wiz['res_id'])
+        wiz = self.env[wiz['res_model']].browse(wiz['res_id']).with_context(wiz['context'])
         wiz.process()
 
         # change the standard price to 14
         self.product._change_standard_price(14.0, counterpart_account_id=self.counterpart_account.id)
 
         # deliver the backorder
-        sale_order.picking_ids[0].move_lines.quantity_done = 1
-        sale_order.picking_ids[0].button_validate()
+        sale_order.picking_ids.filtered('backorder_id').move_lines.quantity_done = 1
+        sale_order.picking_ids.filtered('backorder_id').button_validate()
 
         # Invoice the sale order.
         invoice = sale_order._create_invoices()
@@ -342,7 +342,7 @@ class TestAngloSaxonValuation(SavepointCase):
         # Deliver one.
         sale_order.picking_ids.move_lines.quantity_done = 1
         wiz = sale_order.picking_ids.button_validate()
-        wiz = self.env[wiz['res_model']].browse(wiz['res_id'])
+        wiz = self.env[wiz['res_model']].browse(wiz['res_id']).with_context(wiz['context'])
         wiz.process()
 
         # Invoice 1
@@ -414,15 +414,15 @@ class TestAngloSaxonValuation(SavepointCase):
         # Deliver one.
         sale_order.picking_ids.move_lines.quantity_done = 1
         wiz = sale_order.picking_ids.button_validate()
-        wiz = self.env[wiz['res_model']].browse(wiz['res_id'])
+        wiz = self.env[wiz['res_model']].browse(wiz['res_id']).with_context(wiz['context'])
         wiz.process()
 
         # change the standard price to 14
         self.product._change_standard_price(14.0, counterpart_account_id=self.counterpart_account.id)
 
         # deliver the backorder
-        sale_order.picking_ids[0].move_lines.quantity_done = 1
-        sale_order.picking_ids[0].button_validate()
+        sale_order.picking_ids.filtered('backorder_id').move_lines.quantity_done = 1
+        sale_order.picking_ids.filtered('backorder_id').button_validate()
 
         # Invoice the sale order.
         invoice = sale_order._create_invoices()
@@ -494,7 +494,7 @@ class TestAngloSaxonValuation(SavepointCase):
         # Deliver one.
         sale_order.picking_ids.move_lines.quantity_done = 1
         wiz = sale_order.picking_ids.button_validate()
-        wiz = self.env[wiz['res_model']].browse(wiz['res_id'])
+        wiz = self.env[wiz['res_model']].browse(wiz['res_id']).with_context(wiz['context'])
         wiz.process()
 
         # Invoice the sale order.
@@ -588,7 +588,7 @@ class TestAngloSaxonValuation(SavepointCase):
         # Deliver one.
         sale_order.picking_ids.move_lines.quantity_done = 1
         wiz = sale_order.picking_ids.button_validate()
-        wiz = self.env[wiz['res_model']].browse(wiz['res_id'])
+        wiz = self.env[wiz['res_model']].browse(wiz['res_id']).with_context(wiz['context'])
         wiz.process()
 
         # Invoice the sale order.
@@ -694,7 +694,7 @@ class TestAngloSaxonValuation(SavepointCase):
         # Deliver one.
         sale_order.picking_ids.move_lines.quantity_done = 1
         wiz = sale_order.picking_ids.button_validate()
-        wiz = self.env[wiz['res_model']].browse(wiz['res_id'])
+        wiz = self.env[wiz['res_model']].browse(wiz['res_id']).with_context(wiz['context'])
         wiz.process()
 
         # upate the standard price to 12
@@ -790,7 +790,7 @@ class TestAngloSaxonValuation(SavepointCase):
         # Deliver one.
         sale_order.picking_ids.move_lines.quantity_done = 1
         wiz = sale_order.picking_ids.button_validate()
-        wiz = self.env[wiz['res_model']].browse(wiz['res_id'])
+        wiz = self.env[wiz['res_model']].browse(wiz['res_id']).with_context(wiz['context'])
         wiz.process()
 
         # upate the standard price to 12

@@ -29,17 +29,17 @@ class EventType(models.Model):
         return [(0, 0, {
             'interval_unit': 'now',
             'interval_type': 'after_sub',
-            'template_id': self.env.ref('event.event_subscription')
+            'template_id': self.env.ref('event.event_subscription').id,
         }), (0, 0, {
             'interval_nbr': 1,
             'interval_unit': 'days',
             'interval_type': 'before_event',
-            'template_id': self.env.ref('event.event_reminder')
+            'template_id': self.env.ref('event.event_reminder').id,
         }), (0, 0, {
             'interval_nbr': 10,
             'interval_unit': 'days',
             'interval_type': 'before_event',
-            'template_id': self.env.ref('event.event_reminder')
+            'template_id': self.env.ref('event.event_reminder').id,
         })]
 
     name = fields.Char('Event Category', required=True, translate=True)
@@ -108,7 +108,8 @@ class EventEvent(models.Model):
     organizer_id = fields.Many2one(
         'res.partner', string='Organizer',
         tracking=True,
-        default=lambda self: self.env.company.partner_id)
+        default=lambda self: self.env.company.partner_id,
+        domain="['|', ('company_id', '=', False), ('company_id', '=', company_id)]")
     event_type_id = fields.Many2one(
         'event.type', string='Category',
         readonly=False, states={'done': [('readonly', True)]})
@@ -140,7 +141,7 @@ class EventEvent(models.Model):
         store=True, readonly=True, compute='_compute_seats')
     seats_expected = fields.Integer(
         string='Number of Expected Attendees',
-        readonly=True, compute='_compute_seats')
+        compute_sudo=True, readonly=True, compute='_compute_seats')
 
     # Registration fields
     registration_ids = fields.One2many(
@@ -156,6 +157,7 @@ class EventEvent(models.Model):
         tracking=True, states={'done': [('readonly', True)]})
     date_begin_located = fields.Char(string='Start Date Located', compute='_compute_date_begin_tz')
     date_end_located = fields.Char(string='End Date Located', compute='_compute_date_end_tz')
+    is_one_day = fields.Boolean(compute='_compute_field_is_one_day')
 
     state = fields.Selection([
         ('draft', 'Unconfirmed'), ('cancel', 'Cancelled'),
@@ -168,6 +170,7 @@ class EventEvent(models.Model):
         'res.partner', string='Location',
         default=lambda self: self.env.company.partner_id,
         readonly=False, states={'done': [('readonly', True)]},
+        domain="['|', ('company_id', '=', False), ('company_id', '=', company_id)]",
         tracking=True)
     country_id = fields.Many2one('res.country', 'Country',  related='address_id.country_id', store=True, readonly=False)
     twitter_hashtag = fields.Char('Twitter Hashtag')
@@ -199,6 +202,7 @@ class EventEvent(models.Model):
                         WHERE event_id IN %s AND state IN ('draft', 'open', 'done')
                         GROUP BY event_id, state
                     """
+            self.env['event.registration'].flush(['event_id', 'state'])
             self._cr.execute(query, (tuple(self.ids),))
             for event_id, state, num in self._cr.fetchall():
                 event = self.browse(event_id)
@@ -231,6 +235,16 @@ class EventEvent(models.Model):
             else:
                 event.date_end_located = False
 
+    @api.depends('date_begin', 'date_end', 'date_tz')
+    def _compute_field_is_one_day(self):
+        for event in self:
+            # Need to localize because it could begin late and finish early in
+            # another timezone
+            event = event.with_context(tz=event.date_tz)
+            begin_tz = fields.Datetime.context_timestamp(event, event.date_begin)
+            end_tz = fields.Datetime.context_timestamp(event, event.date_end)
+            event.is_one_day = (begin_tz.date() == end_tz.date())
+
     @api.onchange('is_online')
     def _onchange_is_online(self):
         if self.is_online:
@@ -256,11 +270,11 @@ class EventEvent(models.Model):
             self.is_online = self.event_type_id.is_online
 
             if self.event_type_id.event_type_mail_ids:
-                self.event_mail_ids = [(5, 0, 0)] + [{
+                self.event_mail_ids = [(5, 0, 0)] + [(0, 0, {
                     'template_id': line.template_id,
                     'interval_nbr': line.interval_nbr,
                     'interval_unit': line.interval_unit,
-                    'interval_type': line.interval_type}
+                    'interval_type': line.interval_type})
                     for line in self.event_type_id.event_type_mail_ids]
 
     @api.constrains('seats_min', 'seats_max', 'seats_availability')

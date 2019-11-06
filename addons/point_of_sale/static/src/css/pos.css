@@ -46,8 +46,8 @@ html {
 }
 
 table {
-    border-spacing: 0px 10px;
-    border-collapse: inherit;
+    border-spacing: 0px;
+    border-collapse: collapse;
 }
 td {
     padding: 0px;
@@ -357,6 +357,9 @@ td {
     height:100%;
     display: -webkit-flex;
     display: flex;
+    overflow : hidden;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
 .pos .pos-rightheader > * {
     border-right: 1px solid #292929;
@@ -437,8 +440,6 @@ td {
     display: flex;
     -webkit-flex: 1;
     flex: 1;
-    max-width: -moz-available;
-    max-width: -webkit-fill-available;
 }
 .pos .orders {
     display: -webkit-flex;
@@ -446,8 +447,6 @@ td {
     vertical-align: top;
     margin-left: 0px;
     overflow: hidden;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
 }
 
 /*  c) The session buttons */
@@ -506,7 +505,7 @@ td {
 .pos .oe_icon.oe_red {
     color: rgb(197, 52, 0);
 }
-.pos .oe_statu .oe_green,
+.pos .oe_status .oe_green,
 .pos .oe_icon.oe_green {
     color: rgb(94, 185, 55);
 }
@@ -882,8 +881,8 @@ td {
     border: 1px solid #cecbcb;
     padding: 10px 20px;
     padding-left: 38px;
+    padding-right: 33px;
     margin: 6px;
-    background: url("../img/search.png") no-repeat 15px;
     background-color: white;
     border-radius: 20px;
     font-family: "Lato","Lucida Grande", Helvetica, Verdana, Arial;
@@ -894,12 +893,25 @@ td {
     box-shadow: 0px 0px 0px 2px rgb(153, 153, 255) inset;
     color: rgb(153, 153, 255);
 }
+
 .pos .search-clear {
     position: absolute;
+    top: 9px;
     width: 30px;
     height: 30px;
-    top: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.search-clear.left {
     left: 11px;
+    color: #808080;
+}
+
+.search-clear.right {
+    left: 145px;
+    color: #808080;
     cursor: pointer;
 }
 
@@ -1288,51 +1300,47 @@ td {
 
 .pos .paymentlines {
     width: 100%;
+    border-spacing: 0px 10px;
+    border-collapse: inherit;
 }
 .pos .paymentlines .controls {
     width: 40px;
 }
-.pos .paymentlines .label > * {
-    font-size: 16px;
-    padding: 8px;
-}
-.pos .paymentlines tbody{
+.pos .paymentlines .body{
     background: white;
     border-radius: 3px;
 }
 .pos .paymentline{
+    display: grid;
+    grid-template-columns: 4fr 3fr 1fr;
     font-size: 22px;
+    border-bottom: 10px solid #f0eeee;
+}
+.pos .paymentline.electronic_payment {
+    display: grid;
+    grid-template-columns: 7fr 1fr;
+}
+.pos .paymentline.heading {
+    font-size: 16px;
+    font-weight: bold;
 }
 .pos .paymentline.selected {
     font-size: 22px;
     background: #6EC89B;
     color: white;
 }
-.pos .paymentline.selected .edit {
-    background: white;
-    color: #6EC89B;
-    outline: 3px blue;
-    box-shadow: 0px 0px 0px 3px #6EC89B;
-    position: relative;
-    border-radius: 3px;
+.pos .paymentline.selected.payment-terminal {
+    border-bottom: 0px;
 }
 .pos .paymentline > *{
     padding: 8px 12px;
 }
-.pos .paymentline .col-due,
-.pos .paymentline .col-tendered,
-.pos .paymentline .col-change {
+.pos .paymentline .col-tendered {
     min-width: 90px;
 }
-.pos .paymentline.extra .col-due {
-    border-radius: 0 0 6px 6px;
-    border-top: solid 1px rgb(230, 230, 230);
-    font-weight: bold;
-}
-.pos .paymentline .col-change.highlight {
-    background: rgb(184, 152, 204);
-}
 .pos .paymentline .col-name {
+    display: flex;
+    align-items: center;
     font-size: 16px;
 }
 .pos .paymentline .delete-button{
@@ -1415,6 +1423,39 @@ td {
     text-align: center;
 }
 
+.paymentlines .button {
+    cursor: pointer;
+    border: 1px solid #cacaca;
+}
+.paymentlines .electronic_payment {
+    background: #e2e2e2;
+    border-collapse: unset;
+    text-align: center;
+    font-size: 16px;
+}
+
+.payment-status-container {
+    display: flex;
+    justify-content: space-between;
+    font-size: 25px;
+    padding-top: 15px;
+}
+
+.payment-status-total-due {
+    font-size: 17px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    color: #5c5c5cd1;
+}
+
+.payment-status-container .amount.highlight {
+    font-weight: bold;
+    color: #6EC89B;
+}
+
+.payment-status-container .label {
+    padding-right: 7px;
+}
 
 /* c) The receipt screen */
 
@@ -1521,9 +1562,6 @@ td {
         border: none !important;
         font-size: 13px !important;
         width: 266px !important;
-    }
-    .pos .pos-receipts{
-        display: none !important;
     }
     .o_debug_manager {
         display: none !important;

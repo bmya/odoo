@@ -6,7 +6,7 @@ from odoo import models, api, _, fields
 from odoo.osv import expression
 from odoo.release import version
 from odoo.tools import DEFAULT_SERVER_DATE_FORMAT as DF, safe_eval
-from odoo.tools.misc import formatLang, format_date as odoo_format_date
+from odoo.tools.misc import formatLang, format_date as odoo_format_date, get_lang
 import random
 
 import ast
@@ -25,6 +25,8 @@ class account_journal(models.Model):
                 journal.kanban_dashboard_graph = json.dumps(journal.get_bar_graph_datas())
             elif (journal.type in ['cash', 'bank']):
                 journal.kanban_dashboard_graph = json.dumps(journal.get_line_graph_datas())
+            else:
+                journal.kanban_dashboard_graph = False
 
     def _get_json_activity_data(self):
         for journal in self:
@@ -38,6 +40,7 @@ class account_journal(models.Model):
                     act_type.name as act_type_name,
                     act_type.category as activity_category,
                     act.date_deadline,
+                    m.date,
                     CASE WHEN act.date_deadline < CURRENT_DATE THEN 'late' ELSE 'future' END as status
                 FROM account_move m
                     LEFT JOIN mail_activity act ON act.res_id = m.id
@@ -52,7 +55,7 @@ class account_journal(models.Model):
                     'res_id': activity.get('res_id'),
                     'res_model': activity.get('res_model'),
                     'status': activity.get('status'),
-                    'name': activity.get('summary') or activity.get('act_type_name'),
+                    'name': (activity.get('summary') or activity.get('act_type_name')),
                     'activity_category': activity.get('activity_category'),
                     'date': odoo_format_date(self.env, activity.get('date_deadline'))
                 })
@@ -87,7 +90,7 @@ class account_journal(models.Model):
         data = []
         today = datetime.today()
         last_month = today + timedelta(days=-30)
-        locale = self._context.get('lang') or 'en_US'
+        locale = get_lang(self.env).code
 
         #starting point of the graph is the last statement
         last_stmt = BankStatement.search([('journal_id', '=', self.id), ('date', '<=', today.strftime(DF))], order='date desc, id desc', limit=1)
@@ -135,21 +138,21 @@ class account_journal(models.Model):
     def get_bar_graph_datas(self):
         data = []
         today = fields.Datetime.now(self)
-        data.append({'label': _('Past'), 'value':0.0, 'type': 'past'})
-        day_of_week = int(format_datetime(today, 'e', locale=self._context.get('lang') or 'en_US'))
+        data.append({'label': _('Due'), 'value':0.0, 'type': 'past'})
+        day_of_week = int(format_datetime(today, 'e', locale=get_lang(self.env).code))
         first_day_of_week = today + timedelta(days=-day_of_week+1)
         for i in range(-1,4):
             if i==0:
                 label = _('This Week')
             elif i==3:
-                label = _('Future')
+                label = _('Not Due')
             else:
                 start_week = first_day_of_week + timedelta(days=i*7)
                 end_week = start_week + timedelta(days=6)
                 if start_week.month == end_week.month:
-                    label = str(start_week.day) + '-' +str(end_week.day)+ ' ' + format_date(end_week, 'MMM', locale=self._context.get('lang') or 'en_US')
+                    label = str(start_week.day) + '-' + str(end_week.day) + ' ' + format_date(end_week, 'MMM', locale=get_lang(self.env).code)
                 else:
-                    label = format_date(start_week, 'd MMM', locale=self._context.get('lang') or 'en_US')+'-'+format_date(end_week, 'd MMM', locale=self._context.get('lang') or 'en_US')
+                    label = format_date(start_week, 'd MMM', locale=get_lang(self.env).code) + '-' + format_date(end_week, 'd MMM', locale=get_lang(self.env).code)
             data.append({'label':label,'value':0.0, 'type': 'past' if i<0 else 'future'})
 
         # Build SQL query to find amount aggregated by week
@@ -192,16 +195,20 @@ class account_journal(models.Model):
         for it as its second.
         """
         return ('''
-            SELECT 
-                SUM((CASE WHEN move.type IN ('out_refund', 'in_refund') THEN -1 else 1 END) * line.amount_residual) AS total,
+            SELECT
+                SUM((CASE WHEN move.type IN %(purchase_types)s THEN -1 else 1 END) * line.amount_residual) AS total,
                 MIN(invoice_date_due) AS aggr_date
             FROM account_move_line line
             JOIN account_move move ON move.id = line.move_id
             WHERE move.journal_id = %(journal_id)s
             AND move.state = 'posted'
             AND move.invoice_payment_state = 'not_paid'
-            AND move.type IN ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt')
-        ''', {'journal_id': self.id})
+            AND move.type IN %(invoice_types)s
+        ''', {
+            'purchase_types': tuple(self.env['account.move'].get_purchase_types(True)),
+            'invoice_types': tuple(self.env['account.move'].get_invoice_types(True)),
+            'journal_id': self.id
+        })
 
     def get_journal_dashboard_datas(self):
         currency = self.currency_id or self.company_id.currency_id
@@ -239,6 +246,7 @@ class account_journal(models.Model):
         #TODO need to check if all invoices are in the same currency than the journal!!!!
         elif self.type in ['sale', 'purchase']:
             title = _('Bills to pay') if self.type == 'purchase' else _('Invoices owed to you')
+            self.env['account.move'].flush(['amount_residual', 'currency_id', 'type', 'invoice_date', 'company_id', 'journal_id', 'date', 'state', 'invoice_payment_state'])
 
             (query, query_args) = self._get_open_bills_to_pay_query()
             self.env.cr.execute(query, query_args)
@@ -250,15 +258,15 @@ class account_journal(models.Model):
 
             today = fields.Date.today()
             query = '''
-                SELECT 
-                    (CASE WHEN type IN ('out_refund', 'in_refund') THEN -1 ELSE 1 END) * amount_residual AS amount_total, 
+                SELECT
+                    (CASE WHEN type IN ('out_refund', 'in_refund') THEN -1 ELSE 1 END) * amount_residual AS amount_total,
                     currency_id AS currency,
-                    type, 
-                    invoice_date, 
+                    type,
+                    invoice_date,
                     company_id
                 FROM account_move move
-                WHERE journal_id = %s 
-                AND date <= %s 
+                WHERE journal_id = %s
+                AND date <= %s
                 AND state = 'posted'
                 AND invoice_payment_state = 'not_paid'
                 AND type IN ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt');
@@ -269,10 +277,15 @@ class account_journal(models.Model):
             (number_waiting, sum_waiting) = self._count_results_and_sum_amounts(query_results_to_pay, currency, curr_cache=curr_cache)
             (number_draft, sum_draft) = self._count_results_and_sum_amounts(query_results_drafts, currency, curr_cache=curr_cache)
             (number_late, sum_late) = self._count_results_and_sum_amounts(late_query_results, currency, curr_cache=curr_cache)
-            read = self.env['account.move'].read_group([('journal_id', '=', self.id), ('to_check', '=', True)], ['amount'], 'journal_id', lazy=False)
+            read = self.env['account.move'].read_group([('journal_id', '=', self.id), ('to_check', '=', True)], ['amount_total'], 'journal_id', lazy=False)
             if read:
                 number_to_check = read[0]['__count']
-                to_check_balance = read[0]['amount']
+                to_check_balance = read[0]['amount_total']
+        elif self.type == 'general':
+            read = self.env['account.move'].read_group([('journal_id', '=', self.id), ('to_check', '=', True)], ['amount_total'], 'journal_id', lazy=False)
+            if read:
+                number_to_check = read[0]['__count']
+                to_check_balance = read[0]['amount_total']
 
         difference = currency.round(last_balance-account_sum) + 0.0
 
@@ -304,14 +317,14 @@ class account_journal(models.Model):
         it as its second.
         """
         return ('''
-            SELECT 
-                (CASE WHEN move.type IN ('out_refund', 'in_refund') THEN -1 ELSE 1 END) * move.amount_residual AS amount_total, 
-                move.currency_id AS currency, 
-                move.type, 
-                move.invoice_date, 
+            SELECT
+                (CASE WHEN move.type IN ('out_refund', 'in_refund') THEN -1 ELSE 1 END) * move.amount_residual AS amount_total,
+                move.currency_id AS currency,
+                move.type,
+                move.invoice_date,
                 move.company_id
             FROM account_move move
-            WHERE move.journal_id = %(journal_id)s 
+            WHERE move.journal_id = %(journal_id)s
             AND move.state = 'posted'
             AND move.invoice_payment_state = 'not_paid'
             AND move.type IN ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt');
@@ -324,14 +337,14 @@ class account_journal(models.Model):
         dictionary to use to run it as its second.
         """
         return ('''
-            SELECT 
-                (CASE WHEN move.type IN ('out_refund', 'in_refund') THEN -1 ELSE 1 END) * move.amount_total AS amount_total, 
-                move.currency_id AS currency, 
-                move.type, 
-                move.invoice_date, 
+            SELECT
+                (CASE WHEN move.type IN ('out_refund', 'in_refund') THEN -1 ELSE 1 END) * move.amount_total AS amount_total,
+                move.currency_id AS currency,
+                move.type,
+                move.invoice_date,
                 move.company_id
             FROM account_move move
-            WHERE move.journal_id = %(journal_id)s 
+            WHERE move.journal_id = %(journal_id)s
             AND move.state = 'draft'
             AND move.invoice_payment_state = 'not_paid'
             AND move.type IN ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt');
@@ -387,47 +400,25 @@ class account_journal(models.Model):
     def create_cash_statement(self):
         ctx = self._context.copy()
         ctx.update({'journal_id': self.id, 'default_journal_id': self.id, 'default_journal_type': 'cash'})
-        return {
+        open_statements = self.env['account.bank.statement'].search([('journal_id', '=', self.id), ('state', '=', 'open')])
+        action = {
             'name': _('Create cash statement'),
             'type': 'ir.actions.act_window',
             'view_mode': 'form',
             'res_model': 'account.bank.statement',
             'context': ctx,
         }
-
-    def action_open_reconcile(self):
-        if self.type in ['bank', 'cash']:
-            # Open reconciliation view for bank statements belonging to this journal
-            bank_stmt = self.env['account.bank.statement'].search([('journal_id', 'in', self.ids)]).mapped('line_ids')
-            return {
-                'type': 'ir.actions.client',
-                'tag': 'bank_statement_reconciliation_view',
-                'context': {'statement_line_ids': bank_stmt.ids, 'company_ids': self.mapped('company_id').ids},
-            }
-        else:
-            # Open reconciliation view for customers/suppliers
-            action_context = {'show_mode_selector': False, 'company_ids': self.mapped('company_id').ids}
-            if self.type == 'sale':
-                action_context.update({'mode': 'customers'})
-            elif self.type == 'purchase':
-                action_context.update({'mode': 'suppliers'})
-            return {
-                'type': 'ir.actions.client',
-                'tag': 'manual_reconciliation_view',
-                'context': action_context,
-            }
-
-    def action_open_to_check(self):
-        self.ensure_one()
-        ids = self.to_check_ids().ids
-        action_context = {'show_mode_selector': False, 'company_ids': self.mapped('company_id').ids}
-        action_context.update({'suspense_moves_mode': True})
-        action_context.update({'statement_line_ids': ids})
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'bank_statement_reconciliation_view',
-            'context': action_context,
-        }
+        if len(open_statements) == 1:
+            action.update({
+                'view_mode': 'form',
+                'res_id': open_statements.id,
+            })
+        elif len(open_statements) > 1:
+            action.update({
+                'view_mode': 'tree,form',
+                'domain': [('id', 'in', open_statements.ids)],
+            })
+        return action
 
     def to_check_ids(self):
         self.ensure_one()
@@ -469,10 +460,12 @@ class account_journal(models.Model):
             'search_default_journal_id': self.id,
         })
 
+        domain_type_field = action['res_model'] == 'account.move.line' and 'move_id.type' or 'type' # The model can be either account.move or account.move.line
+
         if self.type == 'sale':
-            action['domain'] = [('type', 'in', ('out_invoice', 'out_refund', 'out_receipt'))]
+            action['domain'] = [(domain_type_field, 'in', ('out_invoice', 'out_refund', 'out_receipt'))]
         elif self.type == 'purchase':
-            action['domain'] = [('type', 'in', ('in_invoice', 'in_refund', 'in_receipt'))]
+            action['domain'] = [(domain_type_field, 'in', ('in_invoice', 'in_refund', 'in_receipt'))]
 
         return action
 

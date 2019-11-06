@@ -34,16 +34,15 @@ var FIELD_CLASSES = {
 };
 
 var ListRenderer = BasicRenderer.extend({
-    className: 'o_list_view',
     events: {
         "mousedown": "_onMouseDown",
         "click .o_optional_columns_dropdown .dropdown-item": "_onToggleOptionalColumn",
         "click .o_optional_columns_dropdown_toggle": "_onToggleOptionalColumnDropdown",
         'click tbody tr': '_onRowClicked',
-        'click tbody .o_list_record_selector': '_onSelectRecord',
+        'change tbody .o_list_record_selector': '_onSelectRecord',
         'click thead th.o_column_sortable': '_onSortColumn',
         'click .o_group_header': '_onToggleGroup',
-        'click thead .o_list_record_selector input': '_onToggleSelection',
+        'change thead .o_list_record_selector input': '_onToggleSelection',
         'keypress thead tr td': '_onKeyPress',
         'keydown td': '_onKeyDown',
         'keydown th': '_onKeyDown',
@@ -67,10 +66,18 @@ var ListRenderer = BasicRenderer.extend({
         this.hasSelectors = params.hasSelectors;
         this.selection = params.selectedRecords || [];
         this.pagers = []; // instantiated pagers (only for grouped lists)
-        this.editable = params.editable;
         this.isGrouped = this.state.groupedBy.length > 0;
         this.groupbys = params.groupbys;
+    },
+    /**
+     * Compute columns visilibity. This can't be done earlier as we need the
+     * controller to respond to the load_optional_fields call of processColumns.
+     *
+     * @override
+     */
+    willStart: function () {
         this._processColumns(this.columnInvisibleFields || {});
+        return this._super.apply(this, arguments);
     },
 
     //--------------------------------------------------------------------------
@@ -149,7 +156,12 @@ var ListRenderer = BasicRenderer.extend({
             (attrs.max && 'max') || (attrs.min && 'min');
         if (func) {
             var count = 0;
-            var aggregateValue = (func === 'max') ? -Infinity : (func === 'min') ? Infinity : 0;
+            var aggregateValue = 0;
+            if (func === 'max') {
+                aggregateValue = -Infinity;
+            } else if (func === 'min') {
+                aggregateValue = Infinity;
+            }
             _.each(data, function (d) {
                 count += 1;
                 var value = (d.type === 'record') ? d.data[attrs.name] : d.aggregateValues[attrs.name];
@@ -241,14 +253,13 @@ var ListRenderer = BasicRenderer.extend({
      * @private
      * @returns {string}
      */
-    _getOptionalColumnsStorageKey: function () {
+    _getOptionalColumnsStorageKeyParts: function () {
         var self = this;
-        var fields = [];
-        _.each(this.state.fieldsInfo[this.viewType], function (field, name) {
-            fields.push(name + ":" + self.state.fields[name].type);
-        });
-        fields.sort();
-        return "list_optional_fields," + this.state.model + "," + this.viewType + "," + fields.join(',');
+        return {
+            fields: _.map(this.state.fieldsInfo[this.viewType], function (_, fieldName) {
+                return {name: fieldName, type: self.state.fields[fieldName].type};
+            }),
+        };
     },
     /**
      * Removes the columns which should be invisible.
@@ -261,8 +272,13 @@ var ListRenderer = BasicRenderer.extend({
         this.columns = [];
         this.optionalColumns = [];
         this.optionalColumnsEnabled = [];
-        var localStorageKey = this._getOptionalColumnsStorageKey();
-        var storedOptionalColumns = this.call('local_storage', 'getItem', localStorageKey);
+        var storedOptionalColumns;
+        this.trigger_up('load_optional_fields', {
+            keyParts: this._getOptionalColumnsStorageKeyParts(),
+            callback: function (res) {
+                storedOptionalColumns = res;
+            },
+        });
         _.each(this.arch.children, function (c) {
             if (c.tag !== 'control' && c.tag !== 'groupby') {
                 var reject = c.attrs.modifiers.column_invisible;
@@ -271,7 +287,14 @@ var ListRenderer = BasicRenderer.extend({
                 if (c.attrs.name in columnInvisibleFields) {
                     reject = columnInvisibleFields[c.attrs.name];
                 }
-
+               if (c.attrs.class) {
+                    if (c.attrs.class.match(/\boe_edit_only\b/)) {
+                        c.attrs.editOnly = true;
+                    }
+                    if (c.attrs.class.match(/\boe_read_only\b/)) {
+                        c.attrs.readOnly = true;
+                    }
+                }
                 if (!reject && c.attrs.widget === 'handle') {
                     self.handleField = c.attrs.name;
                     if (self.isGrouped) {
@@ -283,7 +306,7 @@ var ListRenderer = BasicRenderer.extend({
                     self.optionalColumns.push(c);
                     var enabled;
                     if (storedOptionalColumns === undefined) {
-                        enabled = c.attrs.optional === 'show'
+                        enabled = c.attrs.optional === 'show';
                     } else {
                         enabled = _.contains(storedOptionalColumns, c.attrs.name);
                     }
@@ -314,6 +337,12 @@ var ListRenderer = BasicRenderer.extend({
             var $cell = $('<td>');
             if (config.isDebug()) {
                 $cell.addClass(column.attrs.name);
+            }
+            if (column.attrs.editOnly) {
+                $cell.addClass('oe_edit_only');
+            }
+            if (column.attrs.readOnly) {
+                $cell.addClass('oe_read_only');
             }
             if (column.attrs.name in aggregateValues) {
                 var field = self.state.fields[column.attrs.name];
@@ -369,6 +398,7 @@ var ListRenderer = BasicRenderer.extend({
         if (node.tag === 'button') {
             tdClassName += ' o_list_button';
         } else if (node.tag === 'field') {
+            tdClassName += ' o_field_cell';
             var typeClass = FIELD_CLASSES[this.state.fields[node.attrs.name].type];
             if (typeClass) {
                 tdClassName += (' ' + typeClass);
@@ -376,6 +406,12 @@ var ListRenderer = BasicRenderer.extend({
             if (node.attrs.widget) {
                 tdClassName += (' o_' + node.attrs.widget + '_cell');
             }
+        }
+        if (node.attrs.editOnly) {
+            tdClassName += ' oe_edit_only';
+        }
+        if (node.attrs.readOnly) {
+            tdClassName += ' oe_read_only';
         }
         var $td = $('<td>', { class: tdClassName, tabindex: -1 });
 
@@ -421,7 +457,9 @@ var ListRenderer = BasicRenderer.extend({
      */
     _renderButton: function (record, node) {
         var self = this;
-        var $button = viewUtils.renderButtonFromNode(node, {
+        var nodeWithoutWidth = Object.assign({}, node);
+        delete nodeWithoutWidth.attrs.width;
+        var $button = viewUtils.renderButtonFromNode(nodeWithoutWidth, {
             extraClass: node.attrs.icon ? 'o_icon_button' : undefined,
             textAsTitle: !!node.attrs.icon,
         });
@@ -578,7 +616,7 @@ var ListRenderer = BasicRenderer.extend({
         var $th = $('<th>')
             .addClass('o_group_name')
             .attr('tabindex', -1)
-            .text(name + ' (' + group.count + ')')
+            .text(name + ' (' + group.count + ')');
         var $arrow = $('<span>')
             .css('padding-left', (groupLevel * 20) + 'px')
             .css('padding-right', '5px')
@@ -723,15 +761,28 @@ var ListRenderer = BasicRenderer.extend({
      * @returns {jQueryElement} a <th> element
      */
     _renderHeaderCell: function (node) {
-        var name = node.attrs.name;
+        const { icon, name, string } = node.attrs;
         var order = this.state.orderedBy;
         var isNodeSorted = order[0] && order[0].name === name;
         var field = this.state.fields[name];
         var $th = $('<th>');
+        if (name) {
+            $th.attr('data-name', name);
+        } else if (string) {
+            $th.attr('data-string', string);
+        } else if (icon) {
+            $th.attr('data-icon', icon);
+        }
+        if (node.attrs.editOnly) {
+            $th.addClass('oe_edit_only');
+        }
+        if (node.attrs.readOnly) {
+            $th.addClass('oe_read_only');
+        }
         if (!field) {
             return $th;
         }
-        var description = node.attrs.string || field.string;
+        var description = string || field.string;
         if (node.attrs.widget) {
             $th.addClass(' o_' + node.attrs.widget + '_cell');
             if (this.state.fieldsInfo.list[name].Widget.prototype.noLabel) {
@@ -739,7 +790,6 @@ var ListRenderer = BasicRenderer.extend({
             }
         }
         $th.text(description)
-            .attr('data-name', name)
             .attr('tabindex', -1)
             .toggleClass('o-sort-down', isNodeSorted ? !order[0].asc : false)
             .toggleClass('o-sort-up', isNodeSorted ? order[0].asc : false)
@@ -750,7 +800,7 @@ var ListRenderer = BasicRenderer.extend({
         }
 
         if (field.type === 'float' || field.type === 'integer' || field.type === 'monetary') {
-            $th.css({ textAlign: 'right' });
+            $th.addClass('o_list_number_th');
         }
 
         if (config.isDebug()) {
@@ -800,26 +850,33 @@ var ListRenderer = BasicRenderer.extend({
         return this.state.data.map(this._renderRow.bind(this));
     },
     /**
-    * Render a single <th> with dropdown menu to display optional columns of view.
-    *
-    * @private
-    * @returns {jQueryElement} a <th> element
-    */
+     * Render a single <th> with dropdown menu to display optional columns of view.
+     *
+     * @private
+     * @returns {jQueryElement} a <th> element
+     */
     _renderOptionalColumnsDropdown: function () {
         var self = this;
         var $optionalColumnsDropdown = $('<div>', {
             class: 'o_optional_columns text-center dropdown',
         });
         var $a = $("<a>", {
-            class: "dropdown-toggle text-dark o-no-caret",
-            href: "#",
-            role: "button",
+            'class': "dropdown-toggle text-dark o-no-caret",
+            'href': "#",
+            'role': "button",
             'data-toggle': "dropdown",
             'aria-expanded': false,
         });
         $a.appendTo($optionalColumnsDropdown);
+
+        // Set the expansion direction of the dropdown
+        // The button is located at the end of the list headers
+        // We want the dropdown to expand towards the list rather than away from it
+        // https://getbootstrap.com/docs/4.0/components/dropdowns/#menu-alignment
+        var direction = _t.database.parameters.direction;
+        var dropdownMenuClass = direction === 'rtl' ? 'dropdown-menu-left' : 'dropdown-menu-right';
         var $dropdown = $("<div>", {
-            class: 'dropdown-menu dropdown-menu-right o_optional_columns_dropdown',
+            class: 'dropdown-menu o_optional_columns_dropdown ' + dropdownMenuClass,
             role: 'menu',
         });
         this.optionalColumns.forEach(function (col) {
@@ -831,7 +888,7 @@ var ListRenderer = BasicRenderer.extend({
                     name: col.attrs.name,
                     checked: _.contains(self.optionalColumnsEnabled, col.attrs.name),
                 }
-            })
+            });
             $dropdown.append($("<div>", {
                 class: "dropdown-item",
             }).append($checkbox));
@@ -877,6 +934,7 @@ var ListRenderer = BasicRenderer.extend({
 
         // display the no content helper if there is no data to display
         var displayNoContentHelper = !this._hasContent() && !!this.noContentHelp;
+        this.$el.toggleClass('o_list_view', !displayNoContentHelper);
         if (displayNoContentHelper) {
             // destroy the previously instantiated pagers, if any
             _.invoke(oldPagers, 'destroy');
@@ -917,7 +975,7 @@ var ListRenderer = BasicRenderer.extend({
             }));
 
             if (self.optionalColumns.length) {
-                self.$el.addClass('o_list_optional_columns')
+                self.$el.addClass('o_list_optional_columns');
                 self.$('table').append($('<i class="o_optional_columns_dropdown_toggle fa fa-ellipsis-v"/>'));
                 self.$el.append(self._renderOptionalColumnsDropdown());
             }
@@ -968,11 +1026,18 @@ var ListRenderer = BasicRenderer.extend({
      * @private
      */
     _updateSelection: function () {
-        var $selectedRows = this.$('tbody .o_list_record_selector input:checked')
-            .closest('tr');
-        this.selection = _.map($selectedRows, function (row) {
-            return $(row).data('id');
+        this.selection = [];
+        var self = this;
+        var $inputs = this.$('tbody .o_list_record_selector input:visible:not(:disabled)');
+        var allChecked = $inputs.length > 0;
+        $inputs.each(function (index, input) {
+            if (input.checked) {
+                self.selection.push($(input).closest('tr').data('id'));
+            } else {
+                allChecked = false;
+            }
         });
+        this.$('thead .o_list_record_selector input').prop('checked', allChecked);
         this.trigger_up('selection_changed', { selection: this.selection });
         this._updateFooter();
     },
@@ -1032,11 +1097,14 @@ var ListRenderer = BasicRenderer.extend({
         } else {
             this.optionalColumnsEnabled.push(input.name);
         }
-        this.call('local_storage', 'setItem', this._getOptionalColumnsStorageKey(), this.optionalColumnsEnabled);
-        this._processColumns(this.columnInvisibleFields || {});
-        this._renderView().then(function() {
+        this.trigger_up('save_optional_fields', {
+            keyParts: this._getOptionalColumnsStorageKeyParts(),
+            optionalColumnsEnabled: this.optionalColumnsEnabled,
+        });
+        this._processColumns(this.columnInvisibleFields || {});
+        this._renderView().then(function () {
             self._onToggleOptionalColumnDropdown(ev);
-        })
+        });
     },
     /**
      * When the user clicks on the three dots (ellipsis), toggle the optional
@@ -1092,6 +1160,9 @@ var ListRenderer = BasicRenderer.extend({
                 $cell.closest('tbody').addClass('o_keyboard_navigation');
                 colIndex = this.currentColIndex || $cell.index();
                 $futureCell = this._findConnectedCell($cell, 'prev', colIndex);
+                if (!$futureCell) {
+                    this.trigger_up('navigation_move', { direction: 'up' });
+                }
                 break;
             case $.ui.keyCode.DOWN:
                 ev.preventDefault();
@@ -1126,10 +1197,9 @@ var ListRenderer = BasicRenderer.extend({
         }
     },
     /**
-     *
-     * @param {MouseEvent} ev
+     * @private
      */
-    _onMouseDown: function(ev) {
+    _onMouseDown: function () {
         $('.o_keyboard_navigation').removeClass('o_keyboard_navigation');
     },
     /**
@@ -1139,7 +1209,7 @@ var ListRenderer = BasicRenderer.extend({
     _onRowClicked: function (ev) {
         // The special_click property explicitely allow events to bubble all
         // the way up to bootstrap's level rather than being stopped earlier.
-        if (!$(ev.target).prop('special_click')) {
+        if (!ev.target.closest('.o_list_record_selector') && !$(ev.target).prop('special_click')) {
             var id = $(ev.currentTarget).data('id');
             if (id) {
                 this.trigger_up('open_record', { id: id, target: ev.target });
@@ -1153,9 +1223,6 @@ var ListRenderer = BasicRenderer.extend({
     _onSelectRecord: function (ev) {
         ev.stopPropagation();
         this._updateSelection();
-        if (!$(ev.currentTarget).find('input').prop('checked')) {
-            this.$('thead .o_list_record_selector input').prop('checked', false);
-        }
     },
     /**
      * @private
@@ -1176,7 +1243,8 @@ var ListRenderer = BasicRenderer.extend({
         if (group.count) {
             this.trigger_up('toggle_group', {
                 group: group,
-                onSuccess: function() {
+                onSuccess: () => {
+                    this._updateSelection();
                     // Refocus the header after re-render unless the user
                     // already focused something else by now
                     if (document.activeElement.tagName === 'BODY') {

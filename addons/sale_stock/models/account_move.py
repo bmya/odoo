@@ -33,7 +33,7 @@ class AccountMove(models.Model):
         # Get the other customer invoices and refunds.
         ordered_invoice_ids = sale_orders.mapped('invoice_ids')\
             .filtered(lambda i: i.state != 'draft')\
-            .sorted(lambda i: (i.date_invoice, i.id))
+            .sorted(lambda i: (i.invoice_date, i.id))
 
         # Get the position of self in other customer invoices and refunds.
         self_index = None
@@ -49,7 +49,7 @@ class AccountMove(models.Model):
         last_invoice = previous_invoices[-1] if len(previous_invoices) else None
 
         # Get the incoming and outgoing sml between self.invoice_date and the previous invoice (if any).
-        self_datetime = max(self.invoice_line_ids.mapped('write_date'))
+        self_datetime = max(self.invoice_line_ids.mapped('write_date')) if self.invoice_line_ids else None
         last_invoice_datetime = max(last_invoice.invoice_line_ids.mapped('write_date')) if last_invoice else None
 
         def _filter_incoming_sml(ml):

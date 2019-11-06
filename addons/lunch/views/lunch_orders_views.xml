@@ -7,17 +7,20 @@
         <field name="arch" type="xml">
             <search string="Search">
                 <field name="name" string="Product" filter_domain="['|', ('name', 'ilike', self), ('note', 'ilike', self)]"/>
-                <filter name='is_mine' string="My Orders" domain="[('user_id','=',uid)]"/>
+                <field name="user_id"/>
+                <filter name='is_mine' string="My Orders" domain="[('user_id', '=', uid)]"/>
                 <separator/>
-                <filter name="not_confirmed" string="Not Received" domain="[('state','!=',('confirmed'))]"/>
-                <filter name="confirmed" string="Received" domain="[('state','=','confirmed')]"/>
-                <filter name="cancelled" string="Cancelled" domain="[('state','=','cancelled')]"/>
+                <filter name="not_confirmed" string="Not Received" domain="[('state', '!=', ('confirmed'))]"/>
+                <filter name="confirmed" string="Received" domain="[('state', '=', 'confirmed')]"/>
+                <filter name="cancelled" string="Cancelled" domain="[('state', '=', 'cancelled')]"/>
                 <separator/>
                 <filter name="date_filter" string="Today" domain="[('date', '=', context_today().strftime('%Y-%m-%d'))]" />
-                <field name="user_id"/>
+                <separator/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
                 <group expand="0" string="Group By">
-                    <filter name="group_by_supplier" string="By Vendor" context="{'group_by':'supplier_id'}"/>
-                    <filter name="group_by_date" string="Order Date" context="{'group_by':'date:day'}" help="Vendor Orders by Date"/>
+                    <filter name="group_by_user" string="User" context="{'group_by': 'user_id'}"/>
+                    <filter name="group_by_supplier" string="Vendor" context="{'group_by': 'supplier_id'}"/>
+                    <filter name="group_by_date" string="Order Date" context="{'group_by': 'date:day'}" help="Vendor Orders by Date"/>
                 </group>
             </search>
         </field>
@@ -77,18 +80,18 @@
                             </div>
                             <div class="row mt4">
                                 <div class="col-6">
-                                    <a class="btn btn-sm btn-success" role="button" name="order" string="Order" type="object" attrs="{'invisible': ['|',('state','=','confirmed'),('state','=','ordered')]}" groups="lunch.group_lunch_manager">
+                                    <a class="btn btn-sm btn-success" role="button" name="action_order" string="Order" type="object" attrs="{'invisible': ['|',('state','=','confirmed'),('state','=','ordered')]}" groups="lunch.group_lunch_manager">
                                         <i class="fa fa-phone" role="img" aria-label="Order button" title="Order button"/>
                                     </a>
-                                    <a class="btn btn-sm btn-info" role="button" name="confirm" string="Receive" type="object" attrs="{'invisible': [('state','!=','ordered')]}" groups="lunch.group_lunch_manager">
+                                    <a class="btn btn-sm btn-info" role="button" name="action_confirm" string="Receive" type="object" attrs="{'invisible': [('state','!=','ordered')]}" groups="lunch.group_lunch_manager">
                                         <i class="fa fa-check" role="img" aria-label="Receive button" title="Receive button"/>
                                     </a>
-                                    <a class="btn btn-sm btn-danger" role="button" name="cancel" string="Cancel" type="object" attrs="{'invisible': [('state','=','cancelled')]}" groups="lunch.group_lunch_manager">
+                                    <a class="btn btn-sm btn-danger" role="button" name="action_cancel" string="Cancel" type="object" attrs="{'invisible': [('state','=','cancelled')]}" groups="lunch.group_lunch_manager">
                                         <i class="fa fa-times" role="img" aria-label="Cancel button" title="Cancel button"/>
                                     </a>
                                 </div>
                                 <div class="col-6">
-                                    <img t-att-src="kanban_image('res.users', 'image_64', record.user_id.raw_value)" t-att-title="record.user_id.value" t-att-alt="record.user_id.value" width="24" height="24" class="oe_kanban_avatar float-right"/>
+                                    <img t-att-src="kanban_image('res.users', 'image_128', record.user_id.raw_value)" t-att-title="record.user_id.value" t-att-alt="record.user_id.value" class="oe_kanban_avatar o_image_24_cover float-right"/>
                                 </div>
                             </div>
                         </div>
@@ -169,6 +172,79 @@
             Click on the <span class="fa fa-check text-success" role="img" aria-label="Receive button" title="Receive button"/> to announce that the order is received.<br/>
             Click on the <span class="fa fa-times-circle text-danger" role="img" aria-label="Cancel button" title="Cancel button"/> red X to announce that the order isn't available.
           </p>
+        </field>
+    </record>
+
+    <record id="lunch_order_view_form" model="ir.ui.view">
+        <field name="name">lunch.order.view.form</field>
+        <field name="model">lunch.order</field>
+        <field name="arch" type="xml">
+            <form>
+                <field name="currency_id" invisible="1"/>
+                <field name="quantity" invisible="1"/>
+                <field name="product_id" invisible="1"/>
+                <field name="category_id" invisible="1"/>
+                <field name="available_toppings_1" invisible="1"/>
+                <field name="available_toppings_2" invisible="1"/>
+                <field name="available_toppings_3" invisible="1"/>
+                <field name="edit" invisible="1"/>
+                <div class="d-flex">
+                    <div class="flex-grow-0 pr-5">
+                        <field name="image_1920" widget="image" class="o_lunch_image" options="{'image_preview': 'image_128'}"/>
+                    </div>
+                    <div class="flex-grow-1 pr-5">
+                        <h2><field name="name"/></h2>
+                        <h3 class="pt-3"><field name="price" widget="monetary"/></h3>
+                    </div>
+                </div>
+                <div class="o_lunch_wizard">
+                    <div class="row">
+                        <div class="col-2">
+                            <field name="topping_label_1" nolabel="1" attrs="{'invisible': [('available_toppings_1', '=', False)]}" class="font-weight-bold"/>
+                        </div>
+                        <div class="col-10">
+                            <field name="topping_ids_1" attrs="{'invisible': [('available_toppings_1', '=', False)]}" widget="many2many_checkboxes" nolabel="1"/>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-2">
+                            <field name="topping_label_2" nolabel="1" attrs="{'invisible': [('available_toppings_2', '=', False)]}" class="font-weight-bold"/>
+                        </div>
+                        <div class="col-10">
+                            <field name="topping_ids_2" attrs="{'invisible': [('available_toppings_2', '=', False)]}" widget="many2many_checkboxes" nolabel="1"/>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-2">
+                            <field name="topping_label_3" nolabel="1" attrs="{'invisible': [('available_toppings_3', '=', False)]}" class="font-weight-bold"/>
+                        </div>
+                        <div class="col-10">
+                            <field name="topping_ids_3" attrs="{'invisible': [('available_toppings_3', '=', False)]}" widget="many2many_checkboxes" nolabel="1"/>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-2">
+                            <label for="product_description" class="font-weight-bold"/>
+                        </div>
+                        <div class="col-10">
+                            <field name="product_description" nolabel="1"/>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-2">
+                            <label for="note" class="font-weight-bold" />
+                        </div>
+                        <div class="col-10">
+                            <field name="note" nolabel="1" placeholder="Informations, allergens, ..." />
+                        </div>
+                    </div>
+                </div>
+                <footer>
+                    <button string="Save" special="save" class="oe_highlight" attrs="{'invisible': [('edit', '=', False)]}"/>
+                    <button string="Add To Cart" name="add_to_cart" type="object" class="oe_highlight" attrs="{'invisible': [('edit', '=', True)]}"/>
+                    <button string="Discard" special="cancel"/>
+                </footer>
+            </form>
         </field>
     </record>
 

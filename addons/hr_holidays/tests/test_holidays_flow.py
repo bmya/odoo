@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
+
+
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+from psycopg2 import IntegrityError
 
 from odoo import fields
 from odoo.exceptions import AccessError, ValidationError, UserError
@@ -23,7 +26,6 @@ class TestHolidaysFlow(TestHrHolidaysBase):
         HolidayStatusManagerGroup.create({
             'name': 'WithMeetingType',
             'allocation_type': 'no',
-            'categ_id': self.env['calendar.event.type'].with_user(self.user_hrmanager_id).create({'name': 'NotLimitedMeetingType'}).id
         })
         self.holidays_status_hr = HolidayStatusManagerGroup.create({
             'name': 'NotLimitedHR',
@@ -97,7 +99,6 @@ class TestHolidaysFlow(TestHrHolidaysBase):
         HolidayStatusManagerGroup.create({
             'name': 'WithMeetingType',
             'allocation_type': 'no',
-            'categ_id': self.env['calendar.event.type'].with_user(self.user_hrmanager_id).create({'name': 'NotLimitedMeetingType'}).id,
             'validity_start': False,
         })
 
@@ -156,6 +157,8 @@ class TestHolidaysFlow(TestHrHolidaysBase):
         self.assertEqual(hol2.state, 'refuse',
                          'hr_holidays: refuse should lead to refuse state')
         # Check left days: 2 days left again
+
+        hol_status_2_employee_group.invalidate_cache(['max_leaves'])
         _check_holidays_status(hol_status_2_employee_group, 2.0, 0.0, 2.0, 2.0)
 
         self.assertEqual(hol2.state, 'refuse',
@@ -195,18 +198,6 @@ class TestHolidaysFlow(TestHrHolidaysBase):
         _check_holidays_status(hol3_status, 20.0, 1.0, 19.0, 19.0)
 
     def test_10_leave_summary_reports(self):
-        # Print the HR Holidays(Summary Department) Report through the wizard
-        ctx = {
-            'model': 'hr.department',
-            'active_ids': [self.ref('hr.employee_admin'), self.ref('hr.employee_qdp'), self.ref('hr.employee_al')]
-        }
-        data_dict = {
-            'date_from': datetime.today().strftime('%Y-%m-01'),
-            'depts': [(6, 0, [self.ref('hr.dep_sales')])],
-            'holiday_type': 'Approved'
-        }
-        test_reports.try_report_action(self.env.cr, self.env.uid, 'action_hr_holidays_summary_dept', wiz_data=data_dict, context=ctx, our_module='hr_holidays')
-
         # Print the HR Holidays(Summary Employee) Report through the wizard
         ctx = {
             'model': 'hr.employee',
@@ -217,4 +208,40 @@ class TestHolidaysFlow(TestHrHolidaysBase):
             'emp': [(6, 0, [self.ref('hr.employee_admin'), self.ref('hr.employee_qdp'), self.ref('hr.employee_al')])],
             'holiday_type': 'Approved'
         }
+        self.env.company.external_report_layout_id = self.env.ref('web.external_layout_standard').id
         test_reports.try_report_action(self.env.cr, self.env.uid, 'action_hr_holidays_summary_employee', wiz_data=data_dict, context=ctx, our_module='hr_holidays')
+
+    def test_sql_constraint_dates(self):
+        # The goal is mainly to verify that a human friendly
+        # error message is triggered if the date_from is after
+        # date_to. Coming from a bug due to the new ORM 13.0
+
+        leave_vals = {
+            'name': 'Sick Time Off',
+            'holiday_status_id': self.env.ref('hr_holidays.holiday_status_cl').id,
+            'date_from': datetime.today().strftime('%Y-%m-11 19:00:00'),
+            'date_to': datetime.today().strftime('%Y-%m-10 10:00:00'),
+            'employee_id': self.ref('hr.employee_admin'),
+            'number_of_days': 1,
+        }
+        with mute_logger('odoo.sql_db'):
+            with self.assertRaises(IntegrityError):
+                with self.cr.savepoint():
+                    self.env['hr.leave'].create(leave_vals)
+
+        leave_vals = {
+            'name': 'Sick Time Off',
+            'holiday_status_id': self.env.ref('hr_holidays.holiday_status_cl').id,
+            'date_from': datetime.today().strftime('%Y-%m-10 10:00:00'),
+            'date_to': datetime.today().strftime('%Y-%m-11 19:00:00'),
+            'employee_id': self.ref('hr.employee_admin'),
+            'number_of_days': 1,
+        }
+        leave = self.env['hr.leave'].create(leave_vals)
+        with mute_logger('odoo.sql_db'):
+            with self.assertRaises(IntegrityError):  # No ValidationError
+                with self.cr.savepoint():
+                    leave.write({
+                        'date_from': datetime.today().strftime('%Y-%m-11 19:00:00'),
+                        'date_to': datetime.today().strftime('%Y-%m-10 10:00:00'),
+                    })

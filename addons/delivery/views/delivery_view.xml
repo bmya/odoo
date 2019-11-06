@@ -34,7 +34,8 @@
                 <search string="Delivery Carrier">
                     <field name="name" string="Carrier" />
                     <field name="delivery_type"/>
-                    <filter string="Archived" name="inactive" domain="[('active','=',False)]"/>
+                    <separator/>
+                    <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
                     <group expand="1" string="Group By">
                         <filter string="Provider" name="provider" context="{'group_by':'delivery_type', 'residual_visible':True}"/>
                     </group>
@@ -48,6 +49,7 @@
             <field name="arch" type="xml">
                 <form string="Carrier">
                     <sheet>
+                      <widget name="web_ribbon" text="Archived" bg_color="bg-danger" attrs="{'invisible': [('active', '=', True)]}"/>
                         <div class="oe_button_box" name="button_box">
                             <button name="toggle_prod_environment"
                                     attrs="{'invisible': ['|', '|', ('prod_environment', '=', False), ('delivery_type', '=', 'fixed'), ('delivery_type', '=', 'base_on_rule')]}"
@@ -93,32 +95,26 @@
                         </div>
                         <group>
                             <group name="provider_details">
-                                <field name="active"/>
+                                <field name="active" invisible="1"/>
                                 <field name="prod_environment" invisible="1"/>
                                 <field name="debug_logging" invisible="1"/>
                                 <label for="delivery_type"/>
                                 <div>
-                                    <field name="delivery_type" widget="radio"/>
+                                    <field name="delivery_type" />
                                     <button string="Install more Providers" name="install_more_provider" type="object" class="oe_link oe_edit_only"/>
                                 </div>
                                 <field name="integration_level" widget="radio" attrs="{'invisible': ['|', ('delivery_type', '=', 'fixed'), ('delivery_type', '=', 'base_on_rule')]}"/>
+                                <field name="company_id" groups="base.group_multi_company"/>
                             </group>
                             <group name="delivery_details">
+                                <field name="product_id" context="{'default_type': 'service', 'default_sale_ok': False, 'default_purchase_ok': False}" />
                                 <field name="invoice_policy" widget="radio" attrs="{'invisible': ['|', ('delivery_type', 'in', ('fixed', 'base_on_rule')), ('integration_level', '=', 'rate')]}"/>
                                 <label for="margin" string="Margin on Rate"/>
                                 <div>
                                     <field name="margin" class="oe_inline"/>%
                                 </div>
-                                <div class="o_row o_td_label">
-                                    <field name="free_over"/>
-                                    <label for="free_over"/>
-                                </div>
-                                <field nolabel="1" name="amount" attrs="{'required':[('free_over','!=', False)], 'invisible':[('free_over','=', False)]}"/>
-                                <field name="product_id" context="{'default_type': 'service', 'default_sale_ok': False, 'default_purchase_ok': False}" />
-                                <field name="company_id" groups="base.group_multi_company"/>
-                                <field name="can_generate_return" invisible="1"/>
-                                <field name="return_label_on_delivery" attrs="{'invisible': [('can_generate_return', '=', False)]}"/>
-                                <field name="get_return_label_from_portal" attrs="{'invisible': [('return_label_on_delivery', '=', False)]}"/>
+                                <field name="free_over"/>
+                                <field name="amount" attrs="{'required':[('free_over','!=', False)], 'invisible':[('free_over','=', False)]}"/>
                             </group>
                         </group>
                         <notebook>
@@ -258,9 +254,6 @@
                 <xpath expr="/form/header/button[last()]" position="after">
                     <button name="print_return_label" string="Print Return Label" type="object" attrs="{'invisible':['|', ('is_return_picking', '=', False),('state', '=', 'done')]}"/>
                 </xpath>
-                <xpath expr="//button[@name='do_print_picking']" position="after">
-                    <button name="action_send_confirmation_email" string="Send Confirmation Email" type="object" attrs="{'invisible':['|', ('state', '!=', 'done'), ('carrier_id', '=', False)]}"/>
-                 </xpath>
               </data>
               <xpath expr="//field[@name='partner_id']" position="attributes">
                   <attribute name="attrs">{'required': ['&amp;', ('delivery_type', '!=', False), ('delivery_type', 'not in', ['fixed', 'base_on_rule'])]}</attribute>
@@ -286,15 +279,11 @@
             <field name="arch" type="xml">
                 <field name="company_id" position="before">
                     <field name="packaging_id" domain="[('product_id', '=', False)]"/>
-                    <label for="weight" string="Weight"/>
-                    <div>
-                        <field name="weight" class="oe_inline"/>
-                        <field name="weight_uom_name" nolabel="1" class="oe_inline" style="margin-left:5px"/>
-                    </div>
                     <label for="shipping_weight"/>
                     <div class="o_row" name="Shipping Weight">
                         <field name="shipping_weight"/>
                         <span><field name="weight_uom_name"/></span>
+                        <span class="text-muted">(computed: <field name="weight" nolabel="1"/></span><span class="text-muted"><field name="weight_uom_name" nolabel="1"/>)</span>
                     </div>
                 </field>
             </field>

@@ -13,8 +13,7 @@ from werkzeug import urls
 
 from odoo import api, fields, models, _
 from odoo.addons.http_routing.models.ir_http import slug
-from odoo.addons.gamification.models.gamification_karma_rank import KarmaError
-from odoo.exceptions import Warning, UserError
+from odoo.exceptions import Warning, UserError, AccessError
 from odoo.http import request
 from odoo.addons.http_routing.models.ir_http import url_for
 
@@ -33,6 +32,25 @@ class SlidePartnerRelation(models.Model):
     completed = fields.Boolean('Completed')
     quiz_attempts_count = fields.Integer('Quiz attempts count', default=0)
 
+    def create(self, values):
+        res = super(SlidePartnerRelation, self).create(values)
+        completed = res.filtered('completed')
+        if completed:
+            completed._set_completed_callback()
+        return res
+
+    def write(self, values):
+        res = super(SlidePartnerRelation, self).write(values)
+        if values.get('completed'):
+            self._set_completed_callback()
+        return res
+
+    def _set_completed_callback(self):
+        self.env['slide.channel.partner'].search([
+            ('channel_id', 'in', self.channel_id.ids),
+            ('partner_id', 'in', self.partner_id.ids),
+        ])._recompute_completion()
+
 
 class SlideLink(models.Model):
     _name = 'slide.slide.link'
@@ -40,7 +58,7 @@ class SlideLink(models.Model):
 
     slide_id = fields.Many2one('slide.slide', required=True, ondelete='cascade')
     name = fields.Char('Title', required=True)
-    link = fields.Char('External Link', required=True)
+    link = fields.Char('Link', required=True)
 
 
 class EmbeddedSlide(models.Model):
@@ -102,23 +120,24 @@ class Slide(models.Model):
     sequence = fields.Integer('Sequence', default=0)
     user_id = fields.Many2one('res.users', string='Uploaded by', default=lambda self: self.env.uid)
     description = fields.Text('Description', translate=True)
-    channel_id = fields.Many2one('slide.channel', string="Channel", required=True)
+    channel_id = fields.Many2one('slide.channel', string="Course", required=True)
     tag_ids = fields.Many2many('slide.tag', 'rel_slide_tag', 'slide_id', 'tag_id', string='Tags')
-    is_preview = fields.Boolean('Is Preview', default=False, help="The course is accessible by anyone : the users don't need to join the channel to access the content of the course.")
-    completion_time = fields.Float('Completion Time', digits=(10, 4), help="The estimated completion time for this slide")
+    is_preview = fields.Boolean('Allow Preview', default=False, help="The course is accessible by anyone : the users don't need to join the channel to access the content of the course.")
+    completion_time = fields.Float('Duration', digits=(10, 4), help="The estimated completion time for this slide")
     # Categories
     is_category = fields.Boolean('Is a category', default=False)
-    category_id = fields.Many2one('slide.slide', string="Category", compute="_compute_category_id", store=True)
+    category_id = fields.Many2one('slide.slide', string="Section", compute="_compute_category_id", store=True)
     slide_ids = fields.One2many('slide.slide', "category_id", string="Slides")
     # subscribers
     partner_ids = fields.Many2many('res.partner', 'slide_slide_partner', 'slide_id', 'partner_id',
-                                   string='Subscribers', groups='website.group_website_publisher')
-    slide_partner_ids = fields.One2many('slide.slide.partner', 'slide_id', string='Subscribers information', groups='website.group_website_publisher')
+                                   string='Subscribers', groups='website.group_website_publisher', copy=False)
+    slide_partner_ids = fields.One2many('slide.slide.partner', 'slide_id', string='Subscribers information', groups='website.group_website_publisher', copy=False)
     user_membership_id = fields.Many2one(
-        'slide.slide.partner', string="Subscriber information", compute='_compute_user_membership_id',
+        'slide.slide.partner', string="Subscriber information", compute='_compute_user_membership_id', compute_sudo=False,
         help="Subscriber information for the current logged in user")
     # Quiz related fields
     question_ids = fields.One2many("slide.question", "slide_id", string="Questions")
+    questions_count = fields.Integer(string="Numbers of Questions", compute='_compute_questions_count')
     quiz_first_attempt_reward = fields.Integer("First attempt reward", default=10)
     quiz_second_attempt_reward = fields.Integer("Second attempt reward", default=7)
     quiz_third_attempt_reward = fields.Integer("Third attempt reward", default=5,)
@@ -142,10 +161,10 @@ class Slide(models.Model):
     html_content = fields.Html("HTML Content", help="Custom HTML content for slides of type 'Web Page'.", translate=True)
     # website
     website_id = fields.Many2one(related='channel_id.website_id', readonly=True)
-    date_published = fields.Datetime('Publish Date')
-    likes = fields.Integer('Likes', compute='_compute_user_info', store=True)
-    dislikes = fields.Integer('Dislikes', compute='_compute_user_info', store=True)
-    user_vote = fields.Integer('User vote', compute='_compute_user_info')
+    date_published = fields.Datetime('Publish Date', readonly=True, tracking=True)
+    likes = fields.Integer('Likes', compute='_compute_user_info', store=True, compute_sudo=False)
+    dislikes = fields.Integer('Dislikes', compute='_compute_user_info', store=True, compute_sudo=False)
+    user_vote = fields.Integer('User vote', compute='_compute_user_info', compute_sudo=False)
     embed_code = fields.Text('Embed Code', readonly=True, compute='_compute_embed_code')
     # views
     embedcount_ids = fields.One2many('slide.embed', 'slide_id', string="Embed Count")
@@ -178,9 +197,12 @@ class Slide(models.Model):
         Lists are manually sorted because when adding a new browse record order
         will not be correct as the added slide would actually end up at the
         first place no matter its sequence."""
-        channel_slides = dict.fromkeys(self.mapped('channel_id').ids, self.env['slide.slide'])
+        self.category_id = False  # initialize whatever the state
+
+        channel_slides = {}
         for slide in self:
-            channel_slides[slide.channel_id.id] += slide
+            if slide.channel_id.id not in channel_slides:
+                channel_slides[slide.channel_id.id] = slide.channel_id.slide_ids
 
         for cid, slides in channel_slides.items():
             current_category = self.env['slide.slide']
@@ -191,6 +213,11 @@ class Slide(models.Model):
                     current_category = slide
                 elif slide.category_id != current_category:
                     slide.category_id = current_category.id
+
+    @api.depends('question_ids')
+    def _compute_questions_count(self):
+        for slide in self:
+            slide.questions_count = len(slide.question_ids)
 
     @api.depends('website_message_ids.res_id', 'website_message_ids.model', 'website_message_ids.message_type')
     def _compute_comments_count(self):
@@ -203,6 +230,7 @@ class Slide(models.Model):
             record.total_views = record.slide_views + record.public_views
 
     @api.depends('slide_partner_ids.vote')
+    @api.depends_context('uid')
     def _compute_user_info(self):
         slide_data = dict.fromkeys(self.ids, dict({'likes': 0, 'dislikes': 0, 'user_vote': False}))
         slide_partners = self.env['slide.slide.partner'].sudo().search([
@@ -234,18 +262,20 @@ class Slide(models.Model):
 
     @api.depends('slide_ids.slide_type', 'slide_ids.is_published', 'slide_ids.is_category')
     def _compute_slides_statistics(self):
-        result = dict.fromkeys(self.ids, dict())
+        # Do not use dict.fromkeys(self.ids, dict()) otherwise it will use the same dictionnary for all keys.
+        # Therefore, when updating the dict of one key, it updates the dict of all keys.
+        keys = ['nbr_%s' % slide_type for slide_type in self.env['slide.slide']._fields['slide_type'].get_values(self.env)]
+        default_vals = dict((key, 0) for key in keys)
+
         res = self.env['slide.slide'].read_group(
             [('is_published', '=', True), ('category_id', 'in', self.ids), ('is_category', '=', False)],
             ['category_id', 'slide_type'], ['category_id', 'slide_type'],
             lazy=False)
 
         type_stats = self._compute_slides_statistics_type(res)
-        for cid, cdata in type_stats.items():
-            result[cid].update(cdata)
 
         for record in self:
-            record.update(result[record.id])
+            record.update(type_stats.get(record._origin.id, default_vals))
 
     def _compute_slides_statistics_type(self, read_group_res):
         """ Compute statistics based on all existing slide types """
@@ -261,6 +291,7 @@ class Slide(models.Model):
         return result
 
     @api.depends('slide_partner_ids.partner_id')
+    @api.depends('uid')
     def _compute_user_membership_id(self):
         slide_partners = self.env['slide.slide.partner'].sudo().search([
             ('slide_id', 'in', self.ids),
@@ -331,6 +362,9 @@ class Slide(models.Model):
                     url = '%s/slides/slide/%s' % (base_url, slug(slide))
                 slide.website_url = url
 
+    def get_backend_menu_id(self):
+        return self.env.ref('website_slides.website_slides_menu_root').id
+
     @api.depends('channel_id.can_publish')
     def _compute_can_publish(self):
         for record in self:
@@ -366,7 +400,7 @@ class Slide(models.Model):
 
         slide = super(Slide, self).create(values)
 
-        if slide.is_published:
+        if slide.is_published and not slide.is_category:
             slide._post_publication()
         return slide
 
@@ -383,6 +417,11 @@ class Slide(models.Model):
         if values.get('is_published'):
             self.date_published = datetime.datetime.now()
             self._post_publication()
+
+        if 'is_published' in values or 'active' in values:
+            # if the slide is published/unpublished, recompute the completion for the partners
+            self.slide_partner_ids._set_completed_callback()
+
         return res
 
     @api.returns('self', lambda value: value.id)
@@ -398,10 +437,10 @@ class Slide(models.Model):
     # ---------------------------------------------------------
 
     @api.returns('mail.message', lambda value: value.id)
-    def message_post(self, message_type='notification', **kwargs):
+    def message_post(self, *, message_type='notification', **kwargs):
         self.ensure_one()
         if message_type == 'comment' and not self.channel_id.can_comment:  # user comments have a restriction on karma
-            raise KarmaError(_('Not enough karma to comment'))
+            raise AccessError(_('Not enough karma to comment'))
         return super(Slide, self).message_post(message_type=message_type, **kwargs)
 
     def get_access_action(self, access_uid=None):
@@ -460,9 +499,9 @@ class Slide(models.Model):
         base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
         for record in self:
             if self.env.user.has_group('base.group_portal'):
-                mail_ids.append(self.channel_id.share_template_id.with_context(user=self.env.user, email=email, base_url=base_url, fullscreen=fullscreen).sudo().send_mail(record.id, notif_layout='mail.mail_notification_light', email_values={'email_from': self.env['res.company'].catchall or self.env['res.company'].email}))
+                mail_ids.append(self.channel_id.share_template_id.with_context(user=self.env.user, email=email, base_url=base_url, fullscreen=fullscreen).sudo().send_mail(record.id, notif_layout='mail.mail_notification_light', email_values={'email_from': self.env['res.company'].catchall or self.env['res.company'].email, 'email_to': email}))
             else:
-                mail_ids.append(self.channel_id.share_template_id.with_context(user=self.env.user, email=email, base_url=base_url, fullscreen=fullscreen).send_mail(record.id, notif_layout='mail.mail_notification_light'))
+                mail_ids.append(self.channel_id.share_template_id.with_context(user=self.env.user, email=email, base_url=base_url, fullscreen=fullscreen).send_mail(record.id, notif_layout='mail.mail_notification_light', email_values={'email_to': email}))
         return mail_ids
 
     def action_like(self):
@@ -621,7 +660,7 @@ class Slide(models.Model):
     def _fetch_data(self, base_url, params, content_type=False):
         result = {'values': dict()}
         try:
-            response = requests.get(base_url, params=params)
+            response = requests.get(base_url, timeout=3, params=params)
             response.raise_for_status()
             if content_type == 'json':
                 result['values'] = response.json()

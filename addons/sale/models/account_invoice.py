@@ -12,12 +12,15 @@ class AccountMove(models.Model):
     def _get_invoice_default_sale_team(self):
         return self.env['crm.team']._get_default_team_id()
 
-    team_id = fields.Many2one('crm.team', string='Sales Team', default=_get_invoice_default_sale_team)
+    team_id = fields.Many2one(
+        'crm.team', string='Sales Team', default=_get_invoice_default_sale_team,
+        domain="['|', ('company_id', '=', False), ('company_id', '=', company_id)]")
     partner_shipping_id = fields.Many2one(
         'res.partner',
         string='Delivery Address',
         readonly=True,
         states={'draft': [('readonly', False)]},
+        domain="['|', ('company_id', '=', False), ('company_id', '=', company_id)]",
         help="Delivery address for current invoice.")
 
     @api.onchange('partner_shipping_id')
@@ -26,7 +29,7 @@ class AccountMove(models.Model):
         Trigger the change of fiscal position when the shipping address is modified.
         """
         delivery_partner_id = self._get_invoice_delivery_partner_id()
-        fiscal_position = self.env['account.fiscal.position'].get_fiscal_position(
+        fiscal_position = self.env['account.fiscal.position'].with_context(force_company=self.company_id.id).get_fiscal_position(
             self.partner_id.id, delivery_id=delivery_partner_id)
 
         if fiscal_position:
@@ -42,11 +45,11 @@ class AccountMove(models.Model):
     @api.onchange('partner_id')
     def _onchange_partner_id(self):
         # OVERRIDE
-        res = super(AccountMove, self)._onchange_partner_id()
-
         # Recompute 'partner_shipping_id' based on 'partner_id'.
         addr = self.partner_id.address_get(['delivery'])
         self.partner_shipping_id = addr and addr.get('delivery')
+
+        res = super(AccountMove, self)._onchange_partner_id()
 
         # Recompute 'narration' based on 'company.invoice_terms'.
         if self.type == 'out_invoice':

@@ -16,6 +16,7 @@ The service is provided by the In App Purchase Odoo platform.
         'data/ir_cron_data.xml',
         'wizard/sms_cancel_views.xml',
         'wizard/sms_composer_views.xml',
+        'wizard/sms_template_preview_views.xml',
         'wizard/sms_resend_views.xml',
         'views/ir_actions_views.xml',
         'views/res_config_settings_views.xml',
@@ -33,5 +34,5 @@ The service is provided by the In App Purchase Odoo platform.
         'static/src/xml/thread.xml',
     ],
     'installable': True,
-    'auto_install': False,
+    'auto_install': True,
 }

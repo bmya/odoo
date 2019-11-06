@@ -5,6 +5,7 @@ var AbstractStorageService = require('web.AbstractStorageService');
 var CalendarView = require('web.CalendarView');
 var CalendarRenderer = require('web.CalendarRenderer');
 var Dialog = require('web.Dialog');
+var ViewDialogs = require('web.view_dialogs');
 var fieldUtils = require('web.field_utils');
 var mixins = require('web.mixins');
 var RamStorage = require('web.RamStorage');
@@ -26,6 +27,7 @@ CalendarRenderer.include({
 
 var createCalendarView = testUtils.createCalendarView;
 
+// 2016-12-12 08:00:00
 var initialDate = new Date(2016, 11, 12, 8, 0, 0);
 initialDate = new Date(initialDate.getTime() - initialDate.getTimezoneOffset()*60*1000);
 
@@ -478,6 +480,62 @@ QUnit.module('Views', {
         calendar.destroy();
     });
 
+    QUnit.test('open multiple event form at the same time', async function (assert) {
+        assert.expect(2);
+
+        var prom = testUtils.makeTestPromise();
+        var counter = 0;
+        testUtils.mock.patch(ViewDialogs.FormViewDialog, {
+            open: function () {
+                counter++;
+                this.options = _.omit(this.options, 'fields_view');  // force loadFieldView
+                return this._super.apply(this, arguments);
+            },
+            loadFieldView: function () {
+                var self = this;
+                var args = arguments;
+                var _super = this._super;
+                return prom.then(function () {
+                    return _super.apply(self, args);
+                });
+            },
+        });
+
+        var event = $.Event();
+        var calendar = await createCalendarView({
+            View: CalendarView,
+            model: 'event',
+            data: this.data,
+            arch:
+            '<calendar class="o_calendar_test" '+
+                'string="Events" ' +
+                'event_open_popup="true" '+
+                'date_start="start" '+
+                'quick_add="False" '+
+                'date_stop="stop" '+
+                'all_day="allday" '+
+                'mode="month">'+
+                    '<field name="name"/>'+
+            '</calendar>',
+            archs: archs,
+            viewOptions: {
+                initialDate: initialDate,
+            },
+        });
+
+        var $cell = calendar.$('.fc-day-grid .fc-row:eq(2) .fc-day:eq(2)');
+        for (var i = 0; i < 5; i++) {
+            await testUtils.dom.triggerMouseEvent($cell, "mousedown");
+            await testUtils.dom.triggerMouseEvent($cell, "mouseup");
+        }
+        prom.resolve();
+        await testUtils.nextTick();
+        assert.equal(counter, 5, "there should had been 5 attemps to open a modal");
+        assert.containsOnce($('body'), '.modal', "there should be only one open modal");
+
+        calendar.destroy();
+    });
+
     QUnit.test('create event with timezone in week mode European locale', async function (assert) {
         assert.expect(5);
 
@@ -571,7 +629,7 @@ QUnit.module('Views', {
 
     QUnit.test('default week start (US)', function (assert) {
         // if not given any option, default week start is on Sunday
-        assert.expect(1);
+        assert.expect(3);
         var done = assert.async();
 
         createCalendarView({
@@ -589,9 +647,21 @@ QUnit.module('Views', {
             viewOptions: {
                 initialDate: initialDate,
             },
+            mockRPC: function (route, args) {
+                if (args.method === 'search_read' && args.model === 'event') {
+                    assert.deepEqual(args.kwargs.domain, [
+                        ["start","<=","2016-12-17 23:59:59"],
+                        ["stop",">=","2016-12-11 00:00:00"]
+                    ],
+                    'The domain to search events in should be correct');
+                }
+                return this._super.apply(this, arguments);
+            }
         }).then(function (calendar) {
             assert.strictEqual(calendar.$('.fc-day-header').first().text(), "Sun 11",
                 "The first day of the week should be Sunday");
+            assert.strictEqual(calendar.$('.fc-day-header').last().text(), "Sat 17",
+                "The last day of the week should be Saturday");
             calendar.destroy();
             done();
         });
@@ -599,7 +669,7 @@ QUnit.module('Views', {
 
     QUnit.test('European week start', function (assert) {
         // the week start depends on the locale
-        assert.expect(1);
+        assert.expect(3);
         var done = assert.async();
 
         createCalendarView({
@@ -620,9 +690,21 @@ QUnit.module('Views', {
             translateParameters: {
                 week_start: 1,
             },
+            mockRPC: function (route, args) {
+                if (args.method === 'search_read' && args.model === 'event') {
+                    assert.deepEqual(args.kwargs.domain, [
+                        ["start","<=","2016-12-18 23:59:59"],
+                        ["stop",">=","2016-12-12 00:00:00"]
+                    ],
+                    'The domain to search events in should be correct');
+                }
+                return this._super.apply(this, arguments);
+            }
         }).then(function (calendar) {
             assert.strictEqual(calendar.$('.fc-day-header').first().text(), "Mon 12",
                 "The first day of the week should be Monday");
+            assert.strictEqual(calendar.$('.fc-day-header').last().text(), "Sun 18",
+                "The last day of the week should be Sunday");
             calendar.destroy();
             done();
         });
@@ -971,6 +1053,51 @@ QUnit.module('Views', {
         await testUtils.dom.click(calendar.$('.o_cw_popover .o_cw_popover_delete'));
         await testUtils.dom.click($('.modal button.btn-primary:contains(Ok)'));
         assert.containsNone(calendar, '.fc-content', "should delete the record");
+
+        calendar.destroy();
+    });
+
+    QUnit.test('fetch event when being in timezone', async function (assert) {
+        assert.expect(3);
+
+        var calendar = await createCalendarView({
+            View: CalendarView,
+            model: 'event',
+            data: this.data,
+            arch:
+            '<calendar class="o_calendar_test" '+
+                'date_start="start" '+
+                'date_stop="stop" '+
+                'mode="week" >'+
+                    '<field name="name"/>'+
+                    '<field name="start"/>'+
+                    '<field name="allday"/>'+
+            '</calendar>',
+            archs: archs,
+            viewOptions: {
+                initialDate: initialDate,
+            },
+            session: {
+                getTZOffset: function () {
+                    return 660;
+                },
+            },
+
+            mockRPC: async function (route, args) {
+                if (args.method === 'search_read' && args.model === 'event') {
+                    assert.deepEqual(args.kwargs.domain, [
+                        ["start", "<=", "2016-12-17 12:59:59"], // in UTC. which is 2016-12-17 23:59:59 in TZ Sydney 11 hours later
+                        ["stop", ">=", "2016-12-10 13:00:00"]   // in UTC. which is 2016-12-11 00:00:00 in TZ Sydney 11 hours later
+                    ], 'The domain should contain the right range');
+                }
+                return this._super(route, args);
+            },
+        });
+
+        assert.strictEqual(calendar.$('.fc-day-header:first').text(), 'Sun 11',
+            'The calendar start date should be 2016-12-11');
+        assert.strictEqual(calendar.$('.fc-day-header:last()').text(), 'Sat 17',
+            'The calendar start date should be 2016-12-17');
 
         calendar.destroy();
     });
@@ -1844,7 +1971,7 @@ QUnit.module('Views', {
     });
 
     QUnit.test('Update event with filters', async function (assert) {
-        assert.expect(5);
+        assert.expect(6);
 
         var records = this.data.user.records;
         records.push({
@@ -1900,6 +2027,7 @@ QUnit.module('Views', {
         await testUtils.dom.click(calendar.$('.fc-event:contains(event 2) .fc-content'));
         assert.ok(calendar.$('.o_cw_popover').length, "should open a popover clicking on event");
         await testUtils.dom.click(calendar.$('.o_cw_popover .o_cw_popover_edit'));
+        assert.strictEqual($('.modal .modal-title').text(), 'Open: event 2', "dialog should have a valid title");
         await testUtils.dom.click($('.modal .o_field_widget[name="user_id"] input'));
         await testUtils.dom.click($('.ui-menu-item a:contains(user 5)').trigger('mouseenter'));
         await testUtils.dom.click($('.modal button.btn:contains(Save)'));
@@ -2648,6 +2776,122 @@ QUnit.module('Views', {
         calendar.destroy();
     });
 
+    QUnit.test('default week start (US) month mode', async function (assert) {
+        // if not given any option, default week start is on Sunday
+        assert.expect(8);
+
+        // 2019-09-12 08:00:00
+        var initDate = new Date(2019, 8, 12, 8, 0, 0);
+        initDate = new Date(initDate.getTime() - initDate.getTimezoneOffset()*60*1000);
+
+        var calendar = await createCalendarView({
+            View: CalendarView,
+            model: 'event',
+            data: this.data,
+            arch:
+            '<calendar class="o_calendar_test" '+
+                'date_start="start" '+
+                'date_stop="stop" '+
+                'mode="month">'+
+            '</calendar>',
+            archs: archs,
+
+            viewOptions: {
+                initialDate: initDate,
+            },
+            mockRPC: function (route, args) {
+                if (args.method === 'search_read' && args.model === 'event') {
+                    assert.deepEqual(args.kwargs.domain, [
+                        ["start","<=","2019-10-12 23:59:59"],
+                        ["stop",">=","2019-09-01 00:00:00"]
+                    ],
+                    'The domain to search events in should be correct');
+                }
+                return this._super.apply(this, arguments);
+            }
+        });
+
+        assert.strictEqual(calendar.$('.fc-day-header').first().text(), "Sunday",
+            "The first day of the week should be Sunday");
+        assert.strictEqual(calendar.$('.fc-day-header').last().text(), "Saturday",
+            "The last day of the week should be Saturday");
+
+        var $firstDay = calendar.$('.fc-day-top').first();
+
+        assert.strictEqual($firstDay.find('.fc-week-number').text(), "36",
+            "The number of the week should be correct");
+        assert.strictEqual($firstDay.find('.fc-day-number').text(), "1",
+            "The first day of the week should be 2019-09-01");
+        assert.strictEqual($firstDay.data('date'), "2019-09-01",
+            "The first day of the week should be 2019-09-01");
+
+        var $lastDay = calendar.$('.fc-day-top').last();
+        assert.strictEqual($lastDay.text(), "12",
+            "The last day of the week should be 2019-10-12");
+        assert.strictEqual($lastDay.data('date'), "2019-10-12",
+            "The last day of the week should be 2019-10-12");
+
+        calendar.destroy();
+    });
+
+    QUnit.test('European week start month mode', async function (assert) {
+        assert.expect(8);
+
+        // 2019-09-12 08:00:00
+        var initDate = new Date(2019, 8, 12, 8, 0, 0);
+        initDate = new Date(initDate.getTime() - initDate.getTimezoneOffset()*60*1000);
+
+        var calendar = await createCalendarView({
+            View: CalendarView,
+            model: 'event',
+            data: this.data,
+            arch:
+            '<calendar class="o_calendar_test" '+
+                'date_start="start" '+
+                'date_stop="stop" '+
+                'mode="month">'+
+            '</calendar>',
+            archs: archs,
+
+            viewOptions: {
+                initialDate: initDate,
+            },
+            translateParameters: {
+                week_start: 1,
+            },
+            mockRPC: function (route, args) {
+                if (args.method === 'search_read' && args.model === 'event') {
+                    assert.deepEqual(args.kwargs.domain, [
+                        ["start","<=","2019-10-06 23:59:59"],
+                        ["stop",">=","2019-08-26 00:00:00"]
+                    ],
+                    'The domain to search events in should be correct');
+                }
+                return this._super.apply(this, arguments);
+            }
+        });
+
+        assert.strictEqual(calendar.$('.fc-day-header').first().text(), "Monday",
+            "The first day of the week should be Monday");
+        assert.strictEqual(calendar.$('.fc-day-header').last().text(), "Sunday",
+            "The last day of the week should be Sunday");
+
+        var $firstDay = calendar.$('.fc-day-top').first();
+        assert.strictEqual($firstDay.find('.fc-week-number').text(), "35",
+            "The number of the week should be correct");
+        assert.strictEqual($firstDay.find('.fc-day-number').text(), "26",
+            "The first day of the week should be 2019-09-01");
+        assert.strictEqual($firstDay.data('date'), "2019-08-26",
+            "The first day of the week should be 2019-08-26");
+
+        var $lastDay = calendar.$('.fc-day-top').last();
+        assert.strictEqual($lastDay.text(), "6",
+            "The last day of the week should be 2019-10-06");
+        assert.strictEqual($lastDay.data('date'), "2019-10-06",
+            "The last day of the week should be 2019-10-06");
+
+        calendar.destroy();
+    });
 });
 
 });

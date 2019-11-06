@@ -94,6 +94,9 @@ var viewUtils = require('web.viewUtils');
 
 var _t = core._t;
 
+// field types that can be aggregated in grouped views
+const AGGREGATABLE_TYPES = ['float', 'integer', 'monetary'];
+
 var x2ManyCommands = {
     // (0, virtualID, {values})
     CREATE: 0,
@@ -678,13 +681,14 @@ var BasicModel = AbstractModel.extend({
      */
     getName: function (id) {
         var record = this.localData[id];
+        var returnValue = '';
         if (record._changes && 'display_name' in record._changes) {
-            return record._changes.display_name;
+            returnValue = record._changes.display_name;
         }
-        if ('display_name' in record.data) {
-            return record.data.display_name;
+        else if ('display_name' in record.data) {
+            returnValue = record.data.display_name;
         }
-        return _t("New");
+        return returnValue || _t("New");
     },
     /**
      * Returns true if a record is dirty. A record is considered dirty if it has
@@ -796,6 +800,7 @@ var BasicModel = AbstractModel.extend({
         });
         _.each(fields, function (field) {
             var dataPoint;
+            record.data[field.name] = null;
             if (field.type === 'many2one') {
                 if (field.value) {
                     var id = _.isArray(field.value) ? field.value[0] : field.value;
@@ -1197,7 +1202,7 @@ var BasicModel = AbstractModel.extend({
                 if (!_.isEmpty(action)) {
                     return self.do_action(action, {
                         on_close: function () {
-                            return self.reload(parentID);
+                            return self.trigger_up('reload');
                         }
                     });
                 } else {
@@ -1229,7 +1234,7 @@ var BasicModel = AbstractModel.extend({
                 if (!_.isEmpty(action)) {
                     return self.do_action(action, {
                         on_close: function () {
-                            return self.reload(parentID);
+                            return self.trigger_up('reload');
                         }
                     });
                 } else {
@@ -1261,7 +1266,7 @@ var BasicModel = AbstractModel.extend({
                 if (!_.isEmpty(action)) {
                     return self.do_action(action, {
                         on_close: function () {
-                            return self.reload(parentID);
+                            return self.trigger_up('reload');
                         }
                     });
                 } else {
@@ -1433,9 +1438,9 @@ var BasicModel = AbstractModel.extend({
         // apply changes to local data
         for (var fieldName in changes) {
             field = record.fields[fieldName];
-            if (field.type === 'one2many' || field.type === 'many2many') {
+            if (field && (field.type === 'one2many' || field.type === 'many2many')) {
                 defs.push(this._applyX2ManyChange(record, fieldName, changes[fieldName], options));
-            } else if (field.type === 'many2one' || field.type === 'reference') {
+            } else if (field && (field.type === 'many2one' || field.type === 'reference')) {
                 defs.push(this._applyX2OneChange(record, fieldName, changes[fieldName]));
             } else {
                 record._changes[fieldName] = changes[fieldName];
@@ -1450,7 +1455,7 @@ var BasicModel = AbstractModel.extend({
             var onChangeFields = []; // the fields that have changed and that have an on_change
             for (var fieldName in changes) {
                 field = record.fields[fieldName];
-                if (field.onChange) {
+                if (field && field.onChange) {
                     var isX2Many = field.type === 'one2many' || field.type === 'many2many';
                     if (!isX2Many || (self._isX2ManyValid(record._changes[fieldName] || record.data[fieldName]))) {
                         onChangeFields.push(fieldName);
@@ -1473,12 +1478,6 @@ var BasicModel = AbstractModel.extend({
                     resolve(_.keys(changes));
                 }
             }).then(function (fieldNames) {
-                _.each(fieldNames, function (name) {
-                    if (record._changes && record._changes[name] === record.data[name]) {
-                        delete record._changes[name];
-                        record._isDirty = !_.isEmpty(record._changes);
-                    }
-                });
                 return self._fetchSpecialData(record).then(function (fieldNames2) {
                     // Return the names of the fields that changed (onchange or
                     // associated special data change)
@@ -2072,9 +2071,11 @@ var BasicModel = AbstractModel.extend({
                 if (field.onChange) {
                     hasOnchange = true;
                 }
-                _.each(fieldInfo.views, function (view) {
-                    generateSpecs(view.fieldsInfo[view.type], view.fields, key + '.');
-                });
+                if (field.type === 'one2many' || field.type === 'many2many') {
+                    _.each(fieldInfo.views, function (view) {
+                        generateSpecs(view.fieldsInfo[view.type], view.fields, key + '.');
+                    });
+                }
             });
         }
         return hasOnchange ? specs : false;
@@ -3355,7 +3356,15 @@ var BasicModel = AbstractModel.extend({
         var viewType = view ? view.type : fieldInfo.viewType;
 
         var toFetch = {};
-        _.each(list.data, function (dataPoint) {
+
+        // flattens the list.data ids in a grouped case
+        let dataPointIds = list.data;
+        for (let i = 0; i < list.groupedBy.length; i++) {
+            dataPointIds = dataPointIds.reduce((acc, groupId) =>
+                acc.concat(this.localData[groupId].data), []);
+        }
+
+        dataPointIds.forEach(function (dataPoint) {
             var record = self.localData[dataPoint];
             if (typeof record.data[fieldName] === 'string'){
                 // in this case, the value is a local ID, which means that the
@@ -4453,8 +4462,9 @@ var BasicModel = AbstractModel.extend({
                 _.each(groups, function (group) {
                     var aggregateValues = {};
                     _.each(group, function (value, key) {
-                        if (_.contains(fields, key) && key !== groupByField) {
-                            aggregateValues[key] = value;
+                        if (_.contains(fields, key) && key !== groupByField &&
+                            AGGREGATABLE_TYPES.includes(list.fields[key].type)) {
+                                aggregateValues[key] = value;
                         }
                     });
                     // When a view is grouped, we need to display the name of each group in

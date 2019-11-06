@@ -203,6 +203,49 @@ QUnit.module('Chatter', {
     }
 });
 
+QUnit.test('messaging becomes ready', async function (assert) {
+    assert.expect(2);
+
+    const initMessagingProm = testUtils.makeTestPromise();
+    const form = await createView({
+        View: FormView,
+        model: 'partner',
+        data: this.data,
+        services: this.services,
+        arch: `<form string="Partners">
+                <sheet>
+                    <field name="foo"/>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_ids" widget="mail_thread"/>
+                </div>
+            </form>`,
+        async mockRPC(route, args) {
+            const _super = this._super.bind(this, route, args); // limitation on class.js with async/await
+            if (route === '/mail/init_messaging') {
+                await initMessagingProm;
+            }
+            return _super();
+        },
+        res_id: 2,
+    });
+    await testUtils.nextTick();
+    assert.containsOnce(
+        form,
+        '.o_mail_thread_loading',
+        "thread should be loading when messaging is not yet ready");
+
+    // simulate messaging becoming ready
+    initMessagingProm.resolve();
+    await testUtils.nextTick();
+    assert.containsNone(
+        form,
+        '.o_mail_thread_loading',
+        "thread should no longer be loading when messaging becomes ready");
+
+    form.destroy();
+});
+
 QUnit.test('basic rendering', async function (assert) {
     assert.expect(9);
 
@@ -517,6 +560,39 @@ QUnit.test('attachmentBox basic rendering', async function (assert) {
         "the download URL of name2 must be correct");
     await testUtils.dom.click($button);
     assert.containsNone(form, '.o_mail_chatter_attachments')
+    form.destroy();
+});
+
+QUnit.test('attachmentBox: deletable attachments', async function (assert) {
+    assert.expect(1);
+    this.data.partner.records.push({
+        id: 7,
+        display_name: "attachment_test",
+    });
+
+    const form = await createView({
+        View: FormView,
+        model: 'partner',
+        data: this.data,
+        services: this.services,
+        arch: `
+            <form string="Partners">
+                <sheet>
+                    '<field name="foo"/>
+                </sheet>
+                <div class="oe_chatter">
+                    '<field name="message_ids" widget="mail_thread"/>
+                </div>
+            </form>`,
+        res_id: 7,
+    });
+    await testUtils.dom.click(form.$('.o_chatter_button_attachment'));
+    assert.containsN(
+        form,
+        '.o_attachment_delete_cross',
+        2,
+        "Attachments should be deletable inside attachment box");
+
     form.destroy();
 });
 
@@ -1229,6 +1305,71 @@ QUnit.test('chatter: access document with some notifs', async function (assert) 
     var thread = form.call('mail_service', 'getDocumentThread', 'partner', 2);
     assert.strictEqual(thread.getUnreadCounter(), 0,
         "document thread should have no unread messages (marked as read)");
+
+    form.destroy();
+});
+
+QUnit.test('chatter: new message notification from document', async function (assert) {
+    // when receiving new messages from a document that is open, it should
+    // not mark the messages are read
+    assert.expect(4);
+
+    var form = await createView({
+        View: FormView,
+        model: 'partner',
+        data: this.data,
+        services: this.services,
+        arch: '<form string="Partners">' +
+                '<sheet>' +
+                    '<field name="foo"/>' +
+                '</sheet>' +
+                '<div class="oe_chatter">' +
+                    '<field name="message_ids" widget="mail_thread"/>' +
+                '</div>' +
+            '</form>',
+        res_id: 2,
+        session: {
+            partner_id: 3,
+        },
+        mockRPC: function (route, args) {
+            if (args.method === 'set_message_done') {
+                throw new Error("should not mark message as read");
+            }
+            return this._super.apply(this, arguments);
+        },
+    });
+
+    var thread = form.call('mail_service', 'getDocumentThread', 'partner', 2);
+    assert.strictEqual(
+        thread.getUnreadCounter(),
+        0,
+        "document thread should have no unread messages initially");
+    assert.containsNone(
+        form,
+        '.o_thread_message',
+        "should have no message in the chatter");
+
+    // Simulate received needaction`` message on this document
+    var message = {
+        author_id: [1, "Me"],
+        body: '<p>test</p>',
+        channel_ids: [],
+        id: 2,
+        model: 'partner',
+        needaction_partner_ids: [3],
+        res_id: 2,
+    };
+    const notifications = [ [['myDB', 'ir.needaction'], message] ];
+    form.call('bus_service', 'trigger', 'notification', notifications);
+    await testUtils.nextTick();
+    assert.strictEqual(
+        thread.getUnreadCounter(),
+        1,
+        "document thread should have one unread message (not marked as read)");
+    assert.containsOnce(
+        form,
+        '.o_thread_message',
+        "should have one message in the chatter");
 
     form.destroy();
 });
@@ -2734,6 +2875,40 @@ QUnit.test('chatter: do not duplicate messages on (un)star message', async funct
     form.destroy();
 });
 
+QUnit.test('test open attachment option', async function (assert) {
+    assert.expect(5);
+
+    const form = await createView({
+        View: FormView,
+        model: 'partner',
+        data: this.data,
+        services: this.services,
+        res_id: 2,
+        arch: `
+            <form string="Partners">
+                <sheet>
+                    <field name="foo"/>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_ids" widget="mail_thread" options="{'open_attachments': True}"/>
+                </div>
+            </form>`,
+    });
+    assert.containsOnce(form, '.o_mail_chatter_attachments', "Attachment box should be open by default")
+    await testUtils.form.clickEdit(form);
+    assert.containsOnce(form, '.o_mail_chatter_attachments', "Attachment box should still be open")
+    await testUtils.fields.editInput(form.$('.o_field_char'), 'Coucou Petite Perruche');
+    assert.containsOnce(form, '.o_mail_chatter_attachments', "Attachment box should still be open")
+
+    // Close the attachment box with the button
+    await testUtils.dom.click(form.$('.o_chatter_button_attachment'))
+    assert.containsNone(form, '.o_mail_chatter_attachments', "Attachment box should be closed")
+    await testUtils.form.clickSave(form);
+    assert.containsNone(form, '.o_mail_chatter_attachments', "Attachment box should still be closed")
+
+    form.destroy();
+});
+
 QUnit.test('chatter: new messages on document without any "display_name"', async function (assert) {
     assert.expect(5);
 
@@ -3071,6 +3246,82 @@ QUnit.test('chatter: mention prefetched partners (followers & employees)', async
         "should display correct 4th mention suggestion");
 
     //cleanup
+    form.destroy();
+});
+
+QUnit.test('chatter: display suggested partners only once', async function (assert) {
+    assert.expect(3);
+
+    let isMessageSent = false;
+
+    const form = await createView({
+        View: FormView,
+        model: 'partner',
+        data: this.data,
+        services: this.services,
+        arch: `
+            <form string="Partners">
+                <sheet>
+                    <field name="foo"/>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids" widget="mail_followers"/>
+                    <field name="message_ids" widget="mail_thread" options="{'display_log_button': True}"/>
+                </div>
+            </form>`,
+        res_id: 2,
+        async mockRPC(route, args) {
+            if (route === '/mail/read_followers') {
+                return {
+                    followers: [],
+                    subtypes: [],
+                };
+            }
+            if (route === '/mail/get_suggested_recipients') {
+                if (isMessageSent) {
+                    return {
+                        2: [],
+                    };
+                }
+                return {
+                    2: [[2, "Jack <jack@example.com>", "Partner Profile"]],
+                };
+            }
+            if (args.method === 'message_post') {
+                isMessageSent = true;
+                return 57923;
+            }
+            if (args.method === 'message_format') {
+                return [{
+                    author_id: ["42", "Me"],
+                    model: 'partner',
+                }];
+            }
+            return this._super(route, args);
+        },
+        session: {},
+    });
+
+    await testUtils.dom.click(form.$('.o_chatter_button_new_message'));
+    const $input = form.$('.oe_chatter .o_composer_text_field:first()');
+    assert.containsOnce(
+        form,
+        'div.o_composer_suggested_partners input',
+        "should show one suggested recipient");
+    assert.strictEqual(
+        form.$('div.o_composer_suggested_partners label').text().replace(/\s+/g, ''),
+        "Jack(jack@example.com)",
+        "should have the correct label");
+
+    $input.val("BBQ and beers tonight! Are you in?");
+    await testUtils.dom.click(form.$('.o_composer_button_send'));
+    // Open composer for new message
+    await testUtils.dom.click(form.$('.o_chatter_button_new_message'));
+    assert.containsNone(
+        form,
+        'div.o_composer_suggested_partners input',
+        "should no longer show the suggested recipient");
+
     form.destroy();
 });
 

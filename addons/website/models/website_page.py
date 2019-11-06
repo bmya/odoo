@@ -27,6 +27,7 @@ class Page(models.Model):
 
     # don't use mixin website_id but use website_id on ir.ui.view instead
     website_id = fields.Many2one(related='view_id.website_id', store=True, readonly=False)
+    arch = fields.Text(related='view_id.arch', readonly=False, depends_context=('website_id',))
 
     def _compute_homepage(self):
         for page in self:
@@ -56,12 +57,6 @@ class Page(models.Model):
         most_specific_page = pages_for_url[0]
 
         return most_specific_page == page_to_test
-
-    @api.model
-    def get_page_info(self, id):
-        return self.browse(id).read(
-            ['id', 'name', 'url', 'website_published', 'website_indexed', 'date_publish', 'menu_ids', 'is_homepage', 'website_id'],
-        )
 
     def get_view_identifier(self):
         """ Get identifier of this page view that may be used to render it """
@@ -116,12 +111,15 @@ class Page(models.Model):
             'website_indexed': data['website_indexed'],
             'date_publish': data['date_publish'] or None,
             'is_homepage': data['is_homepage'],
+            'visibility': data['visibility'],
+            'visibility_password': data['visibility'] == "password" and data['visibility_password'] or '',
+            'visibility_group': data['visibility'] == "restricted_group" and data['visibility_group'],
         }
         page.with_context(no_cow=True).write(w_vals)
 
         # Create redirect if needed
         if data['create_redirect']:
-            self.env['website.redirect'].create({
+            self.env['website.rewrite'].create({
                 'redirect_type': data['redirect_type'],
                 'url_from': original_url,
                 'url_to': url,

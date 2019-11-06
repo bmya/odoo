@@ -8,6 +8,8 @@
             <field name="arch" type="xml">
                 <search string="Plan">
                     <field name="name"/>
+                    <separator/>
+                    <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
                 </search>
             </field>
         </record>
@@ -74,6 +76,7 @@
                             <field name="summary"/>
                             <field name="responsible"/>
                             <field name="responsible_id" attrs="{'invisible': [('responsible', '!=', 'other')]}"/>
+                            <field name="note"/>
                         </group>
                     </sheet>
                 </form>

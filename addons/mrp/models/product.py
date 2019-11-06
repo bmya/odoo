@@ -3,7 +3,7 @@
 
 from datetime import timedelta
 from odoo import api, fields, models
-from odoo.tools.float_utils import float_round
+from odoo.tools.float_utils import float_round, float_is_zero
 
 
 class ProductTemplate(models.Model):
@@ -11,9 +11,12 @@ class ProductTemplate(models.Model):
 
     bom_line_ids = fields.One2many('mrp.bom.line', 'product_tmpl_id', 'BoM Components')
     bom_ids = fields.One2many('mrp.bom', 'product_tmpl_id', 'Bill of Materials')
-    bom_count = fields.Integer('# Bill of Material', compute='_compute_bom_count')
-    used_in_bom_count = fields.Integer('# of BoM Where is Used', compute='_compute_used_in_bom_count')
-    mrp_product_qty = fields.Float('Manufactured', compute='_compute_mrp_product_qty')
+    bom_count = fields.Integer('# Bill of Material',
+        compute='_compute_bom_count', compute_sudo=False)
+    used_in_bom_count = fields.Integer('# of BoM Where is Used',
+        compute='_compute_used_in_bom_count', compute_sudo=False)
+    mrp_product_qty = fields.Float('Manufactured',
+        compute='_compute_mrp_product_qty', compute_sudo=False)
     produce_delay = fields.Float(
         'Manufacturing Lead Time', default=0.0,
         help="Average lead time in days to manufacture this product. In the case of multi-level BOM, the manufacturing lead times of the components will be added.")
@@ -52,9 +55,12 @@ class ProductProduct(models.Model):
 
     variant_bom_ids = fields.One2many('mrp.bom', 'product_id', 'BOM Product Variants')
     bom_line_ids = fields.One2many('mrp.bom.line', 'product_id', 'BoM Components')
-    bom_count = fields.Integer('# Bill of Material', compute='_compute_bom_count')
-    used_in_bom_count = fields.Integer('# BoM Where Used', compute='_compute_used_in_bom_count')
-    mrp_product_qty = fields.Float('Manufactured', compute='_compute_mrp_product_qty')
+    bom_count = fields.Integer('# Bill of Material',
+        compute='_compute_bom_count', compute_sudo=False)
+    used_in_bom_count = fields.Integer('# BoM Where Used',
+        compute='_compute_used_in_bom_count', compute_sudo=False)
+    mrp_product_qty = fields.Float('Manufactured',
+        compute='_compute_mrp_product_qty', compute_sudo=False)
 
     def _compute_bom_count(self):
         for product in self:
@@ -101,6 +107,7 @@ class ProductProduct(models.Model):
          - 'outgoing_qty'
          - 'free_qty'
          """
+        kits = self.env['product.product']
         for product in self:
             bom_kit = self.env['mrp.bom']._bom_find(product=product, bom_type='phantom')
             if bom_kit:
@@ -112,8 +119,10 @@ class ProductProduct(models.Model):
                 ratios_free_qty = []
                 for bom_line, bom_line_data in bom_sub_lines:
                     component = bom_line.product_id
-                    if component.type != 'product':
-                        # Consumable product have 0 qty_available so we exclude them
+                    if component.type != 'product' or float_is_zero(bom_line_data['qty'], precision_rounding=bom_line.product_uom_id.rounding):
+                        # As BoMs allow components with 0 qty, a.k.a. optionnal components, we simply skip those
+                        # to avoid a division by zero. The same logic is applied to non-storable products as those
+                        # products have 0 qty available.
                         continue
                     uom_qty_per_kit = bom_line_data['qty'] / bom_line_data['original_qty']
                     qty_per_kit = bom_line.product_uom_id._compute_quantity(uom_qty_per_kit, bom_line.product_id.uom_id)
@@ -123,13 +132,13 @@ class ProductProduct(models.Model):
                     ratios_outgoing_qty.append(component.outgoing_qty / qty_per_kit)
                     ratios_free_qty.append(component.free_qty / qty_per_kit)
                 if bom_sub_lines and ratios_virtual_available:  # Guard against all cnsumable bom: at least one ratio should be present.
+                    kits |= product
                     product.virtual_available = min(ratios_virtual_available) // 1
                     product.qty_available = min(ratios_qty_available) // 1
                     product.incoming_qty = min(ratios_incoming_qty) // 1
                     product.outgoing_qty = min(ratios_incoming_qty) // 1
                     product.free_qty = min(ratios_free_qty) // 1
-            else:
-                super(ProductProduct, self)._compute_quantities()
+        super(ProductProduct, self - kits)._compute_quantities()
 
     def action_view_bom(self):
         action = self.env.ref('mrp.product_open_bom').read()[0]

@@ -122,11 +122,37 @@ class TestSaleOrder(TestCommonSaleNoChart):
 
         # upsell and invoice
         self.sol_serv_order.write({'product_uom_qty': 10})
+        # There is a bug with `new` and `_origin`
+        # If you create a first new from a record, then change a value on the origin record, than create another new,
+        # this other new wont have the updated value of the origin record, but the one from the previous new
+        # Here the problem lies in the use of `new` in `move = self_ctx.new(new_vals)`,
+        # and the fact this method is called multiple times in the same transaction test case.
+        # Here, we update `qty_delivered` on the origin record, but the `new` records which are in cache with this order line
+        # as origin are not updated, nor the fields that depends on it.
+        self.sol_serv_order.flush()
+        for field in self.env['sale.order.line']._fields.values():
+            for res_id in list(self.env.cache._data[field]):
+                if not res_id:
+                    self.env.cache._data[field].pop(res_id)
 
         invoice3 = self.sale_order._create_invoices()
         self.assertEqual(len(invoice3.invoice_line_ids), 1, 'Sale: third invoice is missing lines')
         self.assertEqual(invoice3.amount_total, 8 * self.product_map['serv_order'].list_price, 'Sale: second invoice total amount is wrong')
         self.assertTrue(self.sale_order.invoice_status == 'invoiced', 'Sale: SO status after invoicing everything (including the upsel) should be "invoiced"')
+
+    def test_sale_sequence(self):
+        self.env['ir.sequence'].search([
+            ('code', '=', 'sale.order'),
+        ]).write({
+            'use_date_range': True, 'prefix': 'SO/%(range_year)s/',
+        })
+        sale_order = self.sale_order.copy({'date_order': '2019-01-01'})
+        self.assertTrue(sale_order.name.startswith('SO/2019/'))
+        sale_order = self.sale_order.copy({'date_order': '2020-01-01'})
+        self.assertTrue(sale_order.name.startswith('SO/2020/'))
+        # In EU/BXL tz, this is actually already 01/01/2020
+        sale_order = self.sale_order.with_context(tz='Europe/Brussels').copy({'date_order': '2019-12-31 23:30:00'})
+        self.assertTrue(sale_order.name.startswith('SO/2020/'))
 
     def test_unlink_cancel(self):
         """ Test deleting and cancelling sales orders depending on their state and on the user's rights """
@@ -184,7 +210,6 @@ class TestSaleOrder(TestCommonSaleNoChart):
         so._create_analytic_account()
 
         inv = self.env['account.move'].with_context(default_type='in_invoice').create({
-            'type': 'in_invoice',
             'partner_id': self.partner_customer_usd.id,
             'invoice_line_ids': [
                 (0, 0, {
@@ -200,7 +225,7 @@ class TestSaleOrder(TestCommonSaleNoChart):
         inv.post()
         sol = so.order_line.filtered(lambda l: l.product_id == serv_cost)
         self.assertTrue(sol, 'Sale: cost invoicing does not add lines when confirming vendor invoice')
-        self.assertEquals((sol.price_unit, sol.qty_delivered, sol.product_uom_qty, sol.qty_invoiced), (160, 2, 0, 0), 'Sale: line is wrong after confirming vendor invoice')
+        self.assertEqual((sol.price_unit, sol.qty_delivered, sol.product_uom_qty, sol.qty_invoiced), (160, 2, 0, 0), 'Sale: line is wrong after confirming vendor invoice')
 
     def test_sale_with_taxes(self):
         """ Test SO with taxes applied on its lines and check subtotal applied on its lines and total applied on the SO """
@@ -233,63 +258,63 @@ class TestSaleOrder(TestCommonSaleNoChart):
             else:
                 price = line.price_unit * line.product_uom_qty
 
-            self.assertEquals(float_compare(line.price_subtotal, price, precision_digits=2), 0)
+            self.assertEqual(float_compare(line.price_subtotal, price, precision_digits=2), 0)
 
-        self.assertEquals(self.sale_order.amount_total,
+        self.assertEqual(self.sale_order.amount_total,
                           self.sale_order.amount_untaxed + self.sale_order.amount_tax,
                           'Taxes should be applied')
 
-    def test_reconciliation_with_so(self):
-        # create SO
-        so = self.env['sale.order'].create({
-            'name': 'SO/01/01',
-            'reference': 'Petit suisse',
-            'partner_id': self.partner_customer_usd.id,
-            'partner_invoice_id': self.partner_customer_usd.id,
-            'partner_shipping_id': self.partner_customer_usd.id,
-            'pricelist_id': self.pricelist_usd.id,
+    def test_so_create_multicompany(self):
+        """Check that only taxes of the right company are applied on the lines."""
+        user_demo = self.env.ref('base.user_demo')
+        company_1 = self.env.ref('base.main_company')
+        company_2 = self.env['res.company'].create({
+            'name': 'company 2',
+            'parent_id': company_1.id,
         })
-        self.env['sale.order.line'].create({
-            'name': self.product_order.name,
-            'product_id': self.product_order.id,
-            'product_uom_qty': 2,
-            'product_uom': self.product_order.uom_id.id,
-            'price_unit': self.product_order.list_price,
-            'order_id': so.id,
-            'tax_id': False,
+
+        tax_company_1 = self.env['account.tax'].create({
+            'name': 'T1',
+            'amount': 90,
+            'company_id': company_1.id,
         })
-        # Mark SO as sent otherwise we won't find any match
-        so.write({'state': 'sent'})
-        # Create bank statement
-        statement = self.env['account.bank.statement'].create({
-            'name': 'Test',
-            'journal_id': self.journal_purchase.id,
-            'user_id': self.user_employee.id,
+
+        tax_company_2 = self.env['account.tax'].create({
+            'name': 'T2',
+            'amount': 90,
+            'company_id': company_2.id,
         })
-        st_line1 = self.env['account.bank.statement.line'].create({
-            'name': 'should not find anything',
-            'amount': 15,
-            'statement_id': statement.id
+
+        product_shared = self.env['product.template'].create({
+            'name': 'shared product',
+            'taxes_id': [(6, False, [tax_company_1.id, tax_company_2.id])],
         })
-        st_line2 = self.env['account.bank.statement.line'].create({
-            'name': 'SO/01',
-            'amount': 15,
-            'statement_id': statement.id
+
+        so_1 = self.env['sale.order'].with_user(user_demo.id).create({
+            'partner_id': self.env.ref('base.res_partner_2').id,
+            'company_id': company_1.id,
         })
-        st_line3 = self.env['account.bank.statement.line'].create({
-            'name': 'suisse',
-            'amount': 15,
-            'statement_id': statement.id
+        so_1.write({
+            'order_line': [(0, False, {'product_id': product_shared.product_variant_id.id, 'order_id': so_1.id})],
         })
-        # Call get_bank_statement_line_data for st_line_1, should not find any sale order
-        res = self.env['account.reconciliation.widget'].get_bank_statement_line_data([st_line1.id])
-        line = res.get('lines', [{}])[0]
-        self.assertFalse(line.get('sale_order_ids', False))
-        # Call again for st_line_2, it should find sale_order
-        res = self.env['account.reconciliation.widget'].get_bank_statement_line_data([st_line2.id])
-        line = res.get('lines', [{}])[0]
-        self.assertEquals(line.get('sale_order_ids', []), [so.id])
-        # Call again for st_line_3, it should find sale_order based on reference
-        res = self.env['account.reconciliation.widget'].get_bank_statement_line_data([st_line3.id])
-        line = res.get('lines', [{}])[0]
-        self.assertEquals(line.get('sale_order_ids', []), [so.id])
+
+        self.assertEqual(set(so_1.order_line.tax_id.ids), set([tax_company_1.id]),
+            'Only taxes from the right company are put by default')
+
+    def test_group_invoice(self):
+        """ Test that invoicing multiple sales order for the same customer works. """
+        # Create 3 SOs for the same partner, one of which that uses another currency
+        eur_pricelist = self.env['product.pricelist'].create({'name': 'EUR', 'currency_id': self.env.ref('base.EUR').id})
+        so1 = self.sale_order.with_context(mail_notrack=True).copy()
+        so1.pricelist_id = eur_pricelist
+        so2 = so1.copy()
+        usd_pricelist = self.env['product.pricelist'].create({'name': 'USD', 'currency_id': self.env.ref('base.USD').id})
+        so3 = so1.copy()
+        so1.pricelist_id = usd_pricelist
+        orders = so1 | so2 | so3
+        orders.action_confirm()
+        # Create the invoicing wizard and invoice all of them at once
+        wiz = self.env['sale.advance.payment.inv'].with_context(active_ids=orders.ids, open_invoices=True).create({})
+        res = wiz.create_invoices()
+        # Check that exactly 2 invoices are generated
+        self.assertEqual(len(res['domain'][0][2]),2, "Grouping invoicing 3 orders for the same partner with 2 currencies should create exactly 2 invoices")

@@ -2,6 +2,7 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 import logging
+import werkzeug
 import uuid
 from itertools import groupby
 
@@ -23,6 +24,10 @@ class View(models.Model):
     website_id = fields.Many2one('website', ondelete='cascade', string="Website")
     page_ids = fields.One2many('website.page', 'view_id')
     first_page_id = fields.Many2one('website.page', string='Website Page', help='First page linked to this view', compute='_compute_first_page_id')
+    track = fields.Boolean(string='Track', default=False, help="Allow to specify for one page of the website to be trackable or not")
+    visibility = fields.Selection([('', 'All'), ('connected', 'Connected'), ('restricted_group', 'Restricted Group'), ('password', 'With Password'), ('employee', 'Internal Users')], default='')
+    visibility_group = fields.Many2one('res.groups')
+    visibility_password = fields.Char(groups='base.group_system')
 
     def _compute_first_page_id(self):
         for view in self:
@@ -62,6 +67,16 @@ class View(models.Model):
             if view.website_id:
                 super(View, view).write(vals)
                 continue
+
+            # Ensure the cache of the pages stay consistent when doing COW.
+            # This is necessary when writing view fields from a page record
+            # because the generic page will put the given values on its cache
+            # but in reality the values were only meant to go on the specific
+            # page. Invalidate all fields and not only those in vals because
+            # other fields could have been changed implicitly too.
+            pages = view.page_ids
+            pages.flush(records=pages)
+            pages.invalidate_cache(ids=pages.ids)
 
             # If already a specific view for this generic view, write on it
             website_specific_view = view.search([
@@ -142,12 +157,8 @@ class View(models.Model):
                     ('website_id', '!=', None),
                 ])
                 for specific_parent_view in specific_parent_views:
-                    record.copy({
-                        # Set key to avoid copy() to generate an unique key as
-                        # we want the specific view to have the same key
-                        'key': record.key,
+                    record.with_context(website_id=specific_parent_view.website_id.id).write({
                         'inherit_id': specific_parent_view.id,
-                        'website_id': specific_parent_view.website_id.id,
                     })
         return records
 
@@ -178,10 +189,11 @@ class View(models.Model):
     def _create_website_specific_pages_for_view(self, new_view, website):
         for page in self.page_ids:
             # create new pages for this view
-            page.copy({
+            new_page = page.copy({
                 'view_id': new_view.id,
                 'is_published': page.is_published,
             })
+            page.menu_ids.filtered(lambda m: m.website_id.id == website.id).page_id = new_page.id
 
     @api.model
     def get_related_views(self, key, bundles=False):
@@ -284,12 +296,19 @@ class View(models.Model):
             current_website = self.env['website'].browse(self._context.get('website_id'))
             domain = ['&', ('key', '=', xml_id)] + current_website.website_domain()
 
-            view = self.search(domain, order='website_id', limit=1)
+            view = self.sudo().search(domain, order='website_id', limit=1)
             if not view:
                 _logger.warning("Could not find view object with xml_id '%s'", xml_id)
                 raise ValueError('View %r in website %r not found' % (xml_id, self._context['website_id']))
             return view.id
-        return super(View, self).get_view_id(xml_id)
+        return super(View, self.sudo()).get_view_id(xml_id)
+
+    @api.model
+    def read_template(self, xml_id):
+        view_sudo = self._view_obj(self.get_view_id(xml_id)).sudo()
+        if view_sudo.visibility and view_sudo.handle_visibility(do_raise=False):
+            self = self.sudo()
+        return super(View, self).read_template(xml_id)
 
     def _get_original_view(self):
         """Given a view, retrieve the original view it was COW'd from.
@@ -300,13 +319,43 @@ class View(models.Model):
         domain = [('key', '=', self.key), ('model_data_id', '!=', None)]
         return self.with_context(active_test=False).search(domain, limit=1)  # Useless limit has multiple xmlid should not be possible
 
+    def handle_visibility(self, do_raise=True):
+        """ Check the visibility set on the main view and raise 403 if you should not have access.
+            Order is: Public, Connected, Has group, Password, Employee
+            An user type can see all previous type. So an employee can see password page withtout
+            know the password.
+
+            It only check the visibility on the main content, others views called stay available in
+            rpc or via other way.
+        """
+        error = False
+        self = self.sudo()
+        if self.visibility and not request.env.user.has_group('website.group_website_designer'):
+            if (self.visibility == 'connected' and request.website.is_public_user()) or \
+               (self.visibility == 'employee' and request.env.user.share) or \
+               (self.visibility == 'restricted_group' and request.env.user.share and self.visibility_group and
+                    request.env.user.id not in self.visibility_group.sudo().users.ids):
+                error = werkzeug.exceptions.Forbidden()
+            elif self.visibility == 'password' and request.env.user.share and (request.website.is_public_user() or self.id not in request.session.get('views_unlock', [])):
+                if self.sudo().visibility_password == request.params.get('visibility_password'):
+                    request.session.setdefault('views_unlock', list()).append(self.id)
+                else:
+                    error = werkzeug.exceptions.Forbidden('website_visibility_password_required')
+        if error:
+            if do_raise:
+                raise error
+            else:
+                return False
+        return True
+
     def render(self, values=None, engine='ir.qweb', minimal_qcontext=False):
         """ Render the template. If website is enabled on request, then extend rendering context with website values. """
+        self.handle_visibility(do_raise=True)
         new_context = dict(self._context)
         if request and getattr(request, 'is_frontend', False):
 
             editable = request.website.is_publisher()
-            translatable = editable and self._context.get('lang') != request.website.default_lang_code
+            translatable = editable and self._context.get('lang') != request.website.default_lang_id.code
             editable = not translatable and editable
 
             # in edit mode ir.ui.view will tag nodes
@@ -315,9 +364,13 @@ class View(models.Model):
                     new_context = dict(self._context, inherit_branding=True)
                 elif request.env.user.has_group('website.group_website_publisher'):
                     new_context = dict(self._context, inherit_branding_auto=True)
-            # Fallback incase main_object dont't inherit 'website.seo.metadata'
-            if values and 'main_object' in values and not hasattr(values['main_object'], 'get_website_meta'):
-                values['main_object'].get_website_meta = lambda: {}
+            if values and 'main_object' in values:
+                func = getattr(values['main_object'], 'get_backend_menu_id', False)
+                values['backend_menu_id'] = func and func() or self.env.ref('website.menu_website_configuration').id
+
+                # Fallback incase main_object dont't inherit 'website.seo.metadata'
+                if not hasattr(values['main_object'], 'get_website_meta'):
+                    values['main_object'].get_website_meta = lambda: {}
 
         if self._context != new_context:
             self = self.with_context(new_context)
@@ -336,30 +389,29 @@ class View(models.Model):
             translatable = editable and self._context.get('lang') != request.env['ir.http']._get_default_lang().code
             editable = not translatable and editable
 
-            if 'main_object' not in qcontext:
-                qcontext['main_object'] = self
-
             cur = Website.get_current_website()
-            qcontext['multi_website_websites_current'] = {'website_id': cur.id, 'name': cur.name, 'domain': cur.domain}
-            qcontext['multi_website_websites'] = [
-                {'website_id': website.id, 'name': website.name, 'domain': website.domain}
-                for website in Website.search([]) if website != cur
-            ]
+            if self.env.user.has_group('website.group_website_publisher') and self.env.user.has_group('website.group_multi_website'):
+                qcontext['multi_website_websites_current'] = {'website_id': cur.id, 'name': cur.name, 'domain': cur._get_http_domain()}
+                qcontext['multi_website_websites'] = [
+                    {'website_id': website.id, 'name': website.name, 'domain': website._get_http_domain()}
+                    for website in Website.search([]) if website != cur
+                ]
 
-            cur_company = self.env.company
-            qcontext['multi_website_companies_current'] = {'company_id': cur_company.id, 'name': cur_company.name}
-            qcontext['multi_website_companies'] = [
-                {'company_id': comp.id, 'name': comp.name}
-                for comp in self.env.user.company_ids if comp != cur_company
-            ]
+                cur_company = self.env.company
+                qcontext['multi_website_companies_current'] = {'company_id': cur_company.id, 'name': cur_company.name}
+                qcontext['multi_website_companies'] = [
+                    {'company_id': comp.id, 'name': comp.name}
+                    for comp in self.env.user.company_ids if comp != cur_company
+                ]
 
             qcontext.update(dict(
                 self._context.copy(),
+                main_object=self,
                 website=request.website,
                 url_for=url_for,
                 res_company=request.website.company_id.sudo(),
                 default_lang_code=request.env['ir.http']._get_default_lang().code,
-                languages=request.env['ir.http']._get_language_codes(),
+                languages=request.env['res.lang'].get_available(),
                 translatable=translatable,
                 editable=editable,
                 menu_data=self.env['ir.ui.menu'].load_menus_root() if request.website.is_user() else None,
@@ -371,7 +423,7 @@ class View(models.Model):
     def get_default_lang_code(self):
         website_id = self.env.context.get('website_id')
         if website_id:
-            lang_code = self.env['website'].browse(website_id).default_lang_code
+            lang_code = self.env['website'].browse(website_id).default_lang_id.code
             return lang_code
         else:
             return super(View, self).get_default_lang_code()

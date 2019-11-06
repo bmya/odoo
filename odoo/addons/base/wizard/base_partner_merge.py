@@ -6,6 +6,7 @@ import functools
 import itertools
 import logging
 import psycopg2
+import datetime
 
 from odoo import api, fields, models
 from odoo import SUPERUSER_ID, _
@@ -107,6 +108,8 @@ class MergePartnerAutomatic(models.TransientModel):
         Partner = self.env['res.partner']
         relations = self._get_fk_on('res_partner')
 
+        self.flush()
+
         for table, column in relations:
             if 'base_partner_merge_' in table:  # ignore two tables
                 continue
@@ -168,6 +171,8 @@ class MergePartnerAutomatic(models.TransientModel):
                     query = 'DELETE FROM "%(table)s" WHERE "%(column)s" IN %%s' % query_dic
                     self._cr.execute(query, (tuple(src_partners.ids),))
 
+        self.invalidate_cache()
+
     @api.model
     def _update_reference_fields(self, src_partners, dst_partner):
         """ Update all reference fields from the src_partner to dst_partner.
@@ -182,12 +187,13 @@ class MergePartnerAutomatic(models.TransientModel):
                 return
             records = Model.sudo().search([(field_model, '=', 'res.partner'), (field_id, '=', src.id)])
             try:
-                with mute_logger('odoo.sql_db'), self._cr.savepoint():
-                    return records.sudo().write({field_id: dst_partner.id})
+                with mute_logger('odoo.sql_db'), self._cr.savepoint(), self.env.clear_upon_failure():
+                    records.sudo().write({field_id: dst_partner.id})
+                    records.flush()
             except psycopg2.Error:
                 # updating fails, most likely due to a violated unique constraint
                 # keeping record with nonexistent partner_id is useless, better delete it
-                return records.sudo().unlink()
+                records.sudo().unlink()
 
         update_records = functools.partial(update_records)
 
@@ -216,6 +222,8 @@ class MergePartnerAutomatic(models.TransientModel):
                     record.name: 'res.partner,%d' % dst_partner.id,
                 }
                 records_ref.sudo().write(values)
+
+        self.flush()
 
     def _get_summable_fields(self):
         """ Returns the list of fields that should be summed when merging partners
@@ -402,7 +410,7 @@ class MergePartnerAutomatic(models.TransientModel):
             :param partner_ids : list of partner ids to sort
         """
         return self.env['res.partner'].browse(partner_ids).sorted(
-            key=lambda p: (p.active, (p.create_date or '')),
+            key=lambda p: (p.active, (p.create_date or datetime.datetime(1970, 1, 1))),
             reverse=True,
         )
 

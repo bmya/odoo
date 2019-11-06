@@ -55,7 +55,7 @@ class TestSaleExpectedDate(common.TransactionCase):
         # current date + longest lead time from all of it's order lines
         sale_order.write({'picking_policy': 'one'})
         expected_date = fields.Datetime.now() + timedelta(days=15)
-        self.assertAlmostEquals(expected_date, sale_order.expected_date,
+        self.assertAlmostEqual(expected_date, sale_order.expected_date,
             msg="Wrong expected date on sale order!", delta=timedelta(seconds=1))
 
         sale_order.action_confirm()
@@ -82,9 +82,9 @@ class TestSaleExpectedDate(common.TransactionCase):
         picking = sale_order.picking_ids[0]
         for ml in picking.move_line_ids:
             ml.qty_done = ml.product_uom_qty
-        picking.action_done()
-        self.assertEquals(picking.state, 'done', "Picking not processed correctly!")
-        self.assertEquals(fields.Date.today(), sale_order.effective_date, "Wrong effective date on sale order!")
+        picking._action_done()
+        self.assertEqual(picking.state, 'done', "Picking not processed correctly!")
+        self.assertEqual(fields.Date.today(), sale_order.effective_date, "Wrong effective date on sale order!")
 
     def test_sale_order_commitment_date(self):
 

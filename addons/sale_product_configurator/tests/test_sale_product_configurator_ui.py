@@ -15,11 +15,13 @@ class TestUi(odoo.tests.HttpCase):
     def test_02_product_configurator_advanced(self):
         # group_product_variant: use the product configurator
         # group_sale_pricelist: display the pricelist to determine when it is changed after choosing
+        # group_delivery_invoice_address: show the shipping address (needed for a trigger)
         #                       the partner
         self.env.ref('base.user_admin').write({
             'groups_id': [
                 (4, self.env.ref('product.group_product_variant').id),
-                (4, self.env.ref('product.group_sale_pricelist').id),
+                (4, self.env.ref('product.group_product_pricelist').id),
+                (4, self.env.ref('sale.group_delivery_invoice_address').id),
             ],
         })
 
@@ -27,35 +29,35 @@ class TestUi(odoo.tests.HttpCase):
         # This is not included in demo data to avoid useless noise
         product_attributes = self.env['product.attribute'].create([{
             'name': 'PA1',
-            'type': 'radio',
+            'display_type': 'radio',
             'create_variant': 'dynamic'
         }, {
             'name': 'PA2',
-            'type': 'radio',
+            'display_type': 'radio',
             'create_variant': 'always'
         }, {
             'name': 'PA3',
-            'type': 'radio',
+            'display_type': 'radio',
             'create_variant': 'dynamic'
         }, {
             'name': 'PA4',
-            'type': 'select',
+            'display_type': 'select',
             'create_variant': 'no_variant'
         }, {
             'name': 'PA5',
-            'type': 'select',
+            'display_type': 'select',
             'create_variant': 'no_variant'
         }, {
             'name': 'PA7',
-            'type': 'color',
+            'display_type': 'color',
             'create_variant': 'no_variant'
         }, {
             'name': 'PA8',
-            'type': 'radio',
+            'display_type': 'radio',
             'create_variant': 'no_variant'
         }])
 
-        product_attribute_values = self.env['product.attribute.value'].create([{
+        self.env['product.attribute.value'].create([{
             'name': 'PAV' + str(i),
             'is_custom': i == 9,
             'attribute_id': product_attribute.id
@@ -66,12 +68,8 @@ class TestUi(odoo.tests.HttpCase):
         self.env['product.template.attribute.line'].create([{
             'attribute_id': product_attribute.id,
             'product_tmpl_id': product_template.id,
-            'value_ids': [(6, 0, product_attribute_values.filtered(
-                lambda product_attribute_value: product_attribute_value.attribute_id == product_attribute
-            ).ids)]
+            'value_ids': [(6, 0, product_attribute.value_ids.ids)],
         } for product_attribute in product_attributes])
-
-        product_template.create_variant_ids()
 
         self.start_tour("/web", 'sale_product_configurator_advanced_tour', login="admin")
 
@@ -88,7 +86,7 @@ class TestUi(odoo.tests.HttpCase):
         self.env.ref('base.user_admin').write({
             'groups_id': [
                 (4, self.env.ref('product.group_product_variant').id),
-                (4, self.env.ref('product.group_sale_pricelist').id),
+                (4, self.env.ref('product.group_product_pricelist').id),
             ],
         })
 
@@ -96,7 +94,7 @@ class TestUi(odoo.tests.HttpCase):
         # This is not included in demo data to avoid useless noise
         product_attributes = self.env['product.attribute'].create([{
             'name': 'product attribute',
-            'type': 'radio',
+            'display_type': 'radio',
             'create_variant': 'always'
         }])
 
@@ -114,8 +112,6 @@ class TestUi(odoo.tests.HttpCase):
             'value_ids': [(6, 0, [product_attribute_values[0].id])]
         }])
 
-        product_template.create_variant_ids()
-
         self.start_tour("/web", 'sale_product_configurator_single_custom_attribute_tour', login="admin")
 
     def test_05_product_configurator_pricelist(self):
@@ -131,7 +127,7 @@ class TestUi(odoo.tests.HttpCase):
         self.env.ref('account.group_show_line_subtotals_tax_included').users |= admin
 
         # Active pricelist on SO
-        self.env.ref('product.group_sale_pricelist').users |= admin
+        self.env.ref('product.group_product_pricelist').users |= admin
 
         # Add a 15% tax on desk
         tax = self.env['account.tax'].create({'name': "Test tax", 'amount': 15})
@@ -145,7 +141,7 @@ class TestUi(odoo.tests.HttpCase):
         product_template = self.env.ref('product.product_product_4_product_template')
         pricelist = self.env.ref('product.list0')
 
-        if not pricelist.item_ids.filtered(lambda i: i.product_tmpl_id == product_template and i.price_discount == 20):
+        if not pricelist.item_ids.filtered(lambda i: i.product_tmpl_id == product_template and i.applied_on == '1_product' and i.price_discount == 20):
             self.env['product.pricelist.item'].create({
                 'base': 'list_price',
                 'applied_on': '1_product',
@@ -164,10 +160,13 @@ class TestUi(odoo.tests.HttpCase):
         if the main product does not have variants.
         """
 
-        # add an optional product to the office chair for test purposes
+        # add an optional product to the office chair and the custo desk for testing purposes
         office_chair = self.env.ref('product.product_product_12')
+        custo_desk = self.env.ref('product.product_product_4')
         office_chair.update({
             'optional_product_ids': [(6, 0, [self.env.ref('sale_product_configurator.product_product_1_product_template').id])]
         })
-
+        custo_desk.update({
+            'optional_product_ids': [(6, 0, [self.env.ref('product.product_product_12_product_template').id, self.env.ref('product.product_product_11_product_template').id])]
+        })
         self.start_tour("/web", 'sale_product_configurator_optional_products_tour', login="admin")

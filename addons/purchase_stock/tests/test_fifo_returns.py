@@ -60,7 +60,8 @@ class TestFifoReturns(TestPurchase):
 
         # Process the reception of purchase order 1
         picking = purchase_order_1.picking_ids[0]
-        self.env['stock.immediate.transfer'].create({'pick_ids': [(4, picking.id)]}).process()
+        res = picking.button_validate()
+        self.env[res['res_model']].browse(res['res_id']).with_context(res['context']).process()
 
         # Check the standard price of the product (fifo icecream)
         self.assertEqual(product_fiforet_icecream.standard_price, 0.0, 'Standard price should not have changed!')
@@ -68,7 +69,8 @@ class TestFifoReturns(TestPurchase):
         # Confirm the second purchase order
         purchase_order_2.button_confirm()
         picking = purchase_order_2.picking_ids[0]
-        self.env['stock.immediate.transfer'].create({'pick_ids': [(4, picking.id)]}).process()
+        res = picking.button_validate()
+        self.env[res['res_model']].browse(res['res_id']).with_context(res['context']).process()
 
         # Return the goods of purchase order 2
         picking = purchase_order_2.picking_ids[0]
@@ -82,7 +84,7 @@ class TestFifoReturns(TestPurchase):
         return_picking = self.env['stock.picking'].browse(return_picking_id)
         return_picking.action_confirm()
         return_picking.move_lines[0].quantity_done = return_picking.move_lines[0].product_uom_qty
-        return_picking.action_done()
+        return_picking._action_done()
 
         #  After the return only 10 of the second purchase order should still be in stock as it applies fifo on the return too
         self.assertEqual(product_fiforet_icecream.qty_available, 10.0, 'Qty available should be 10.0')

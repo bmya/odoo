@@ -61,7 +61,7 @@ class TestStockValuation(AccountingTestCase):
         self.assertEqual(len(self.sale_order1.picking_ids), 1)
         #self.assertEqual(self.sale_order1.picking_ids.move_lines._is_dropshipped(), True)
         wizard = self.sale_order1.picking_ids.button_validate()
-        immediate_transfer = self.env[wizard['res_model']].browse(wizard['res_id'])
+        immediate_transfer = self.env[wizard['res_model']].browse(wizard['res_id']).with_context(wizard['context'])
         immediate_transfer.process()
         self.assertEqual(self.sale_order1.picking_ids.state, 'done')
 
@@ -281,7 +281,7 @@ class TestStockValuation(AccountingTestCase):
         stock_return_picking_action = stock_return_picking.create_returns()
         return_pick = self.env['stock.picking'].browse(stock_return_picking_action['res_id'])
         return_pick.move_lines[0].move_line_ids[0].qty_done = 1.0
-        return_pick.action_done()
+        return_pick._action_done()
         self.assertEqual(return_pick.move_lines._is_dropshipped_returned(), True)
 
         all_amls_return = self.vendor_bill1.line_ids + self.customer_invoice1.line_ids

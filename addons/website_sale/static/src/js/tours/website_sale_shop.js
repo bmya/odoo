@@ -25,7 +25,7 @@ odoo.define("website_sale.tour_shop", function (require) {
         position: "right",
     }, {
         trigger: ".product_price .oe_currency_value:visible",
-        extra_trigger: ".note-editable",
+        extra_trigger: ".editor_enable",
         content: _t("Edit the price of this product by clicking on the amount."),
         position: "bottom",
         run: "text 1.99",
@@ -44,6 +44,9 @@ odoo.define("website_sale.tour_shop", function (require) {
         run: function (actions) {
             actions.auto(".modal-footer .btn-secondary");
         },
+    }, {
+        trigger: "button.o_we_add_snippet_btn",
+        auto: true,
     }, {
         trigger: "#snippet_structure .oe_snippet:eq(3) .oe_snippet_thumbnail",
         extra_trigger: "body:not(.modal-open)",

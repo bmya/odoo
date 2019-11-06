@@ -2,19 +2,18 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 import base64
-import itertools
+import json
 import logging
 import werkzeug
 import math
 
-from odoo import http, modules, tools, _
-from odoo.exceptions import AccessError, UserError
-from odoo.http import request
-from odoo.osv import expression
-
+from odoo import http, tools, _
 from odoo.addons.http_routing.models.ir_http import slug
 from odoo.addons.website_profile.controllers.main import WebsiteProfile
 from odoo.addons.website.models.ir_http import sitemap_qs2dom
+from odoo.exceptions import AccessError, UserError
+from odoo.http import request
+from odoo.osv import expression
 
 _logger = logging.getLogger(__name__)
 
@@ -97,6 +96,7 @@ class WebsiteSlides(WebsiteProfile):
         values = {
             # slide
             'slide': slide,
+            'main_object': slide,
             'most_viewed_slides': most_viewed_slides,
             'related_slides': related_slides,
             'previous_slide': previous_slide,
@@ -143,7 +143,7 @@ class WebsiteSlides(WebsiteProfile):
             'channel_id': channel.id,
             'is_category': True,
             'is_published': True,
-            'sequence': channel.slide_ids[-1]['sequence'] + 1 if channel.slide_id else 1,
+            'sequence': channel.slide_ids[-1]['sequence'] + 1 if channel.slide_ids else 1,
         }
 
     # CHANNEL UTILITIES
@@ -175,7 +175,7 @@ class WebsiteSlides(WebsiteProfile):
             slide_partners = request.env['slide.slide.partner'].sudo().search([
                 ('channel_id', '=', channel.id),
                 ('partner_id', '=', request.env.user.partner_id.id),
-                ('slide_id.active', '=', True)
+                ('slide_id', 'in', slides.ids)
             ])
             for slide_partner in slide_partners:
                 channel_progress[slide_partner.slide_id.id].update(slide_partner.read()[0])
@@ -234,7 +234,7 @@ class WebsiteSlides(WebsiteProfile):
     # SLIDE.CHANNEL MAIN / SEARCH
     # --------------------------------------------------
 
-    @http.route('/slides', type='http', auth="public", website=True)
+    @http.route('/slides', type='http', auth="public", website=True, sitemap=True)
     def slides_channel_home(self, **post):
         """ Home page for eLearning platform. Is mainly a container page, does not allow search / filter. """
         domain = request.website.website_domain()
@@ -246,13 +246,11 @@ class WebsiteSlides(WebsiteProfile):
         channels_popular = channels_all.sorted('total_votes', reverse=True)[:3]
         channels_newest = channels_all.sorted('create_date', reverse=True)[:3]
 
-        # fetch 'latests achievements' for non logged people
+        achievements = request.env['gamification.badge.user'].sudo().search([('badge_id.is_published', '=', True)], limit=5)
         if request.env.user._is_public():
-            achievements = request.env['gamification.badge.user'].sudo().search([('badge_id.is_published', '=', True)], limit=5)
             challenges = None
             challenges_done = None
         else:
-            achievements = None
             challenges = request.env['gamification.challenge'].sudo().search([
                 ('category', '=', 'slides'),
                 ('reward_id.is_published', '=', True)
@@ -263,13 +261,9 @@ class WebsiteSlides(WebsiteProfile):
                 ('badge_id.is_published', '=', True)
             ]).mapped('challenge_id')
 
-        # fetch 'heroes of the week' for non logged people
-        if request.env.user._is_public():
-            users = request.env['res.users'].sudo().search([
-                ('karma', '>', 0),
-                ('website_published', '=', True)], limit=5, order='karma desc')
-        else:
-            users = None
+        users = request.env['res.users'].sudo().search([
+            ('karma', '>', 0),
+            ('website_published', '=', True)], limit=5, order='karma desc')
 
         values = self._prepare_user_values(**post)
         values.update({
@@ -285,7 +279,7 @@ class WebsiteSlides(WebsiteProfile):
 
         return request.render('website_slides.courses_home', values)
 
-    @http.route('/slides/all', type='http', auth="public", website=True)
+    @http.route('/slides/all', type='http', auth="public", website=True, sitemap=True)
     def slides_channel_all(self, slide_type=None, my=False, **post):
         """ Home page displaying a list of courses displayed according to some
         criterion and search terms.
@@ -401,6 +395,7 @@ class WebsiteSlides(WebsiteProfile):
 
         values = {
             'channel': channel,
+            'main_object': channel,
             'active_tab': kw.get('active_tab', 'home'),
             # search
             'search_category': category,
@@ -422,18 +417,28 @@ class WebsiteSlides(WebsiteProfile):
             'enable_slide_upload': 'enable_slide_upload' in kw,
         }
         if not request.env.user._is_public():
-            last_message_values = request.env['mail.message'].search([
+            last_message = request.env['mail.message'].search([
                 ('model', '=', channel._name),
                 ('res_id', '=', channel.id),
                 ('author_id', '=', request.env.user.partner_id.id),
                 ('message_type', '=', 'comment'),
                 ('website_published', '=', True)
-            ], order='write_date DESC', limit=1).read(['body', 'rating_value'])
-            last_message_data = last_message_values[0] if last_message_values else {}
+            ], order='write_date DESC', limit=1)
+            if last_message:
+                last_message_values = last_message.read(['body', 'rating_value', 'attachment_ids'])[0]
+                last_message_attachment_ids = last_message_values.pop('attachment_ids', [])
+                if last_message_attachment_ids:
+                    last_message_attachment_ids = json.dumps(request.env['ir.attachment'].browse(last_message_attachment_ids).read(
+                        ['id', 'name', 'mimetype', 'file_size', 'access_token']
+                    ))
+            else:
+                last_message_values = {}
+                last_message_attachment_ids = []
             values.update({
-                'last_message_id': last_message_data.get('id'),
-                'last_message': tools.html2plaintext(last_message_data.get('body', '')),
-                'last_rating_value': last_message_data.get('rating_value'),
+                'last_message_id': last_message_values.get('id'),
+                'last_message': tools.html2plaintext(last_message_values.get('body', '')),
+                'last_rating_value': last_message_values.get('rating_value'),
+                'last_message_attachment_ids': last_message_attachment_ids,
             })
             if channel.can_review:
                 values.update({
@@ -508,6 +513,11 @@ class WebsiteSlides(WebsiteProfile):
             return {'error': 'join_done'}
         return success
 
+    @http.route(['/slides/channel/leave'], type='json', auth='user', website=True)
+    def slide_channel_leave(self, channel_id):
+        request.env['slide.channel'].browse(channel_id)._remove_membership(request.env.user.partner_id.ids)
+        return True
+
     @http.route(['/slides/channel/tag/search_read'], type='json', auth='user', methods=['POST'], website=True)
     def slide_channel_tag_search_read(self, fields, domain):
         can_create = request.env['slide.channel.tag'].check_access_rights('create', raise_exception=False)
@@ -516,11 +526,20 @@ class WebsiteSlides(WebsiteProfile):
             'can_create': can_create,
         }
 
+    @http.route(['/slides/channel/subscribe'], type='json', auth='user', website=True)
+    def slide_channel_subscribe(self, channel_id):
+        return request.env['slide.channel'].browse(channel_id).message_subscribe(partner_ids=[request.env.user.partner_id.id])
+
+    @http.route(['/slides/channel/unsubscribe'], type='json', auth='user', website=True)
+    def slide_channel_unsubscribe(self, channel_id):
+        request.env['slide.channel'].browse(channel_id).message_unsubscribe(partner_ids=[request.env.user.partner_id.id])
+        return True
+
     # --------------------------------------------------
     # SLIDE.SLIDE MAIN / SEARCH
     # --------------------------------------------------
 
-    @http.route('''/slides/slide/<model("slide.slide", "[('website_id', 'in', (False, current_website_id))]"):slide>''', type='http', auth="public", website=True)
+    @http.route('''/slides/slide/<model("slide.slide"):slide>''', type='http', auth="public", website=True, sitemap=True)
     def slide_view(self, slide, **kwargs):
         if not slide.channel_id.can_access_from_current_website() or not slide.active:
             raise werkzeug.exceptions.NotFound()
@@ -563,7 +582,7 @@ class WebsiteSlides(WebsiteProfile):
     @http.route('/slides/slide/<int:slide_id>/get_image', type='http', auth="public", website=True, sitemap=False)
     def slide_get_image(self, slide_id, field='image_128', width=0, height=0, crop=False):
         # Protect infographics by limiting access to 256px (large) images
-        if field not in ('image_64', 'image_128', 'image_256', 'image_512', 'image_1024', 'image_1920'):
+        if field not in ('image_128', 'image_256', 'image_512', 'image_1024', 'image_1920'):
             return werkzeug.exceptions.Forbidden()
 
         slide = request.env['slide.slide'].sudo().browse(slide_id).exists()
@@ -820,7 +839,10 @@ class WebsiteSlides(WebsiteProfile):
             else:
                 values.update({
                     'category_id': post['category_id'][0],
+                    'sequence': request.env['slide.slide'].browse(post['category_id'][0]).sequence + 1
                 })
+        else:
+            values['sequence'] = -1
 
         # create slide itself
         try:

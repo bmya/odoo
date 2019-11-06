@@ -24,7 +24,6 @@ from lxml import etree, html
 import odoo
 from . import config, pycompat
 from .misc import file_open, get_iso_codes, SKIPPED_ELEMENT_TYPES
-from .osutil import walksymlinks
 
 _logger = logging.getLogger(__name__)
 
@@ -603,7 +602,7 @@ class PoFileReader:
             translation = entry.msgstr
             found_code_occurrence = False
             for occurrence, line_number in entry.occurrences:
-                match = re.match(r'(model|model_terms):([\w.]+),([\w]+):(\w+)\.(\w+)', occurrence)
+                match = re.match(r'(model|model_terms):([\w.]+),([\w]+):(\w+)\.([\w-]+)', occurrence)
                 if match:
                     type, model_name, field_name, module, xmlid = match.groups()
                     yield {
@@ -632,24 +631,14 @@ class PoFileReader:
                         'src': source,
                         'value': translation,
                         'comments': comments,
-                        'res_id': int(line_number),
+                        'res_id': int(line_number or 0),
                         'module': module,
                     }
                     continue
 
                 match = re.match(r'(selection):([\w.]+),([\w]+)', occurrence)
                 if match:
-                    type, model_name, field_name = match.groups()
-                    yield {
-                        'type': type,
-                        'model': model_name,
-                        'name': model_name+','+field_name,
-                        'src': source,
-                        'value': translation,
-                        'comments': comments,
-                        'res_id': int(line_number),
-                        'module': module,
-                    }
+                    _logger.info("Skipped deprecated occurrence %s", occurrence)
                     continue
 
                 match = re.match(r'(sql_constraint|constraint):([\w.]+)', occurrence)
@@ -900,6 +889,21 @@ def trans_generate(lang, modules, cr):
         tnx = (module, source, name, id, type, tuple(comments or ()))
         to_translate.add(tnx)
 
+    def translatable_model(record):
+        if not record._translate:
+            return False
+
+        if record._name == 'ir.model.fields.selection':
+            record = record.field_id
+        if record._name == 'ir.model.fields':
+            field_name = record.name
+            field_model = env.get(record.model)
+            if (field_model is None or not field_model._translate or
+                    field_name not in field_model._fields):
+                return False
+
+        return True
+
     query = 'SELECT min(name), model, res_id, module FROM ir_model_data'
 
     if 'all_installed' in modules:
@@ -924,30 +928,12 @@ def trans_generate(lang, modules, cr):
             continue
 
         record = env[model].browse(res_id)
-        if not record._translate:
-            # explicitly disabled
-            continue
-
         if not record.exists():
             _logger.warning(u"Unable to find object %r with id %d", model, res_id)
             continue
 
-        if model==u'ir.model.fields':
-            try:
-                field_name = record.name
-            except AttributeError as exc:
-                _logger.error(u"name error in %s: %s", xml_name, str(exc))
-                continue
-            field_model = env.get(record.model)
-            if (field_model is None or not field_model._translate or
-                    field_name not in field_model._fields):
-                continue
-            field = field_model._fields[field_name]
-
-            if isinstance(getattr(field, 'selection', None), (list, tuple)):
-                name = "%s,%s" % (record.model, field_name)
-                for dummy, val in field.selection:
-                    push_translation(module, 'selection', name, 0, val)
+        if not translatable_model(record):
+            continue
 
         for field_name, field in record._fields.items():
             if field.translate:
@@ -967,7 +953,7 @@ def trans_generate(lang, modules, cr):
         for m in env['ir.module.module'].search_read([('state', '=', 'installed')], fields=['name'])
     ]
 
-    path_list = [(path, True) for path in odoo.modules.module.ad_paths]
+    path_list = [(path, True) for path in odoo.addons.__path__]
     # Also scan these non-addon paths
     for bin_path in ['osv', 'report', 'modules', 'service', 'tools']:
         path_list.append((os.path.join(config['root_path'], bin_path), True))
@@ -1019,7 +1005,7 @@ def trans_generate(lang, modules, cr):
 
     for (path, recursive) in path_list:
         _logger.debug("Scanning files of modules at %s", path)
-        for root, dummy, files in walksymlinks(path):
+        for root, dummy, files in os.walk(path, followlinks=True):
             for fname in fnmatch.filter(files, '*.py'):
                 babel_extract_terms(fname, path, root,
                                     extract_keywords={'_': None, '_lt': None})

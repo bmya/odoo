@@ -563,11 +563,14 @@ form: module.record_id""" % (xml_id,)
             else:
                 f_val = _eval_xml(self, field, env)
                 if f_name in model._fields:
-                    if model._fields[f_name].type == 'integer':
+                    field_type = model._fields[f_name].type
+                    if field_type == 'many2one':
+                        f_val = int(f_val) if f_val else False
+                    elif field_type == 'integer':
                         f_val = int(f_val)
-                    elif model._fields[f_name].type in ['float', 'monetary']:
+                    elif field_type in ('float', 'monetary'):
                         f_val = float(f_val)
-                    elif model._fields[f_name].type == 'boolean' and isinstance(f_val, str):
+                    elif field_type == 'boolean' and isinstance(f_val, str):
                         f_val = str2bool(f_val)
             res[f_name] = f_val
 
@@ -613,6 +616,8 @@ form: module.record_id""" % (xml_id,)
         record.append(Field(name, name='name'))
         record.append(Field(full_tpl_id, name='key'))
         record.append(Field("qweb", name='type'))
+        if 'track' in el.attrib:
+            record.append(Field(el.get('track'), name='track'))
         if 'priority' in el.attrib:
             record.append(Field(el.get('priority'), name='priority'))
         if 'inherit_id' in el.attrib:
@@ -707,15 +712,7 @@ form: module.record_id""" % (xml_id,)
         try:
             self._tag_root(de)
         except Exception as e:
-            exc_info = sys.exc_info()
-            pycompat.reraise(
-                ParseError,
-                ParseError(
-                    ustr(e),
-                    etree.tostring(de, encoding='unicode').rstrip(),
-                    de.getroottree().docinfo.URL, de.sourceline),
-                exc_info[2]
-            )
+            raise ParseError(ustr(e), etree.tostring(de, encoding='unicode').rstrip(), de.getroottree().docinfo.URL, de.sourceline)
     DATA_ROOTS = ['odoo', 'data', 'openerp']
 
 def convert_file(cr, module, filename, idref, mode='update', noupdate=False, kind=None, report=None, pathname=None):
@@ -784,10 +781,10 @@ def convert_xml_import(cr, module, xmlfile, idref=None, mode='init', noupdate=Fa
         _logger.exception("The XML file '%s' does not fit the required schema !", xmlfile.name)
         if jingtrang:
             p = subprocess.run(['pyjing', schema, xmlfile.name], stdout=subprocess.PIPE)
-            _logger.warn(p.stdout.decode())
+            _logger.warning(p.stdout.decode())
         else:
             for e in relaxng.error_log:
-                _logger.warn(e)
+                _logger.warning(e)
             _logger.info("Install 'jingtrang' for more precise and useful validation messages.")
         raise
 

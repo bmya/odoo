@@ -71,8 +71,6 @@ return AbstractRenderer.extend({
 
         this.chart = null;
         this.chartId = _.uniqueId('chart');
-        // the bar charts are considered stackable a priori
-        this.isStackable = true;
         this.$legendTooltip = null;
         this.$tooltip = null;
     },
@@ -314,6 +312,24 @@ return AbstractRenderer.extend({
         return this.state.origins[dataPt.originIndex];
     },
     /**
+     * Returns an object used to style chart elements independently from the datasets.
+     *
+     * @private
+     * @returns {Object}
+     */
+    _getElementOptions: function () {
+        var elementOptions = {};
+        if (this.state.mode === 'bar') {
+            elementOptions.rectangle = {borderWidth: 1};
+        } else if (this.state.mode === 'line') {
+            elementOptions.line = {
+                tension: 0,
+                fill: false,
+            };
+        }
+        return elementOptions;
+    },
+    /**
      * Returns a DateClasses instance used to manage equivalence of dates.
      *
      * @private
@@ -348,9 +364,8 @@ return AbstractRenderer.extend({
             } else {
                 return dataPt.labels.slice(0, 1);
             }
-        } else if (i >= 0) {
+        } else if (i === 0) {
             return Array.prototype.concat.apply([], [
-                        dataPt.labels.slice(0, i),
                         this.dateClasses.dateClass(dataPt.originIndex, dataPt.labels[i]),
                         dataPt.labels.slice(i+1)
                     ]);
@@ -667,6 +682,7 @@ return AbstractRenderer.extend({
             scales: this._getScaleOptions(),
             legend: this._getLegendOptions(datasetsCount),
             tooltips: this._getTooltipOptions(),
+            elements: this._getElementOptions(),
         };
     },
     /**
@@ -687,7 +703,7 @@ return AbstractRenderer.extend({
         if (_.contains(['bar', 'line'], this.state.mode) && i === 0) {
             // here label is an array of length 1 and contains a number
             return this.dateClasses.representative(label, originIndex) || '';
-        } else if (this.state.mode === 'pie' && i >= 0) {
+        } else if (this.state.mode === 'pie' && i === 0) {
             // here label is an array of length at least one containing string or numbers
             var labelCopy = label.slice(0);
             if (originIndex !== undefined) {
@@ -737,7 +753,7 @@ return AbstractRenderer.extend({
             this.$el.append($canvasContainer);
 
             var i = this.state.comparisonFieldIndex;
-            if (i === 0 || (i > 0 && this.state.mode === 'pie')) {
+            if (i === 0) {
                 this.dateClasses = this._getDateClasses(dataPoints);
             }
             if (this.state.mode === 'bar') {
@@ -761,40 +777,12 @@ return AbstractRenderer.extend({
     _renderBarChart: function (dataPoints) {
         var self = this;
 
-        // style rectangles
-        Chart.defaults.global.elements.rectangle.borderWidth = 1;
-
         // prepare data
         var data = this._prepareData(dataPoints);
 
-        // The datapoints (with non zero value) can be grouped by
-        // their originIndex and associated labels.
-        // If at least one group formed in that way has two elements
-        // this.isStackable will be true.
-        var groupMemberCounts = data.labels.map(function () {
-            return {};
-        });
-        this.isStackable = false;
-        for (var i = 0; i < data.datasets.length; i++) {
-            var dataset = data.datasets[i];
-            var originIndex = dataset.originIndex;
-            if (this.isStackable) {
-                break;
-            }
-            for (var j = 0; j < dataset.data.length; j++) {
-                if (dataset.data[j]) {
-                    if (originIndex in groupMemberCounts[j]) {
-                        this.isStackable = true;
-                        break;
-                    } else {
-                        groupMemberCounts[j][originIndex] = 1;
-                    }
-                }
-            }
-        }
         data.datasets.forEach(function (dataset, index) {
             // used when stacked
-            dataset.stack = self.isStackable && self.state.stacked ? self.state.origins[dataset.originIndex] : undefined;
+            dataset.stack = self.state.stacked ? self.state.origins[dataset.originIndex] : undefined;
             // set dataset color
             var color = self._getColor(index);
             dataset.backgroundColor = color;
@@ -819,10 +807,6 @@ return AbstractRenderer.extend({
      */
     _renderLineChart: function (dataPoints) {
         var self = this;
-
-        // style lines
-        Chart.defaults.global.elements.line.tension = 0;
-        Chart.defaults.global.elements.line.fill = false;
 
         // prepare data
         var data = this._prepareData(dataPoints);

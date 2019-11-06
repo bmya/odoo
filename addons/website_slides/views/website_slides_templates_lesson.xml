@@ -5,7 +5,6 @@
 <template id="slide_main" name="Slide Detailed View">
     <t t-set="body_classname" t-value="'o_wslides_body'"/>
     <t t-call="website.layout">
-        <t t-set="main_object" t-value="slide"/>
         <div id="wrap" class="wrap o_wslides_wrap">
             <div class="o_wslides_lesson_header o_wslides_gradient position-relative text-white pb-0 pt-2 pt-md-5">
                 <t t-call="website_slides.course_nav">
@@ -16,6 +15,9 @@
                         <div t-attf-class="col-12 col-lg-9 d-flex flex-column #{'offset-lg-3' if slide.channel_id.channel_type == 'training' else ''}">
                             <h2 class="font-weight-medium w-100">
                                 <a t-att-href="'/slides/%s' % (slug(slide.channel_id))" class="text-white text-decoration-none" t-field="slide.channel_id.name"/>
+                                <t t-if="slide.channel_id.completed">
+                                    <small><span class="badge badge-pill badge-success pull-right my-1 py-1 px-2 font-weight-normal"><i class="fa fa-check"/> Completed</span></small>
+                                </t>
                             </h2>
 
                             <div t-if="slide.channel_id.channel_type == 'documentation'" class="mb-3 small">
@@ -23,7 +25,7 @@
                                 <t t-esc="slide.date_published" t-options="{'widget': 'date'}"/>
                             </div>
 
-                            <div t-else="" class="d-flex align-items-center pb-3">
+                            <div t-else="" t-if="not slide.channel_id.completed" class="d-flex align-items-center pb-3">
                                 <div class="progress w-50 bg-black-25" style="height: 10px;">
                                     <div class="progress-bar rounded-left" role="progressbar"
                                         t-att-aria-valuenow="slide.channel_id.completion" aria-valuemin="0" aria-valuemax="100"
@@ -137,10 +139,13 @@
         </a>
         <ul class="collapse show p-0 m-0 list-unstyled" t-att-id="('collapse-%s') % (category.id if category else 0)" >
             <t t-foreach="category_slide_ids" t-as="aside_slide">
+                <t t-set="slide_completed" t-value="channel_progress[aside_slide.id].get('completed')"/>
+                <t t-set="is_member" t-value="aside_slide.channel_id.is_member"/>
+                <t t-set="can_access" t-value="aside_slide.is_preview or is_member or aside_slide.channel_id.can_publish"/>
                 <li class="p-0 pb-1">
-                    <a t-att-href="'/slides/slide/%s' % (slug(aside_slide))"
-                        t-att-class="'o_wslides_lesson_aside_list_link d-flex align-items-top px-2 pt-1 text-decoration-none %s' % ('bg-100 py-1 active' if aside_slide == slide else '')">
-                        <div t-if="aside_slide.channel_id.is_member" >
+                    <a t-att-href="'/slides/slide/%s' % (slug(aside_slide)) if can_access else '#'"
+                        t-att-class="'o_wslides_lesson_aside_list_link d-flex align-items-top px-2 pt-1 text-decoration-none %s%s' % (('bg-100 py-1 active' if aside_slide == slide else ''), 'text-muted' if not can_access else '')">
+                        <div t-if="is_member" >
                             <i t-att-id="'o_wslides_lesson_aside_slide_check_%s' % (aside_slide.id)"
                                 t-att-class="'mr-1 fa fa-fw %s' % ('text-success fa-check-circle' if channel_progress[aside_slide.id].get('completed') else 'text-600 fa-circle-o')">
                             </i>
@@ -160,15 +165,22 @@
                     <ul t-if="aside_slide.link_ids or aside_slide.question_ids" class="list-group px-2 mb-1 list-unstyled">
                         <t t-foreach="aside_slide.link_ids" t-as="resource">
                             <li class="pl-4">
-                                <a t-attf-href="#{resource.link}" target="new" class="text-decoration-none small">
+                                <a t-if="can_access" t-att-href="resource.link" target="new" class="text-decoration-none small">
                                     <i class="fa fa-link mr-1"/><span t-field="resource.name"/>
                                 </a>
+                                <span t-else="" class="text-decoration-none text-muted small">
+                                    <i class="fa fa-link mr-1"/><span t-field="resource.name"/>
+                                </span>
                             </li>
                         </t>
                         <li class="pl-4">
-                            <a t-if="aside_slide.question_ids and aside_slide.slide_type != 'quiz'" t-att-href="'/slides/slide/%s#lessonQuiz' % (slug(aside_slide))" class="o_wslides_lesson_aside_list_link text-decoration-none small text-600">
+                            <a t-if="can_access and aside_slide.question_ids and aside_slide.slide_type != 'quiz'" t-att-href="'/slides/slide/%s#lessonQuiz' % (slug(aside_slide))" class="o_wslides_lesson_aside_list_link text-decoration-none small text-600">
                                 <i class="fa fa-flag text-warning"/> Quiz
                             </a>
+                            <span t-elif="not can_access and aside_slide.question_ids and aside_slide.slide_type != 'quiz'"
+                                class="o_wslides_lesson_aside_list_link text-decoration-none small text-600 text-muted">
+                                <i class="fa fa-flag text-warning"/> Quiz
+                            </span>
                         </li>
                     </ul>
                 </li>
@@ -328,9 +340,20 @@
                     The social sharing module will be unlocked when a moderator will allow your publication.
                 </h4>
                 <t t-if="slide.website_published">
-                    <t t-call="website_slides.slide_social_media">
-                        <t t-set="slide" t-value="slide"/>
-                    </t>
+                    <div class="row">
+                        <div class="col-12 col-lg-6">
+                            <h5 class="mt16">Share on Social Networks</h5>
+                            <t t-call="website_slides.slide_share_social">
+                                <t t-set="record" t-value="slide"/>
+                            </t>
+                        </div>
+                        <div class="col-12 col-lg-6">
+                            <t t-call="website_slides.slide_share_link">
+                                <t t-set="record" t-value="slide"/>
+                                <t t-set="website_url" t-value="slide.website_url"/>
+                            </t>
+                        </div>
+                    </div>
                     <div class="row">
                         <div t-attf-class="col-12 #{'col-lg-6' if slide.embed_code else ''}">
                             <t t-call="website_slides.slide_social_email">

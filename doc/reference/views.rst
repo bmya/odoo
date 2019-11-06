@@ -48,7 +48,7 @@ otherwise.
     a route address to be fetched and prepended to the view.
 
     If this attribute is set, the
-    :ref:`controller route url<reference/http/controllers>` will be fetched and
+    :ref:`controller route url<reference/controllers>` will be fetched and
     displayed above the view. The json response from the controller should
     contain an "html" key.
 
@@ -197,6 +197,10 @@ root can have the following attributes:
 
     .. note:: if the ``edit`` attribute is set to ``false``, the ``editable`` option will be ignored.
 
+``multi_edit``
+    editable or not editable list can activate the multi-edition feature by defining
+    the multi_edit=1
+
 ``default_order``
     overrides the ordering of the view, replacing the model's default order.
     The value is a comma-separated list of fields, postfixed by ``desc`` to
@@ -219,7 +223,7 @@ root can have the following attributes:
     (``font-style: italic``), or any `bootstrap contextual color
     <https://getbootstrap.com/docs/3.3/components/#available-variations>`_ (``danger``,
     ``info``, ``muted``, ``primary``, ``success`` or ``warning``).
-``create``, ``edit``, ``delete``, ``duplicate``, ``import``
+``create``, ``edit``, ``delete``, ``duplicate``, ``import``, ``export_xlsx``
     allows *dis*\ abling the corresponding action in the view by setting the
     corresponding attribute to ``false``
 ``limit``
@@ -329,15 +333,29 @@ Possible children elements of the list view are:
         dynamic attributes based on record values. Only effects the current
         field, so e.g. ``invisible`` will hide the field but leave the same
         field of other records visible, it will not hide the column itself
-    ``width_factor`` (for ``editable``)
-        the column relative width (as the layout is fixed)
     ``width`` (for ``editable``)
-        the column width (as the layout is fixed). It is a string describing the
-        width css property, such as '100px'.
+        when there is no data in the list, the width of a column can be forced
+        by setting this attribute. The value can be an absolute width (e.g.
+        '100px'), or a relative weight (e.g. '3', meaning that this column will
+        be 3 times larger than the others). Note that when there are records in
+        the list, we let the browser automatically adapt the column's widths
+        according to their content, and this attribute is thus ignored.
 
-    .. note:: if the list view is ``editable``, any field attribute from the
-              :ref:`form view <reference/views/form>` is also valid and will
-              be used when setting up the inline form view
+    .. note::
+
+        if the list view is ``editable``, any field attribute from the
+        :ref:`form view <reference/views/form>` is also valid and will
+        be used when setting up the inline form view.
+
+    .. note::
+
+        In case of list sub-views (One2many/Many2many display in a form view),
+        The attribute ``column_invisible`` can be useful to hide a column
+        depending on the parent object.
+
+        .. code-block:: xml
+
+           <field name="product_is_late" attrs="{'column_invisible': [('parent.has_late_products', '=', False)]}"/>
 
     .. note:: When a list view is grouped, numeric fields are aggregated and
               displayed for each group.  Also, if there are too many records in
@@ -575,312 +593,6 @@ system. Available semantic components are:
 
 .. todo:: widgets?
 
-Business Views guidelines
--------------------------
-
-.. sectionauthor:: Aline Preillon, Raphael Collet
-
-Business views are targeted at regular users, not advanced users.  Examples
-are: Opportunities, Products, Partners, Tasks, Projects, etc.
-
-.. image:: forms/oppreadonly.png
-   :class: img-responsive
-
-In general, a business view is composed of
-
-1. a status bar on top (with technical or business flow),
-2. a sheet in the middle (the form itself),
-3. a bottom part with History and Comments.
-
-Technically, the new form views are structured as follows in XML::
-
-    <form>
-        <header> ... content of the status bar  ... </header>
-        <sheet>  ... content of the sheet       ... </sheet>
-        <div class="oe_chatter"> ... content of the bottom part ... </div>
-    </form>
-
-The Status Bar
-''''''''''''''
-
-The purpose of the status bar is to show the status of the current record and
-the action buttons.
-
-.. image:: forms/status.png
-   :class: img-responsive
-
-The Buttons
-...........
-
-The order of buttons follows the business flow. For instance, in a sale order,
-the logical steps are:
-
-1. Send the quotation
-2. Confirm the quotation
-3. Create the final invoice
-4. Send the goods
-
-Highlighted buttons (in red by default) emphasize the logical next step, to
-help the user. It is usually the first active button. On the other hand,
-:guilabel:`cancel` buttons *must* remain grey (normal).  For instance, in
-Invoice the button :guilabel:`Refund` must never be red.
-
-Technically, buttons are highlighted by adding the class "oe_highlight"::
-
-    <button class="oe_highlight" name="..." type="..." states="..."/>
-
-The Status
-..........
-
-Uses the ``statusbar`` widget, and shows the current state in red. States
-common to all flows (for instance, a sale order begins as a quotation, then we
-send it, then it becomes a full sale order, and finally it is done) should be
-visible at all times but exceptions or states depending on particular sub-flow
-should only be visible when current.
-
-.. image:: forms/status1.png
-   :class: img-responsive
-
-.. image:: forms/status2.png
-   :class: img-responsive
-
-The states are shown following the order used in the field (the list in a
-selection field, etc). States that are always visible are specified with the
-attribute ``statusbar_visible``.
-
-::
-
-    <field name="state" widget="statusbar"
-        statusbar_visible="draft,sent,progress,invoiced,done" />
-
-The Sheet
-'''''''''
-
-All business views should look like a printed sheet:
-
-.. image:: forms/sheet.png
-   :class: img-responsive
-
-1. Elements inside a ``<form>`` or ``<page>`` do not define groups, elements
-   inside them are laid out according to normal HTML rules. They content can
-   be explicitly grouped using ``<group>`` or regular ``<div>`` elements.
-2. By default, the element ``<group>`` defines two columns inside, unless an
-   attribute ``col="n"`` is used.  The columns have the same width (1/n th of
-   the group's width). Use a ``<group>`` element to produce a column of fields.
-3. To give a title to a section, add a ``string`` attribute to a ``<group>`` element::
-
-     <group string="Time-sensitive operations">
-
-   this replaces the former use of ``<separator string="XXX"/>``.
-4. The ``<field>`` element does not produce a label, except as direct children
-   of a ``<group>`` element\ [#backwards-compatibility]_.  Use :samp:`<label
-   for="{field_name}>` to produce a label of a field.
-
-Sheet Headers
-.............
-
-Some sheets have headers with one or more fields, and the labels of those
-fields are only shown in edit mode.
-
-.. list-table::
-   :header-rows: 1
-
-   * - View mode
-     - Edit mode
-   * - .. image:: forms/header.png
-          :class: img-responsive
-     - .. image:: forms/header2.png
-          :class: img-responsive
-
-Use HTML text, ``<div>``, ``<h1>``, ``<h2>``… to produce nice headers, and
-``<label>`` with the class ``oe_edit_only`` to only display the field's label
-in edit mode. The class ``oe_inline`` will make fields inline (instead of
-blocks): content following the field will be displayed on the same line rather
-than on the line below it. The form above is produced by the following XML::
-
-    <label for="name" class="oe_edit_only"/>
-    <h1><field name="name"/></h1>
-
-    <label for="planned_revenue" class="oe_edit_only"/>
-    <h2>
-        <field name="planned_revenue" class="oe_inline"/>
-        <field name="company_currency" class="oe_inline oe_edit_only"/> at
-        <field name="probability" class="oe_inline"/> % success rate
-    </h2>
-
-Button Box
-..........
-
-Many relevant actions or links can be displayed in the form. For example, in
-Opportunity form, the actions "Schedule a Call" and "Schedule a Meeting" have
-an important place in the use of the CRM. Instead of placing them in the
-"More" menu, put them directly in the sheet as buttons (on the top) to make
-them more visible and more easily accessible.
-
-.. image:: forms/header3.png
-   :class: img-responsive
-
-Technically, the buttons are placed inside a ``<div>`` to group them as a
-block on the top of the sheet.
-
-::
-
-    <div class="oe_button_box" name="button_box">
-        <button string="Schedule/Log Call" name="..." type="action"/>
-        <button string="Schedule Meeting" name="action_makeMeeting" type="object"/>
-    </div>
-
-Groups and Titles
-.................
-
-A column of fields is now produced with a ``<group>`` element, with an
-optional title.
-
-.. image:: forms/screenshot-03.png
-   :class: img-responsive
-
-::
-
-    <group string="Payment Options">
-        <field name="writeoff_amount"/>
-        <field name="payment_option"/>
-    </group>
-
-It is recommended to have two columns of fields on the form. For this, simply
-put the ``<group>`` elements that contain the fields inside a top-level
-``<group>`` element.
-
-To make :ref:`view extension <reference/views/inheritance>` simpler, it is
-recommended to put a ``name`` attribute on ``<group>`` elements, so new fields
-can easily be added at the right place.
-
-Special Case: Subtotals
-~~~~~~~~~~~~~~~~~~~~~~~
-
-Some classes are defined to render subtotals like in invoice forms:
-
-.. image:: forms/screenshot-00.png
-   :class: img-responsive
-
-::
-
-    <group class="oe_subtotal_footer">
-        <field name="amount_untaxed"/>
-        <field name="amount_tax"/>
-        <field name="amount_total" class="oe_subtotal_footer_separator"/>
-        <field name="amount_residual" style="margin-top: 10px"/>
-    </group>
-
-Placeholders and Inline Fields
-..............................
-
-Sometimes field labels make the form too complex. One can omit field labels,
-and instead put a placeholder inside the field. The placeholder text is
-visible only when the field is empty. The placeholder should tell what to
-place inside the field, it *must not* be an example as they are often confused
-with filled data.
-
-One can also group fields together by rendering them "inline" inside an
-explicit block element like ``<div>``. This allows grouping semantically
-related fields as if they were a single (composite) fields.
-
-The following example, taken from the *Leads* form, shows both placeholders and
-inline fields (zip and city).
-
-.. list-table::
-   :header-rows: 1
-
-   * - Edit mode
-     - View mode
-   * - .. image:: forms/placeholder.png
-          :class: img-responsive
-     - .. image:: forms/screenshot-01.png
-          :class: img-responsive
-
-::
-
-    <group>
-        <label for="street" string="Address"/>
-        <div>
-            <field name="street" placeholder="Street..."/>
-            <field name="street2"/>
-            <div>
-                <field name="zip" class="oe_inline" placeholder="ZIP"/>
-                <field name="city" class="oe_inline" placeholder="City"/>
-            </div>
-            <field name="state_id" placeholder="State"/>
-            <field name="country_id" placeholder="Country"/>
-        </div>
-    </group>
-
-Images
-......
-
-Images, like avatars, should be displayed on the right of the sheet.  The
-product form looks like:
-
-.. image:: forms/screenshot-02.png
-   :class: img-responsive
-
-The form above contains a <sheet> element that starts with:
-
-::
-
-    <field name="product_image" widget="image" class="oe_avatar oe_right"/>
-
-Tags
-....
-
-Most :class:`~odoo.fields.Many2many` fields, like categories, are better
-rendered as a list of tags. Use the widget ``many2many_tags`` for this:
-
-.. image:: forms/screenshot-04.png
-   :class: img-responsive
-
-::
-
-    <field name="category_id" widget="many2many_tags"/>
-
-Configuration forms guidelines
-------------------------------
-
-Examples of configuration forms: Stages, Leave Type, etc.  This concerns all
-menu items under Configuration of each application (like Sales/Configuration).
-
-.. image:: forms/nosheet.png
-   :class: img-responsive
-
-1. no header (because no state, no workflow, no button)
-2. no sheet
-
-Dialog forms guidelines
------------------------
-
-Example: "Schedule a Call" from an opportunity.
-
-.. image:: forms/wizard-popup.png
-   :class: img-responsive
-
-1. avoid separators (the title is already in the popup title bar, so another
-   separator is not relevant)
-2. avoid cancel buttons (user generally close the popup window to get the same
-   effect)
-3. action buttons must be highlighted (red)
-4. when there is a text area, use a placeholder instead of a label or a
-   separator
-5. like in regular form views, put buttons in the <header> element
-
-Configuration Wizards guidelines
---------------------------------
-
-Example: Settings / Configuration / Sales.
-
-1. always in line (no popup)
-2. no sheet
-3. keep the cancel button (users cannot close the window)
-4. the button "Apply" must be red
-
-
 .. _reference/views/graph:
 
 Graphs
@@ -1050,6 +762,8 @@ attributes:
   whether it should be possible to create records without switching to the
   form view. By default, ``quick_create`` is enabled when the Kanban view is
   grouped by many2one, selection, char or boolean fields, and disabled when not.
+``records_draggable``
+  whether it should be possible to drag records when kanban is grouped. Default: true.
 
   Set to ``true`` to always enable it, and to ``false`` to always disable it.
 
@@ -1074,8 +788,8 @@ Possible children of the view element are:
     the progressbar
 
   ``colors`` (required)
-    JSON mapping the above field values to either "danger", "warning" or
-    "success" colors
+    JSON mapping the above field values to either "danger", "warning", "success"
+    or "muted" colors
 
   ``sum_field`` (optional)
     the name of the field whose column's records' values will be summed and
@@ -1368,49 +1082,24 @@ take the following attributes:
   is not set, the gantt view will fall back to the id of the form view in the
   current action, if any.
 
-.. _reference/views/diagram:
+``thumbnails``
+  This allows to display a thumbnail next to groups name if the group is a relationnal field.
+  This expects a python dict which keys are the name of the field on the active model.
+  Values are the names of the field holding the thumbnail on the related model.
 
-Diagram
-=======
+  Example: tasks have a field user_id that reference res.users. The res.users model has a field image that holds the avatar,
+  then:
+.. code-block:: xml
 
-The diagram view can be used to display directed graphs of records. The root
-element is ``<diagram>`` and takes no attributes.
+      <gantt
+        date_start="date_start"
+        date_stop="date_stop"
+        thumbnails="{'user_id': 'image_128'}"
+      >
+      </gantt>
 
-Possible children of the diagram view are:
 
-``node`` (required, 1)
-    Defines the nodes of the graph. Its attributes are:
-
-    ``object``
-      the node's Odoo model
-    ``shape``
-      conditional shape mapping similar to colors and fonts in :ref:`the list
-      view <reference/views/list>`. The only valid shape is ``rectangle`` (the
-      default shape is an ellipsis)
-    ``bgcolor``
-      same as ``shape``, but conditionally maps a background color for
-      nodes. The default background color is white, the only valid alternative
-      is ``grey``.
-``arrow`` (required, 1)
-    Defines the directed edges of the graph. Its attributes are:
-
-    ``object`` (required)
-      the edge's Odoo model
-    ``source`` (required)
-      :class:`~odoo.fields.Many2one` field of the edge's model pointing to
-      the edge's source node record
-    ``destination`` (required)
-      :class:`~odoo.fields.Many2one` field of the edge's model pointing to
-      the edge's destination node record
-    ``label``
-      Python list of attributes (as quoted strings). The corresponding
-      attributes's values will be concatenated and displayed as the edge's
-      label
-
-``label``
-    Explanatory note for the diagram, the ``string`` attribute defines the
-    note's content. Each ``label`` is output as a paragraph in the diagram
-    header, easily visible but without any special emphasis.
+will display the users avatars next to their names when grouped by user_id
 
 .. _reference/views/dashboard:
 
@@ -2047,8 +1736,12 @@ The view's root element is ``<map>`` multiple attributes are allowed
     If a field is provided the view will override the model's default order. The field must be apart of the model on which the view is applied not from res.partner
 ``routing``
     if ``true`` the routes between the records will be shown. The view still needs a valid MapBox token and at least two located records. (i.e the records has a res.partner many2one and the partner has a address or valid coordinates)
+``hide_name``
+    if ``true`` hide a name from the marker's popup (default: false)
+``hide_address``
+    if ``true`` hide a address from the marker's popup (default: false)
 
-The only element allowed within the ``<map>`` element is the ``<marker-popup>``. This element is able to contain multiple ``<field>`` elements. Each of these elements will be interpreted as a line in the marker's popup. The field's attributes are the following:
+The ``<map>`` element can contain multiple ``<field>`` elements. Each ``<field>`` element will be interpreted as a line in the marker's popup. The field's attributes are the following:
 
 ``name``
     The field to display.
@@ -2060,10 +1753,8 @@ No attribute or element is mandatory but as stated above if no res.partner many2
 For example here is a map:
     .. code-block:: xml
 
-        <map res_partner="partner_id" default_order="date_begin" routing="true">
-            <marker-popup>
-                <field name="name" string="Task: "/>
-            </marker-popup>
+        <map res_partner="partner_id" default_order="date_begin" routing="true" hide_name="true">
+            <field name="partner_id" string="Customer Name"/>
         </map>
 
 .. _reference/views/qweb:

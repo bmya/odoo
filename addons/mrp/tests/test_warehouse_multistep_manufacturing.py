@@ -132,6 +132,7 @@ class TestMultistepManufacturingWarehouse(TestMrpCommon):
         with Form(self.warehouse) as warehouse:
             warehouse.manufacture_steps = 'pbm_sam'
             warehouse.delivery_steps = 'pick_pack_ship'
+        self.warehouse.flush()
         self.env['stock.quant']._update_available_quantity(self.raw_product, self.warehouse.lot_stock_id, 4.0)
         picking_customer = self.env['stock.picking'].create({
             'location_id': self.warehouse.wh_output_stock_loc_id.id,
@@ -174,7 +175,7 @@ class TestMultistepManufacturingWarehouse(TestMrpCommon):
 
         picking_stock_preprod.action_assign()
         picking_stock_preprod.move_line_ids.qty_done = 4
-        picking_stock_preprod.action_done()
+        picking_stock_preprod._action_done()
 
         self.assertFalse(sum(self.env['stock.quant']._gather(self.raw_product, self.warehouse.lot_stock_id).mapped('quantity')))
         self.assertTrue(self.env['stock.quant']._gather(self.raw_product, self.warehouse.pbm_loc_id))
@@ -210,6 +211,7 @@ class TestMultistepManufacturingWarehouse(TestMrpCommon):
         cancel depends on the default values on each rule of the chain.
         """
         self.warehouse.manufacture_steps = 'pbm_sam'
+        self.warehouse.flush()
         self.env['stock.quant']._update_available_quantity(self.raw_product, self.warehouse.lot_stock_id, 4.0)
         picking_customer = self.env['stock.picking'].create({
             'location_id': self.warehouse.lot_stock_id.id,
@@ -250,6 +252,6 @@ class TestMultistepManufacturingWarehouse(TestMrpCommon):
         self.assertEqual(move_stock_postprod.state, 'waiting')
 
         move_stock_preprod._action_cancel()
-        self.assertEquals(production_order.state, 'confirmed')
+        self.assertEqual(production_order.state, 'confirmed')
         production_order.action_cancel()
         self.assertTrue(move_stock_postprod.state, 'cancel')

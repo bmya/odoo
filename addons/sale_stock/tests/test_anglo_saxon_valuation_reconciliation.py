@@ -145,14 +145,14 @@ class TestValuationReconciliation(ValuationReconciliationTestCase):
         return_pick = self.env['stock.picking'].browse(stock_return_picking_action['res_id'])
         return_pick.action_assign()
         return_pick.move_lines.quantity_done = 1
-        return_pick.action_done()
+        return_pick._action_done()
         self.env['res.currency.rate'].create({
             'currency_id': self.currency_one.id,
             'company_id': self.company.id,
             'rate': 9.56564564,
             'name': '2018-04-01',
         })
-        refund_invoice_wiz = self.env['account.move.reversal'].with_context(active_ids=[invoice.id]).create({
+        refund_invoice_wiz = self.env['account.move.reversal'].with_context(active_model='account.move', active_ids=[invoice.id]).create({
             'reason': 'test_invoice_shipment_refund',
             'refund_method': 'cancel',
         })

@@ -74,23 +74,23 @@ class TestStockValuation(TransactionCase):
         move1 = picking1.move_lines[0]
 
         # the unit price of the purchase order line is copied to the in move
-        self.assertEquals(move1.price_unit, 100)
+        self.assertEqual(move1.price_unit, 100)
 
         # update the unit price on the purchase order line
         po1.order_line.price_unit = 200
 
         # the unit price on the stock move is not directly updated
-        self.assertEquals(move1.price_unit, 100)
+        self.assertEqual(move1.price_unit, 100)
 
         # validate the receipt
         res_dict = picking1.button_validate()
-        wizard = self.env[(res_dict.get('res_model'))].browse(res_dict.get('res_id'))
+        wizard = self.env[(res_dict.get('res_model'))].browse(res_dict.get('res_id')).with_context(res_dict['context'])
         wizard.process()
 
         # the unit price of the valuationlayer used the latest value
-        self.assertEquals(move1.stock_valuation_layer_ids.unit_cost, 200)
+        self.assertEqual(move1.stock_valuation_layer_ids.unit_cost, 200)
 
-        self.assertEquals(self.product1.value_svl, 2000)
+        self.assertEqual(self.product1.value_svl, 2000)
 
     def test_standard_price_change_1(self):
         """ Confirm a purchase order and create the associated receipt, change the unit cost of the
@@ -122,23 +122,23 @@ class TestStockValuation(TransactionCase):
 
         # the move's unit price reflects the purchase order line's cost even if it's useless when
         # the product's cost method is standard
-        self.assertEquals(move1.price_unit, 11)
+        self.assertEqual(move1.price_unit, 11)
 
         # set a new standard price
         self.product1.product_tmpl_id.standard_price = 12
 
         # the unit price on the stock move is not directly updated
-        self.assertEquals(move1.price_unit, 11)
+        self.assertEqual(move1.price_unit, 11)
 
         # validate the receipt
         res_dict = picking1.button_validate()
-        wizard = self.env[(res_dict.get('res_model'))].browse(res_dict.get('res_id'))
+        wizard = self.env[(res_dict.get('res_model'))].browse(res_dict.get('res_id')).with_context(res_dict['context'])
         wizard.process()
 
         # the unit price of the valuation layer used the latest value
-        self.assertEquals(move1.stock_valuation_layer_ids.unit_cost, 12)
+        self.assertEqual(move1.stock_valuation_layer_ids.unit_cost, 12)
 
-        self.assertEquals(self.product1.value_svl, 120)
+        self.assertEqual(self.product1.value_svl, 120)
 
     def test_change_currency_rate_average_1(self):
         """ Confirm a purchase order in another currency and create the associated receipt, change
@@ -202,7 +202,7 @@ class TestStockValuation(TransactionCase):
 
         # validate the receipt
         res_dict = picking1.button_validate()
-        wizard = self.env[(res_dict.get('res_model'))].browse(res_dict.get('res_id'))
+        wizard = self.env[(res_dict.get('res_model'))].browse(res_dict.get('res_id')).with_context(res_dict['context'])
         wizard.process()
 
         # the unit price of the valuation layer used the latest value
@@ -233,10 +233,7 @@ class TestStockValuation(TransactionCase):
         picking1 = po1.picking_ids[0]
         move1 = picking1.move_lines[0]
         move1.quantity_done = 15
-        res_dict = picking1.button_validate()
-        self.assertEqual(res_dict['res_model'], 'stock.overprocessed.transfer')
-        wizard = self.env[(res_dict.get('res_model'))].browse(res_dict.get('res_id'))
-        wizard.action_confirm()
+        picking1.button_validate()
 
         # there should be only one move
         self.assertEqual(len(picking1.move_lines), 1)
@@ -270,7 +267,7 @@ class TestStockValuation(TransactionCase):
         move1.quantity_done = 5
         res_dict = picking1.button_validate()
         self.assertEqual(res_dict['res_model'], 'stock.backorder.confirmation')
-        wizard = self.env[(res_dict.get('res_model'))].browse(res_dict.get('res_id'))
+        wizard = self.env[(res_dict.get('res_model'))].browse(res_dict.get('res_id')).with_context(res_dict['context'])
         wizard.process()
 
         self.assertEqual(len(picking1.move_lines), 1)
@@ -291,15 +288,19 @@ class TestStockValuationWithCOA(AccountingTestCase):
         self.supplier_location = self.env.ref('stock.stock_location_suppliers')
         self.stock_location = self.env.ref('stock.stock_location_stock')
         self.partner_id = self.env.ref('base.res_partner_1')
-        self.product1 = self.env.ref('product.product_product_8')
 
-        cat = self.env['product.category'].create({
+        self.cat = self.env['product.category'].create({
             'name': 'cat',
         })
         self.product1 = self.env['product.product'].create({
             'name': 'product1',
             'type': 'product',
-            'categ_id': cat.id,
+            'categ_id': self.cat.id,
+        })
+        self.product1_copy = self.env['product.product'].create({
+            'name': 'product1',
+            'type': 'product',
+            'categ_id': self.cat.id,
         })
 
         Account = self.env['account.account']
@@ -460,17 +461,17 @@ class TestStockValuationWithCOA(AccountingTestCase):
 
         # Check what was posted in the price difference account
         price_diff_aml = self.env['account.move.line'].search([('account_id','=', self.price_diff_account.id)])
-        self.assertEquals(len(price_diff_aml), 1, "Only one line should have been generated in the price difference account.")
-        self.assertAlmostEquals(price_diff_aml.debit, 5, "Price difference should be equal to 5 (15-10)")
+        self.assertEqual(len(price_diff_aml), 1, "Only one line should have been generated in the price difference account.")
+        self.assertAlmostEqual(price_diff_aml.debit, 5, "Price difference should be equal to 5 (15-10)")
 
         # Check what was posted in stock input account
         input_aml = self.env['account.move.line'].search([('account_id','=',self.stock_input_account.id)])
-        self.assertEquals(len(input_aml), 3, "Only three lines should have been generated in stock input account: one when receiving the product, one when making the invoice.")
+        self.assertEqual(len(input_aml), 3, "Only three lines should have been generated in stock input account: one when receiving the product, one when making the invoice.")
         invoice_amls = input_aml.filtered(lambda l: l.move_id == invoice)
         picking_aml = input_aml - invoice_amls
-        self.assertAlmostEquals(sum(invoice_amls.mapped('debit')), 15, "Total debit value on stock input account should be equal to the original PO price of the product.")
-        self.assertAlmostEquals(sum(invoice_amls.mapped('credit')), 5, "Total debit value on stock input account should be equal to the original PO price of the product.")
-        self.assertAlmostEquals(sum(picking_aml.mapped('credit')), 10, "Total credit value on stock input account should be equal to the original PO price of the product.")
+        self.assertAlmostEqual(sum(invoice_amls.mapped('debit')), 15, "Total debit value on stock input account should be equal to the original PO price of the product.")
+        self.assertAlmostEqual(sum(invoice_amls.mapped('credit')), 5, "Total debit value on stock input account should be equal to the original PO price of the product.")
+        self.assertAlmostEqual(sum(picking_aml.mapped('credit')), 10, "Total credit value on stock input account should be equal to the original PO price of the product.")
 
     def test_valuation_from_increasing_tax(self):
         """ Check that a tax without account will increment the stock value.
@@ -618,14 +619,15 @@ class TestStockValuationWithCOA(AccountingTestCase):
         # SetUp product Standard
         # should have bought at 60 USD
         # actually invoiced at 70 EUR > 35 USD
-        product_categ_standard = self.product1.product_tmpl_id.categ_id.copy({
+        product_categ_standard = self.cat.copy({
             'property_cost_method': 'standard',
             'property_stock_account_input_categ_id': self.stock_input_account.id,
             'property_stock_account_output_categ_id': self.stock_output_account.id,
             'property_stock_valuation_account_id': self.stock_valuation_account.id,
             'property_stock_journal': self.stock_journal.id,
         })
-        product_standard = self.product1.copy({
+        product_standard = self.product1_copy
+        product_standard.write({
             'categ_id': product_categ_standard.id,
             'name': 'Standard Val',
             'standard_price': 60,
@@ -783,7 +785,8 @@ class TestStockValuationWithCOA(AccountingTestCase):
         date_delivery = '2019-01-08'
         date_invoice = '2019-01-16'
 
-        product_avg = self.product1.copy({
+        product_avg = self.product1_copy
+        product_avg.write({
             'purchase_method': 'purchase',
             'name': 'AVG',
             'standard_price': 60,
@@ -945,7 +948,8 @@ class TestStockValuationWithCOA(AccountingTestCase):
 
         self.product1.categ_id.property_valuation = 'real_time'
         self.product1.categ_id.property_cost_method = 'average'
-        product_avg = self.product1.copy({
+        product_avg = self.product1_copy
+        product_avg.write({
             'purchase_method': 'purchase',
             'name': 'AVG',
             'standard_price': 0,
@@ -1037,7 +1041,7 @@ class TestStockValuationWithCOA(AccountingTestCase):
             .write({'quantity_done': 5.0}))
 
         picking.button_validate()
-        picking.action_done()  # Create Backorder
+        picking._action_done()  # Create Backorder
         # 5 Units received at rate 0.7 = 42.86
         self.assertAlmostEqual(product_avg.standard_price, 42.86)
 
@@ -1207,14 +1211,14 @@ class TestStockValuationWithCOA(AccountingTestCase):
 
         # Check what was posted in the price difference account
         price_diff_aml = self.env['account.move.line'].search([('account_id','=', self.price_diff_account.id)])
-        self.assertEquals(len(price_diff_aml), 1, "Only one line should have been generated in the price difference account.")
-        self.assertAlmostEquals(price_diff_aml.credit, 20, "Price difference should be equal to 20 (110-90)")
+        self.assertEqual(len(price_diff_aml), 1, "Only one line should have been generated in the price difference account.")
+        self.assertAlmostEqual(price_diff_aml.credit, 20, "Price difference should be equal to 20 (110-90)")
 
         # Check what was posted in stock input account
         input_aml = self.env['account.move.line'].search([('account_id','=', self.stock_input_account.id)])
-        self.assertEquals(len(input_aml), 3, "Only two lines should have been generated in stock input account: one when receiving the product, two when making the invoice.")
-        self.assertAlmostEquals(sum(input_aml.mapped('debit')), 110, "Total debit value on stock input account should be equal to the original PO price of the product.")
-        self.assertAlmostEquals(sum(input_aml.mapped('credit')), 110, "Total credit value on stock input account should be equal to the original PO price of the product.")
+        self.assertEqual(len(input_aml), 3, "Only two lines should have been generated in stock input account: one when receiving the product, two when making the invoice.")
+        self.assertAlmostEqual(sum(input_aml.mapped('debit')), 110, "Total debit value on stock input account should be equal to the original PO price of the product.")
+        self.assertAlmostEqual(sum(input_aml.mapped('credit')), 110, "Total credit value on stock input account should be equal to the original PO price of the product.")
 
     def test_anglosaxon_valuation_discount(self):
         """
@@ -1254,14 +1258,14 @@ class TestStockValuationWithCOA(AccountingTestCase):
 
         # Check what was posted in the price difference account
         price_diff_aml = self.env['account.move.line'].search([('account_id', '=', self.price_diff_account.id)])
-        self.assertEquals(len(price_diff_aml), 1, "Only one line should have been generated in the price difference account.")
-        self.assertAlmostEquals(price_diff_aml.credit, 10, "Price difference should be equal to 10 (100-90)")
+        self.assertEqual(len(price_diff_aml), 1, "Only one line should have been generated in the price difference account.")
+        self.assertAlmostEqual(price_diff_aml.credit, 10, "Price difference should be equal to 10 (100-90)")
 
         # Check what was posted in stock input account
         input_aml = self.env['account.move.line'].search([('account_id', '=', self.stock_input_account.id)])
-        self.assertEquals(len(input_aml), 3, "Three lines generated in stock input account: one when receiving the product, two when making the invoice.")
-        self.assertAlmostEquals(sum(input_aml.mapped('debit')), 100, "Total debit value on stock input account should be equal to the original PO price of the product.")
-        self.assertAlmostEquals(sum(input_aml.mapped('credit')), 100, "Total credit value on stock input account should be equal to the original PO price of the product.")
+        self.assertEqual(len(input_aml), 3, "Three lines generated in stock input account: one when receiving the product, two when making the invoice.")
+        self.assertAlmostEqual(sum(input_aml.mapped('debit')), 100, "Total debit value on stock input account should be equal to the original PO price of the product.")
+        self.assertAlmostEqual(sum(input_aml.mapped('credit')), 100, "Total credit value on stock input account should be equal to the original PO price of the product.")
 
     def test_anglosaxon_valuation_price_unit_diff_discount(self):
         """
@@ -1301,10 +1305,10 @@ class TestStockValuationWithCOA(AccountingTestCase):
 
         # Check if something was posted in the price difference account
         price_diff_aml = self.env['account.move.line'].search([('account_id','=', self.price_diff_account.id)])
-        self.assertEquals(len(price_diff_aml), 0, "No line should have been generated in the price difference account.")
+        self.assertEqual(len(price_diff_aml), 0, "No line should have been generated in the price difference account.")
 
         # Check what was posted in stock input account
         input_aml = self.env['account.move.line'].search([('account_id','=', self.stock_input_account.id)])
-        self.assertEquals(len(input_aml), 2, "Only two lines should have been generated in stock input account: one when receiving the product, one when making the invoice.")
-        self.assertAlmostEquals(sum(input_aml.mapped('debit')), 90, "Total debit value on stock input account should be equal to the original PO price of the product.")
-        self.assertAlmostEquals(sum(input_aml.mapped('credit')), 90, "Total credit value on stock input account should be equal to the original PO price of the product.")
+        self.assertEqual(len(input_aml), 2, "Only two lines should have been generated in stock input account: one when receiving the product, one when making the invoice.")
+        self.assertAlmostEqual(sum(input_aml.mapped('debit')), 90, "Total debit value on stock input account should be equal to the original PO price of the product.")
+        self.assertAlmostEqual(sum(input_aml.mapped('credit')), 90, "Total credit value on stock input account should be equal to the original PO price of the product.")

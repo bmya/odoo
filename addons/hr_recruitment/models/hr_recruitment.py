@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
-from odoo import api, fields, models, SUPERUSER_ID
+from odoo import api, fields, models, tools, SUPERUSER_ID
 from odoo.tools.translate import _
 from odoo.exceptions import UserError
 
@@ -108,6 +108,8 @@ class Applicant(models.Model):
         if self._context.get('default_department_id'):
             department = self.env['hr.department'].browse(self._context['default_department_id'])
             company_id = department.company_id.id
+        if not company_id and self.job_id:
+            company_id = self.env['hr.job'].browse(self._context['default_job_id']).company_id.ids
         if not company_id:
             company_id = self.env.company
         return company_id
@@ -133,7 +135,7 @@ class Applicant(models.Model):
     date_open = fields.Datetime("Assigned", readonly=True, index=True)
     date_last_stage_update = fields.Datetime("Last Stage Update", index=True, default=fields.Datetime.now)
     priority = fields.Selection(AVAILABLE_PRIORITIES, "Appreciation", default='0')
-    job_id = fields.Many2one('hr.job', "Applied Job")
+    job_id = fields.Many2one('hr.job', "Applied Job", domain="['|', ('company_id', '=', False), ('company_id', '=', company_id)]")
     salary_proposed_extra = fields.Char("Proposed Salary Extra", help="Salary Proposed by the Organisation, extra advantages")
     salary_expected_extra = fields.Char("Expected Salary Extra", help="Salary Expected by Applicant, extra advantages")
     salary_proposed = fields.Float("Proposed Salary", group_operator="avg", help="Salary Proposed by the Organisation")
@@ -143,12 +145,12 @@ class Applicant(models.Model):
     partner_phone = fields.Char("Phone", size=32)
     partner_mobile = fields.Char("Mobile", size=32)
     type_id = fields.Many2one('hr.recruitment.degree', "Degree")
-    department_id = fields.Many2one('hr.department', "Department")
-    day_open = fields.Float(compute='_compute_day', string="Days to Open")
-    day_close = fields.Float(compute='_compute_day', string="Days to Close")
+    department_id = fields.Many2one('hr.department', "Department", domain="['|', ('company_id', '=', False), ('company_id', '=', company_id)]")
+    day_open = fields.Float(compute='_compute_day', string="Days to Open", compute_sudo=True)
+    day_close = fields.Float(compute='_compute_day', string="Days to Close", compute_sudo=True)
     delay_close = fields.Float(compute="_compute_day", string='Delay to Close', readonly=True, group_operator="avg", help="Number of days to close", store=True)
     color = fields.Integer("Color Index", default=0)
-    emp_id = fields.Many2one('hr.employee', string="Employee", help="Employee linked to the applicant.")
+    emp_id = fields.Many2one('hr.employee', string="Employee", help="Employee linked to the applicant.", copy=False)
     user_email = fields.Char(related='user_id.email', type="char", string="User Email", readonly=True)
     attachment_number = fields.Integer(compute='_get_attachment_number', string="Number of Attachments")
     employee_name = fields.Char(related='emp_id.name', string="Employee Name", readonly=False, tracking=False)
@@ -171,19 +173,26 @@ class Applicant(models.Model):
                 date_create = applicant.create_date
                 date_open = applicant.date_open
                 applicant.day_open = (date_open - date_create).total_seconds() / (24.0 * 3600)
+            else:
+                applicant.day_open = False
             if applicant.date_closed:
                 date_create = applicant.create_date
                 date_closed = applicant.date_closed
                 applicant.day_close = (date_closed - date_create).total_seconds() / (24.0 * 3600)
                 applicant.delay_close = applicant.day_close - applicant.day_open
+            else:
+                applicant.day_close = False
+                applicant.delay_close = False
 
     @api.depends('email_from')
     def _compute_application_count(self):
         application_data = self.env['hr.applicant'].read_group([
             ('email_from', 'in', list(set(self.mapped('email_from'))))], ['email_from'], ['email_from'])
         application_data_mapped = dict((data['email_from'], data['email_from_count']) for data in application_data)
-        for applicant in self.filtered(lambda applicant: applicant.email_from):
+        applicants = self.filtered(lambda applicant: applicant.email_from)
+        for applicant in applicants:
             applicant.application_count = application_data_mapped.get(applicant.email_from, 1) - 1
+        (self - applicants).application_count = False
 
     def _compute_meeting_count(self):
         for applicant in self:
@@ -220,11 +229,13 @@ class Applicant(models.Model):
     def _onchange_job_id_internal(self, job_id):
         department_id = False
         user_id = False
+        company_id = False
         stage_id = self.stage_id.id or self._context.get('default_stage_id')
         if job_id:
             job = self.env['hr.job'].browse(job_id)
             department_id = job.department_id.id
             user_id = job.user_id.id
+            company_id = job.company_id.id
             if not stage_id:
                 stage_ids = self.env['hr.recruitment.stage'].search([
                     '|',
@@ -236,6 +247,7 @@ class Applicant(models.Model):
 
         return {'value': {
             'department_id': department_id,
+            'company_id': company_id,
             'user_id': user_id,
             'stage_id': stage_id
         }}
@@ -385,7 +397,7 @@ class Applicant(models.Model):
             elif applicant.email_from:
                 email_from = applicant.email_from
                 if applicant.partner_name:
-                    email_from = '%s<%s>' % (applicant.partner_name, email_from)
+                    email_from = tools.formataddr((applicant.partner_name, email_from))
                 applicant._message_add_suggested_recipient(recipients, email=email_from, reason=_('Contact Email'))
         return recipients
 

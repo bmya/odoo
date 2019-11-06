@@ -4,6 +4,7 @@
 from odoo import api, fields, models
 from odoo.tools.translate import _, html_translate
 from odoo.addons.http_routing.models.ir_http import slug
+from datetime import timedelta
 
 
 class TrackTag(models.Model):
@@ -13,7 +14,7 @@ class TrackTag(models.Model):
 
     name = fields.Char('Tag Name', required=True)
     track_ids = fields.Many2many('event.track', string='Tracks')
-    color = fields.Integer(string='Color Index')
+    color = fields.Integer(string='Color Index', help="Note that colorless tags won't be available on the website.")
 
     _sql_constraints = [
         ('name_uniq', 'unique (name)', "Tag name already exists !"),
@@ -24,7 +25,7 @@ class TrackLocation(models.Model):
     _name = "event.track.location"
     _description = 'Event Track Location'
 
-    name = fields.Char('Location')
+    name = fields.Char('Location', required=True)
 
 
 class TrackStage(models.Model):
@@ -58,7 +59,8 @@ class Track(models.Model):
     name = fields.Char('Title', required=True, translate=True)
     active = fields.Boolean(default=True)
     user_id = fields.Many2one('res.users', 'Responsible', tracking=True, default=lambda self: self.env.user)
-    partner_id = fields.Many2one('res.partner', 'Partner')
+    company_id = fields.Many2one('res.company', related='event_id.company_id')
+    partner_id = fields.Many2one('res.partner', 'Speaker')
     partner_name = fields.Char('Name')
     partner_email = fields.Char('Email')
     partner_phone = fields.Char('Phone')
@@ -80,7 +82,8 @@ class Track(models.Model):
              " * Green indicates the track is ready to be pulled to the next stage")
     description = fields.Html(translate=html_translate, sanitize_attributes=False)
     date = fields.Datetime('Track Date')
-    duration = fields.Float('Duration', default=1.5)
+    date_end = fields.Datetime('Track End Date', compute='_compute_end_date', store=True)
+    duration = fields.Float('Duration', default=1.5, help="Track duration in hours.")
     location_id = fields.Many2one('event.track.location', 'Room')
     event_id = fields.Many2one('event.event', 'Event', required=True)
     color = fields.Integer('Color Index')
@@ -104,6 +107,15 @@ class Track(models.Model):
             self.partner_email = self.partner_id.email
             self.partner_phone = self.partner_id.phone
             self.partner_biography = self.partner_id.website_description
+
+    @api.depends('date', 'duration')
+    def _compute_end_date(self):
+        for track in self:
+            if track.date:
+                delta = timedelta(minutes=60 * track.duration)
+                track.date_end = track.date + delta
+            else:
+                track.date_end = False
 
     @api.model
     def create(self, vals):
@@ -154,7 +166,7 @@ class Track(models.Model):
     def _message_get_suggested_recipients(self):
         recipients = super(Track, self)._message_get_suggested_recipients()
         for track in self:
-            if track.partner_email != track.partner_id.email:
+            if track.partner_email and track.partner_email != track.partner_id.email:
                 track._message_add_suggested_recipient(recipients, email=track.partner_email, reason=_('Speaker Email'))
         return recipients
 

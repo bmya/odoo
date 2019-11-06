@@ -55,7 +55,9 @@
                                             Companies
                                         </span>
                                         <br/>
-                                        <button name="%(base.action_res_company_form)d" icon="fa-arrow-right" type="action" string="Manage Companies" class="btn-link"/>
+                                        <div class="mt8">
+                                            <button name="%(base.action_res_company_form)d" icon="fa-arrow-right" type="action" string="Manage Companies" class="btn-link"/>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -73,7 +75,9 @@
                                                 Languages
                                             </span>
                                         </div>
-                                        <button name="%(base.res_lang_act_window)d" icon="fa-arrow-right" type="action" string="Manage Languages" class="btn-link"/>
+                                        <div class="mt8">
+                                            <button name="%(base.res_lang_act_window)d" icon="fa-arrow-right" type="action" string="Manage Languages" class="btn-link"/>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -109,7 +113,7 @@
                                                 <label for="external_report_layout_id" string="Layout" class="col-3 col-lg-3 o_light_label"/>
                                                 <field name="external_report_layout_id" domain="[('type','=', 'qweb')]" class="oe_inline"/>
                                             </div>
-                                            <div class="mt16">
+                                            <div class="mt8">
                                                 <button name="%(base.action_base_document_layout_configurator)d" string="Configure Document Layout" type="action" class="oe_link" icon="fa-arrow-right"/>
                                                 <button name="edit_external_header" string="Edit Layout" type="object" class="oe_link" groups="base.group_no_one"/>
                                                 <button name="%(web.action_report_externalpreview)d" string="Preview Document" type="action" class="oe_link" groups="base.group_no_one"/>
@@ -129,6 +133,14 @@
                         <div id="contacts_settings">
                             <h2>Contacts</h2>
                             <div class="row mt16 o_settings_container">
+                                <div class="col-xs-12 col-md-6 o_setting_box" id="sms">
+                                        <div class="o_setting_right_pane" id="sms_settings">
+                                            <div class="o_form_label">Send SMS</div>
+                                            <div class="text-muted">
+                                                Send texts to your contacts
+                                            </div>
+                                        </div>
+                                </div>
                                 <div class="col-xs-12 col-md-6 o_setting_box" title="When populating your address book, Odoo provides a list of matching companies. When selecting one item, the company data and logo are auto-filled." id="partner_autocomplete">
                                     <div class="o_setting_left_pane">
                                         <field name="module_partner_autocomplete"/>
@@ -140,17 +152,6 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-xs-12 col-md-6 o_setting_box" id="sms">
-                                    <div class="o_setting_left_pane">
-                                        <field name="module_sms"/>
-                                    </div>
-                                    <div class="o_setting_right_pane" id="sms_settings">
-                                        <label for="module_sms"/>
-                                        <div class="text-muted">
-                                            Send texts to your contacts
-                                        </div>
-                                    </div>
-                            </div>
                         </div>
                     </div>
                     <div id="emails"/>
@@ -166,7 +167,7 @@
                                     Set custom access rights for new users
                                 </div>
                                 <div class="content-group" attrs="{'invisible': [('user_default_rights','=',False)]}">
-                                    <div class="mt16">
+                                    <div class="mt8">
                                         <button type="object" name="open_default_user" string="Default Access Rights" icon="fa-arrow-right" class="btn-link"/>
                                     </div>
                                 </div>

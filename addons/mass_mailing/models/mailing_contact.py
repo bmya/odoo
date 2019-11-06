@@ -46,9 +46,8 @@ class MassMailingContact(models.Model):
     base."""
     _name = 'mailing.contact'
     _inherit = ['mail.thread.blacklist']
-    _description = 'Mass Mailing Contact'
+    _description = 'Mailing Contact'
     _order = 'email'
-    _rec_name = 'email'
 
     name = fields.Char()
     company_name = fields.Char(string='Company Name')
@@ -78,7 +77,7 @@ class MassMailingContact(models.Model):
             contacts = self.env['mailing.contact.subscription'].search([('list_id', '=', active_list_id)])
             return [('id', 'in', [record.contact_id.id for record in contacts if record.opt_out == value])]
         else:
-            raise UserError('Search opt out cannot be executed without a unique and valid active mailing list context.')
+            raise UserError(_('Search opt out cannot be executed without a unique and valid active mailing list context.'))
 
     @api.depends('subscription_list_ids')
     def _compute_opt_out(self):

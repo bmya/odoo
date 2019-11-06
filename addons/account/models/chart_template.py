@@ -23,27 +23,6 @@ def migrate_set_tags_and_taxes_updatable(cr, registry, module):
     if xml_record_ids:
         cr.execute("update ir_model_data set noupdate = 'f' where id in %s", (tuple(xml_record_ids),))
 
-def migrate_tags_on_taxes(cr, registry):
-    ''' This is a utility function to help migrate the tags of taxes when the localization has been modified on stable version. If
-    called accordingly in a post_init_hooked function, it will reset the tags set on taxes as per their equivalent template.
-
-    Note: This unusual decision has been made in order to help the improvement of VAT reports on version 9.0, to have them more flexible
-    and working out of the box when people are creating/using new taxes.
-    '''
-    env = api.Environment(cr, SUPERUSER_ID, {})
-    xml_records = env['ir.model.data'].search([
-        ('model', '=', 'account.tax.template'),
-        ('module', 'like', 'l10n_%')
-    ])
-    tax_template_ids = [x['res_id'] for x in xml_records.sudo().read(['res_id'])]
-    for tax_template in env['account.tax.template'].browse(tax_template_ids):
-        tax_id = env['account.tax'].search([
-            ('name', '=', tax_template.name),
-            ('type_tax_use', '=', tax_template.type_tax_use),
-            ('description', '=', tax_template.description)
-        ])
-        tax_id.sudo().write({'tag_ids': [(6, 0, tax_template.tag_ids.ids)]})
-
 def preserve_existing_tags_on_taxes(cr, registry, module):
     ''' This is a utility function used to preserve existing previous tags during upgrade of the module.'''
     env = api.Environment(cr, SUPERUSER_ID, {})
@@ -78,6 +57,7 @@ class AccountAccountTemplate(models.Model):
             "to define chart templates that extend another and complete it with few new accounts (You don't need to define the whole structure that is common to both several times).")
     tag_ids = fields.Many2many('account.account.tag', 'account_account_template_account_tag', string='Account tag', help="Optional tags you may want to assign for custom reporting")
     group_id = fields.Many2one('account.group')
+    root_id = fields.Many2one('account.root')
 
     @api.depends('name', 'code')
     def name_get(self):
@@ -194,7 +174,7 @@ class AccountChartTemplate(models.Model):
         # Ensure everything is translated to the company's language, not the user's one.
         self = self.with_context(lang=company.partner_id.lang, company=company)
         if not self.env.is_admin():
-            raise AccessError(_("Only administrators can load a charf of accounts"))
+            raise AccessError(_("Only administrators can load a chart of accounts"))
 
         existing_accounts = self.env['account.account'].search([('company_id', '=', company.id)])
         if existing_accounts:
@@ -252,13 +232,16 @@ class AccountChartTemplate(models.Model):
         })
 
         # Set default PoS receivable account in company
-        if acc_template_ref.get(self.default_pos_receivable_account_id.id):
+        default_pos_receivable = self.default_pos_receivable_account_id.id
+        if not default_pos_receivable and self.parent_id:
+            default_pos_receivable = self.parent_id.default_pos_receivable_account_id.id
+        if acc_template_ref.get(default_pos_receivable):
             company.write({
-                'account_default_pos_receivable_account_id': acc_template_ref[self.default_pos_receivable_account_id.id]
+                'account_default_pos_receivable_account_id': acc_template_ref[default_pos_receivable]
             })
 
         # Set the transfer account on the company
-        company.transfer_account_id = self.env['account.account'].search([('code', '=like', self.transfer_account_code_prefix + '%')])[0]
+        company.transfer_account_id = self.env['account.account'].search([('code', '=like', self.transfer_account_code_prefix + '%')])[:1]
 
         # Create Bank journals
         self._create_bank_journals(company, acc_template_ref)
@@ -269,6 +252,7 @@ class AccountChartTemplate(models.Model):
         # set the default taxes on the company
         company.account_sale_tax_id = self.env['account.tax'].search([('type_tax_use', 'in', ('sale', 'all')), ('company_id', '=', company.id)], limit=1).id
         company.account_purchase_tax_id = self.env['account.tax'].search([('type_tax_use', 'in', ('purchase', 'all')), ('company_id', '=', company.id)], limit=1).id
+
         return {}
 
     @api.model
@@ -279,7 +263,7 @@ class AccountChartTemplate(models.Model):
         """
         model_to_check = ['account.move', 'account.payment', 'account.bank.statement']
         for model in model_to_check:
-            if len(self.env[model].search([('company_id', '=', company_id.id)])) > 0:
+            if self.env[model].sudo().search([('company_id', '=', company_id.id)], limit=1):
                 return True
         return False
 
@@ -740,6 +724,19 @@ class AccountChartTemplate(models.Model):
         for account_reconcile_model in account_reconcile_models:
             vals = self._prepare_reconcile_model_vals(company, account_reconcile_model, acc_template_ref, tax_template_ref)
             self.create_record_with_xmlid(company, account_reconcile_model, 'account.reconcile.model', vals)
+        # Create a default rule for the reconciliation widget matching invoices automatically.
+        self.env['account.reconcile.model'].sudo().create({
+            "name": _('Invoices Matching Rule'),
+            "sequence": '1',
+            "rule_type": 'invoice_matching',
+            "auto_reconcile": False,
+            "match_nature": 'both',
+            "match_same_currency": True,
+            "match_total_amount": True,
+            "match_total_amount_param": 100,
+            "match_partner": True,
+            "company_id": company.id,
+        })
         return True
 
     def _get_fp_vals(self, company, position):
@@ -930,7 +927,11 @@ class AccountTaxTemplate(models.Model):
                 }
 
                 # We also have to delay the assignation of accounts to repartition lines
-                all_tax_rep_lines = tax.invoice_repartition_line_ids + tax.refund_repartition_line_ids
+                # The below code assigns the account_id to the repartition lines according
+                # to the corresponding repartition line in the template, based on the order.
+                # As we just created the repartition lines, tax.invoice_repartition_line_ids is not well sorted.
+                # But we can force the sort by calling sort()
+                all_tax_rep_lines = tax.invoice_repartition_line_ids.sorted() + tax.refund_repartition_line_ids.sorted()
                 all_template_rep_lines = template.invoice_repartition_line_ids + template.refund_repartition_line_ids
                 for i in range(0, len(all_template_rep_lines)):
                     # We assume template and tax repartition lines are in the same order
@@ -1042,8 +1043,8 @@ class AccountFiscalPositionTemplate(models.Model):
     country_group_id = fields.Many2one('res.country.group', string='Country Group',
         help="Apply only if delivery or invoicing country match the group.")
     state_ids = fields.Many2many('res.country.state', string='Federal States')
-    zip_from = fields.Integer(string='Zip Range From', default=0)
-    zip_to = fields.Integer(string='Zip Range To', default=0)
+    zip_from = fields.Char(string='Zip Range From')
+    zip_to = fields.Char(string='Zip Range To')
 
 
 class AccountFiscalPositionTaxTemplate(models.Model):
@@ -1150,9 +1151,12 @@ class AccountReconcileModelTemplate(models.Model):
     label = fields.Char(string='Journal Item Label')
     amount_type = fields.Selection([
         ('fixed', 'Fixed'),
-        ('percentage', 'Percentage of balance')
+        ('percentage', 'Percentage of balance'),
+        ('regex', 'From label'),
         ], required=True, default='percentage')
     amount = fields.Float(string='Write-off Amount', digits=0, required=True, default=100.0, help="Fixed amount will count as a debit if it is negative, as a credit if it is positive.")
+    amount_from_label_regex = fields.Char(string="Amount from Label (regex)", default=r"([\d\.,]+)")
+    decimal_separator = fields.Char(help="Every character that is nor a digit nor this separator will be removed from the matching string")
     force_tax_included = fields.Boolean(string='Tax Included in Price',
         help='Force the tax to be managed as a price included tax.')
     # Second part fields.
@@ -1162,10 +1166,11 @@ class AccountReconcileModelTemplate(models.Model):
     second_label = fields.Char(string='Second Journal Item Label')
     second_amount_type = fields.Selection([
         ('fixed', 'Fixed'),
-        ('percentage', 'Percentage of amount')
+        ('percentage', 'Percentage of amount'),
+        ('regex', 'From label'),
         ], string="Second Amount type",required=True, default='percentage')
     second_amount = fields.Float(string='Second Write-off Amount', digits=0, required=True, default=100.0, help="Fixed amount will count as a debit if it is negative, as a credit if it is positive.")
+    second_amount_from_label_regex = fields.Char(string="Second Amount from Label (regex)", default=r"([\d\.,]+)")
     force_second_tax_included = fields.Boolean(string='Second Tax Included in Price',
         help='Force the second tax to be managed as a price included tax.')
-    number_entries = fields.Integer(string='Number of entries related to this model', compute='_compute_number_entries')
     second_tax_ids = fields.Many2many('account.tax.template', relation='account_reconcile_model_tmpl_account_tax_bis_rel', string='Second Taxes', ondelete='restrict')

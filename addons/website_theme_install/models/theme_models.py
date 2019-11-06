@@ -14,6 +14,8 @@ class ThemeView(models.Model):
     _description = 'Theme UI View'
 
     def compute_arch_fs(self):
+        if 'install_filename' not in self._context:
+            return ''
         path_info = get_resource_from_path(self._context['install_filename'])
         if path_info:
             return '/'.join(path_info[0:2])
@@ -28,8 +30,7 @@ class ThemeView(models.Model):
     arch_fs = fields.Char(default=compute_arch_fs)
     inherit_id = fields.Reference(selection=[('ir.ui.view', 'ir.ui.view'), ('theme.ir.ui.view', 'theme.ir.ui.view')])
     copy_ids = fields.One2many('ir.ui.view', 'theme_template_id', 'Views using a copy of me', copy=False, readonly=True)
-
-    # TODO master add missing field: customize_show
+    customize_show = fields.Boolean()
 
     def _convert_to_base_model(self, website, **kwargs):
         self.ensure_one()
@@ -39,6 +40,14 @@ class ThemeView(models.Model):
             if not inherit:
                 # inherit_id not yet created, add to the queue
                 return False
+
+        if inherit and inherit.website_id != website:
+            website_specific_inherit = self.env['ir.ui.view'].with_context(active_test=False).search([
+                ('key', '=', inherit.key),
+                ('website_id', '=', website.id)
+            ], limit=1)
+            if website_specific_inherit:
+                inherit = website_specific_inherit
 
         new_view = {
             'type': self.type or 'qweb',
@@ -51,6 +60,7 @@ class ThemeView(models.Model):
             'active': self.active,
             'theme_template_id': self.id,
             'website_id': website.id,
+            'customize_show': self.customize_show,
         }
 
         if self.mode:  # if not provided, it will be computed automatically (if inherit_id or not)

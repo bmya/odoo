@@ -83,7 +83,7 @@ class AcquirerPaypal(models.Model):
         return fees
 
     def paypal_form_generate_values(self, values):
-        base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+        base_url = self.get_base_url()
 
         paypal_tx_values = dict(values)
         paypal_tx_values.update({
@@ -211,7 +211,7 @@ class TxPaypal(models.Model):
                     'PST': -8 * 3600,
                     'PDT': -7 * 3600,
                 }
-                date = dateutil.parser.parse(data.get('payment_date'), tzinfos=tzinfos).astimezone(pytz.utc)
+                date = dateutil.parser.parse(data.get('payment_date'), tzinfos=tzinfos).astimezone(pytz.utc).replace(tzinfo=None)
             except:
                 date = fields.Datetime.now()
             res.update(date=date)

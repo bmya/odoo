@@ -167,14 +167,17 @@ class CustomerPortal(Controller):
             'error_message': [],
         })
 
-        if post:
+        if post and request.httprequest.method == 'POST':
             error, error_message = self.details_form_validate(post)
             values.update({'error': error, 'error_message': error_message})
             values.update(post)
             if not error:
                 values = {key: post[key] for key in self.MANDATORY_BILLING_FIELDS}
                 values.update({key: post[key] for key in self.OPTIONAL_BILLING_FIELDS if key in post})
+                values.update({'country_id': int(values.pop('country_id', 0))})
                 values.update({'zip': values.pop('zipcode', '')})
+                if values.get('state_id') == '':
+                    values.update({'state_id': False})
                 partner.sudo().write(values)
                 if redirect:
                     return request.redirect(redirect)
@@ -323,7 +326,7 @@ class CustomerPortal(Controller):
         document = request.env[model_name].browse([document_id])
         document_sudo = document.with_user(SUPERUSER_ID).exists()
         if not document_sudo:
-            raise MissingError("This document does not exist.")
+            raise MissingError(_("This document does not exist."))
         try:
             document.check_access_rights('read')
             document.check_access_rule('read')
@@ -359,12 +362,12 @@ class CustomerPortal(Controller):
 
     def _show_report(self, model, report_type, report_ref, download=False):
         if report_type not in ('html', 'pdf', 'text'):
-            raise UserError("Invalid report type: %s" % report_type)
+            raise UserError(_("Invalid report type: %s") % report_type)
 
         report_sudo = request.env.ref(report_ref).sudo()
 
         if not isinstance(report_sudo, type(request.env['ir.actions.report'])):
-            raise UserError("%s is not the reference of a report" % report_ref)
+            raise UserError(_("%s is not the reference of a report") % report_ref)
 
         method_name = 'render_qweb_%s' % (report_type)
         report = getattr(report_sudo, method_name)([model.id], data={'report_type': report_type})[0]

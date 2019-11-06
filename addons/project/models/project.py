@@ -67,6 +67,7 @@ class Project(models.Model):
     _order = "sequence, name, id"
     _period_number = 5
     _rating_satisfaction_days = False  # takes all existing ratings
+    _check_company_auto = True
 
     def get_alias_model_name(self, vals):
         return vals.get('alias_model', 'project.task')
@@ -164,10 +165,11 @@ class Project(models.Model):
     active = fields.Boolean(default=True,
         help="If the active field is set to False, it will allow you to hide the project without removing it.")
     sequence = fields.Integer(default=10, help="Gives the sequence order when displaying a list of Projects.")
-    partner_id = fields.Many2one('res.partner', string='Customer', auto_join=True, tracking=True)
+    partner_id = fields.Many2one('res.partner', string='Customer', auto_join=True, tracking=True, domain="['|', ('company_id', '=', False), ('company_id', '=', company_id)]")
     company_id = fields.Many2one('res.company', string='Company', required=True, default=lambda self: self.env.company)
     currency_id = fields.Many2one('res.currency', related="company_id.currency_id", string="Currency", readonly=True)
     analytic_account_id = fields.Many2one('account.analytic.account', string="Analytic Account", copy=False, ondelete='set null',
+        domain="['|', ('company_id', '=', False), ('company_id', '=', company_id)]", check_company=True,
         help="Analytic account to which this project is linked for financial management. "
              "Use an analytic account to record cost and revenue on your project.")
 
@@ -182,6 +184,7 @@ class Project(models.Model):
     resource_calendar_id = fields.Many2one(
         'resource.calendar', string='Working Time',
         default=lambda self: self.env.company.resource_calendar_id.id,
+        domain="['|', ('company_id', '=', False), ('company_id', '=', company_id)]",
         help="Timetable working hours to adjust the gantt diagram report")
     type_ids = fields.Many2many('project.task.type', 'project_task_type_rel', 'project_id', 'type_id', string='Tasks Stages')
     task_count = fields.Integer(compute='_compute_task_count', string="Task Count")
@@ -193,16 +196,16 @@ class Project(models.Model):
         help="Internal email associated with this project. Incoming emails are automatically synchronized "
              "with Tasks (or optionally Issues if the Issue Tracker module is installed).")
     privacy_visibility = fields.Selection([
-            ('followers', 'Visible by invited employees'),
-            ('employees', 'Visible by employees'),
-            ('portal', 'Visible by portal users and employees'),
+            ('followers', 'Invited employees'),
+            ('employees', 'All employees'),
+            ('portal', 'Portal users and all employees'),
         ],
-        string='Privacy', required=True,
+        string='Visibility', required=True,
         default='portal',
         help="Defines the visibility of the tasks of the project:\n"
-                "- Visible by invited employees: employees may only see the followed project and tasks.\n"
-                "- Visible by employees: employees may see all project and tasks.\n"
-                "- Visible by portal users and employees: employees may see everything."
+                "- Invited employees: employees may only see the followed project and tasks.\n"
+                "- All employees: employees may see all project and tasks.\n"
+                "- Portal users and all employees: employees may see everything."
                 "   Portal users may see project and tasks followed by.\n"
                 "   them or by someone of their company.")
     doc_count = fields.Integer(compute='_compute_attached_docs_count', string="Number of documents attached")
@@ -246,22 +249,24 @@ class Project(models.Model):
             project.rating_request_deadline = fields.datetime.now() + timedelta(days=periods.get(project.rating_status_period, 0))
 
     @api.model
-    def _map_tasks_default_valeus(self, task):
+    def _map_tasks_default_valeus(self, task, project):
         """ get the default value for the copied task on project duplication """
         return {
             'stage_id': task.stage_id.id,
             'name': task.name,
+            'company_id': project.company_id.id,
         }
 
     def map_tasks(self, new_project_id):
         """ copy and map tasks from old to new project """
+        project = self.browse(new_project_id)
         tasks = self.env['project.task']
         # We want to copy archived task, but do not propagate an active_test context key
         task_ids = self.env['project.task'].with_context(active_test=False).search([('project_id', '=', self.id)], order='parent_id').ids
         old_to_new_tasks = {}
         for task in self.env['project.task'].browse(task_ids):
             # preserve task name and stage, normally altered during copy
-            defaults = self._map_tasks_default_valeus(task)
+            defaults = self._map_tasks_default_valeus(task, project)
             if task.parent_id:
                 # set the parent to the duplicated task
                 defaults['parent_id'] = old_to_new_tasks.get(task.parent_id.id, False)
@@ -269,7 +274,7 @@ class Project(models.Model):
             old_to_new_tasks[task.id] = new_task.id
             tasks += new_task
 
-        return self.browse(new_project_id).write({'tasks': [(6, 0, tasks.ids)]})
+        return project.write({'tasks': [(6, 0, tasks.ids)]})
 
     @api.returns('self', lambda value: value.id)
     def copy(self, default=None):
@@ -313,7 +318,7 @@ class Project(models.Model):
 
     def unlink(self):
         # Check project is empty
-        for project in self:
+        for project in self.with_context(active_test=False):
             if project.tasks:
                 raise UserError(_('You cannot delete a project containing tasks. You can either archive it or first delete all of its tasks.'))
         # Delete the empty related analytic account
@@ -429,13 +434,18 @@ class Task(models.Model):
     _inherit = ['portal.mixin', 'mail.thread.cc', 'mail.activity.mixin', 'rating.mixin']
     _mail_post_access = 'read'
     _order = "priority desc, sequence, id desc"
+    _check_company_auto = True
 
     @api.model
     def default_get(self, fields_list):
         result = super(Task, self).default_get(fields_list)
-        # force some parent values, if needed
-        if 'parent_id' in result and result['parent_id']:
-            result.update(self._subtask_values_from_parent(result['parent_id']))
+        # find default value from parent for the not given ones
+        parent_task_id = result.get('parent_id') or self._context.get('default_parent_id')
+        if parent_task_id:
+            parent_values = self._subtask_values_from_parent(parent_task_id)
+            for fname, value in parent_values.items():
+                if fname not in result:
+                    result[fname] = value
         return result
 
     @api.model
@@ -450,6 +460,12 @@ class Task(models.Model):
         if not project_id:
             return False
         return self.stage_find(project_id, [('fold', '=', False)])
+
+    @api.model
+    def _default_company_id(self):
+        if self._context.get('default_project_id'):
+            return self.env['project.project'].browse(self._context['default_project_id']).company_id
+        return self.env.company
 
     @api.model
     def _read_group_stage_ids(self, stages, domain, order):
@@ -488,12 +504,8 @@ class Task(models.Model):
         index=True,
         copy=False,
         readonly=True)
-    project_id = fields.Many2one('project.project',
-        string='Project',
-        default=lambda self: self.env.context.get('default_project_id'),
-        index=True,
-        tracking=True,
-        change_default=True)
+    project_id = fields.Many2one('project.project', string='Project', default=lambda self: self.env.context.get('default_project_id'),
+        index=True, tracking=True, check_company=True, change_default=True)
     planned_hours = fields.Float("Planned Hours", help='It is the time planned to achieve the task. If this document has sub-tasks, it means the time needed to achieve this tasks and its childs.',tracking=True)
     subtask_planned_hours = fields.Float("Subtasks", compute='_compute_subtask_planned_hours', help="Computed using sum of hours planned of all subtasks created from main task. Usually these hours are less or equal to the Planned Hours (of main task).")
     user_id = fields.Many2one('res.users',
@@ -502,9 +514,11 @@ class Task(models.Model):
         index=True, tracking=True)
     partner_id = fields.Many2one('res.partner',
         string='Customer',
-        default=lambda self: self._get_default_partner())
+        default=lambda self: self._get_default_partner(),
+        domain="['|', ('company_id', '=', False), ('company_id', '=', company_id)]")
+    partner_city = fields.Char(related='partner_id.city', readonly=False)
     manager_id = fields.Many2one('res.users', string='Project Manager', related='project_id.user_id', readonly=True, related_sudo=False)
-    company_id = fields.Many2one('res.company', string='Company', required=True, default=lambda self: self.env.company)
+    company_id = fields.Many2one('res.company', string='Company', required=True, default=_default_company_id)
     color = fields.Integer(string='Color Index')
     user_email = fields.Char(related='user_id.email', string='User Email', readonly=True, related_sudo=False)
     attachment_ids = fields.One2many('ir.attachment', compute='_compute_attachment_ids', string="Main Attachments",
@@ -527,16 +541,11 @@ class Task(models.Model):
     # customer portal: include comment and incoming emails in communication history
     website_message_ids = fields.One2many(domain=lambda self: [('model', '=', self._name), ('message_type', 'in', ['email', 'comment'])])
 
-    @api.constrains('parent_id')
-    def _check_parent_id(self):
-        if not self._check_recursion():
-            raise ValidationError(_('You cannot create recursive tasks.'))
-
     def _compute_attachment_ids(self):
         for task in self:
             attachment_ids = self.env['ir.attachment'].search([('res_id', '=', task.id), ('res_model', '=', 'project.task')]).ids
             message_attachment_ids = task.mapped('message_ids.attachment_ids').ids  # from mail_thread
-            task.attachment_ids = list(set(attachment_ids) - set(message_attachment_ids))
+            task.attachment_ids = [(6, 0, list(set(attachment_ids) - set(message_attachment_ids)))]
 
     @api.depends('create_date', 'date_end', 'date_assign')
     def _compute_elapsed(self):
@@ -551,12 +560,18 @@ class Task(models.Model):
                 duration_data = task.project_id.resource_calendar_id.get_work_duration_data(dt_create_date, dt_date_assign, compute_leaves=True)
                 task.working_hours_open = duration_data['hours']
                 task.working_days_open = duration_data['days']
+            else:
+                task.working_hours_open = 0.0
+                task.working_days_open = 0.0
 
             if task.date_end:
                 dt_date_end = fields.Datetime.from_string(task.date_end)
                 duration_data = task.project_id.resource_calendar_id.get_work_duration_data(dt_create_date, dt_date_end, compute_leaves=True)
                 task.working_hours_close = duration_data['hours']
                 task.working_days_close = duration_data['days']
+            else:
+                task.working_hours_close = 0.0
+                task.working_days_close = 0.0
 
         (self - task_linked_to_calendar).update(dict.fromkeys(
             ['working_hours_open', 'working_hours_close', 'working_days_open', 'working_days_close'], 0.0))
@@ -602,16 +617,21 @@ class Task(models.Model):
     @api.onchange('parent_id')
     def _onchange_parent_id(self):
         if self.parent_id:
-            for field_name in self._subtask_implied_fields():
-                self[field_name] = self.parent_id[field_name]
+            for field_name, value in self._subtask_values_from_parent(self.parent_id.id).items():
+                if not self[field_name]:
+                    self[field_name] = value
 
     @api.onchange('project_id')
     def _onchange_project(self):
         if self.project_id:
-            if not self.parent_id and self.project_id.partner_id:
+            # find partner
+            if self.project_id.partner_id:
                 self.partner_id = self.project_id.partner_id
+            # find stage
             if self.project_id not in self.stage_id.project_ids:
                 self.stage_id = self.stage_find(self.project_id.id, [('fold', '=', False)])
+            # keep multi company consistency
+            self.company_id = self.project_id.company_id
         else:
             self.stage_id = False
 
@@ -683,10 +703,6 @@ class Task(models.Model):
     def create(self, vals):
         # context: no_log, because subtype already handle this
         context = dict(self.env.context)
-        # force some parent values, if needed
-        if 'parent_id' in vals and vals['parent_id']:
-            vals.update(self._subtask_values_from_parent(vals['parent_id']))
-            context.pop('default_parent_id', None)
         # for default stage
         if vals.get('project_id') and not context.get('default_project_id'):
             context['default_project_id'] = vals.get('project_id')
@@ -697,14 +713,16 @@ class Task(models.Model):
         if vals.get('stage_id'):
             vals.update(self.update_date_end(vals['stage_id']))
             vals['date_last_stage_update'] = fields.Datetime.now()
+        # substask default values
+        if vals.get('parent_id'):
+            for fname, value in self._subtask_values_from_parent(vals['parent_id']).items():
+                if fname not in vals:
+                    vals[fname] = value
         task = super(Task, self.with_context(context)).create(vals)
         return task
 
     def write(self, vals):
         now = fields.Datetime.now()
-        # subtask: force some parent values, if needed
-        if 'parent_id' in vals and vals['parent_id']:
-            vals.update(self._subtask_values_from_parent(vals['parent_id']))
         # stage change: update date_last_stage_update
         if 'stage_id' in vals:
             vals.update(self.update_date_end(vals['stage_id']))
@@ -720,12 +738,6 @@ class Task(models.Model):
         # rating on stage
         if 'stage_id' in vals and vals.get('stage_id'):
             self.filtered(lambda x: x.project_id.rating_status == 'stage')._send_task_rating_mail(force_send=True)
-        # subtask: update subtask according to parent values
-        subtask_values_to_write = self._subtask_write_values(vals)
-        if subtask_values_to_write:
-            subtasks = self.filtered(lambda task: not task.parent_id).mapped('child_ids')
-            if subtasks:
-                subtasks.write(subtask_values_to_write)
         return result
 
     def update_date_end(self, stage_id):
@@ -738,27 +750,18 @@ class Task(models.Model):
     # Subtasks
     # ---------------------------------------------------
 
-    @api.model
-    def _subtask_implied_fields(self):
-        """ Return the list of field name to apply on subtask when changing parent_id or when updating parent task. """
+    def _subtask_default_fields(self):
+        """ Return the list of field name for default value when creating a subtask """
         return ['partner_id', 'email_from']
-
-    def _subtask_write_values(self, values):
-        """ Return the values to write on subtask when `values` is written on parent tasks
-            :param values: dict of values to write on parent
-        """
-        result = {}
-        for field_name in self._subtask_implied_fields():
-            if field_name in values:
-                result[field_name] = values[field_name]
-        return result
 
     def _subtask_values_from_parent(self, parent_id):
         """ Get values for substask implied field of the given"""
         result = {}
         parent_task = self.env['project.task'].browse(parent_id)
-        for field_name in self._subtask_implied_fields():
+        for field_name in self._subtask_default_fields():
             result[field_name] = parent_task[field_name]
+        # special case for the subtask default project
+        result['project_id'] = parent_task.project_id.subtask_project_id
         return self._convert_to_write(result)
 
     # ---------------------------------------------------
@@ -916,16 +919,28 @@ class Task(models.Model):
 
     def action_subtask(self):
         action = self.env.ref('project.project_task_action_sub_task').read()[0]
-        ctx = self.env.context.copy()
-        ctx.update({
-            'default_parent_id': self.id,
-            'default_project_id': self.env.context.get('project_id', self.project_id.id),
-            'default_name': self.env.context.get('name', self.name) + ':',
-            'default_partner_id': self.env.context.get('partner_id', self.partner_id.id),
-            'search_default_project_id': self.env.context.get('project_id', self.project_id.id),
-        })
-        action['context'] = ctx
+
+        # only display subtasks of current task
         action['domain'] = [('id', 'child_of', self.id), ('id', '!=', self.id)]
+
+        # update context, with all default values as 'quick_create' does not contains all field in its view
+        if self._context.get('default_project_id'):
+            default_project = self.env['project.project'].browse(self.env.context['default_project_id'])
+        else:
+            default_project = self.project_id.subtask_project_id or self.project_id
+        ctx = dict(self.env.context)
+        ctx.update({
+            'default_name': self.env.context.get('name', self.name) + ':',
+            'default_parent_id': self.id,  # will give default subtask field in `default_get`
+            'default_company_id': default_project.company_id.id if default_project else self.env.company.id,
+            'search_default_parent_id': self.id,
+        })
+        parent_values = self._subtask_values_from_parent(self.id)
+        for fname, value in parent_values.items():
+            if 'default_' + fname not in ctx:
+                ctx['default_' + fname] = value
+        action['context'] = ctx
+
         return action
 
     # ---------------------------------------------------

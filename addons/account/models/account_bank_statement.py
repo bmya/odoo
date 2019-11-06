@@ -47,6 +47,7 @@ class AccountBankStmtCashWizard(models.Model):
     @api.depends('start_bank_stmt_ids', 'end_bank_stmt_ids')
     def _compute_currency(self):
         for cashbox in self:
+            cashbox.currency_id = False
             if cashbox.end_bank_stmt_ids:
                 cashbox.currency_id = cashbox.end_bank_stmt_ids[0].currency_id
             if cashbox.start_bank_stmt_ids:
@@ -110,6 +111,34 @@ class AccountBankStmtCloseCheck(models.TransientModel):
 
 class AccountBankStatement(models.Model):
 
+    # Note: the reason why we did 2 separate function with the same dependencies (one for balance_start and one for balance_end_real)
+    # is because if we create a bank statement with a default value for one of the field but not the other, the compute method
+    # won't be called and therefore the other field will have a value of 0 and we don't want that.
+    @api.depends('previous_statement_id', 'previous_statement_id.balance_end_real')
+    def _compute_starting_balance(self):
+        for statement in self:
+            if statement.previous_statement_id.balance_end_real != statement.balance_start:
+                statement.balance_start = statement.previous_statement_id.balance_end_real
+            else:
+                # Need default value
+                statement.balance_start = statement.balance_start or 0.0
+
+    @api.depends('previous_statement_id', 'previous_statement_id.balance_end_real')
+    def _compute_ending_balance(self):
+        for statement in self:
+            # recompute balance_end_real in case we are in a bank journal and if we change the
+            # balance_end_real of previous statement as we don't want
+            # holes in case we add a statement in between 2 others statements.
+            # We only do this for the bank journal as we use the balance_end_real in cash
+            # journal for verification and creating cash difference entries so we don't want
+            # to recompute the value in that case
+            if statement.journal_type == 'bank':
+                total_entry_encoding = sum([line.amount for line in statement.line_ids])
+                statement.balance_end_real = statement.previous_statement_id.balance_end_real + total_entry_encoding
+            else:
+                # Need default value
+                statement.balance_end_real = statement.balance_end_real or 0.0
+
     @api.depends('line_ids', 'balance_start', 'line_ids.amount', 'balance_end_real')
     def _end_balance(self):
         for statement in self:
@@ -167,6 +196,63 @@ class AccountBankStatement(models.Model):
             return self._get_opening_balance(journal_id)
         return 0
 
+    @api.depends('balance_start', 'previous_statement_id')
+    def _compute_is_valid_balance_start(self):
+        for bnk in self:
+            bnk.is_valid_balance_start = bnk.balance_start == bnk.previous_statement_id.balance_end_real
+
+    @api.depends('date', 'journal_id')
+    def _get_previous_statement(self):
+        # We have to sort self by date otherwise we may encounter some errors
+        # Let's assume the following case
+        # Self contains 3 record (1,2,3) with the following order on date (2019-01-13, 2019-01-12, 2019-01-15)
+        # On first iteration, record 1 will correctly set previous_Statement_id = 2
+        # On second iteration, before record 2 can set its previous_statement_id, it will look for someone
+        # pointing to him in order to change that to its self.previous_statement_id (because we could change the date of
+        # record 2 and move it to the end and we don't want the previously statement that was pointing towards him to
+        # continue doing so). However in the case of a creating in batch like in our example, this will cause the following
+        # issue: record 3 that was done just before in the first loop iteration will have its previous_statement_id set
+        # to False and its starting and ending balance won't be computed correctly.
+        # The solution to avoid that is to sort self by date in ascending order that way we are sure that no record
+        # set their values too soon.
+        for st in sorted(self, key=lambda l: l['date']):
+            # Search for the previous statement
+            domain = [('date', '<=', st.date), ('journal_id', '=', st.journal_id.id)]
+            # The reason why we have to perform this test is because we have two use case here:
+            # First one is in case we are creating a new record, in that case that new record does
+            # not have any id yet. However if we are updating an existing record, the domain date <= st.date
+            # will find the record itself, so we have to add a condition in the search to ignore self.id
+            if not isinstance(st.id, models.NewId):
+                domain.append(('id', '!=', st.id))
+            previous_statement = self.search(domain, limit=1)
+            
+            # Exist early if no change
+            if previous_statement == st.previous_statement_id:
+                st.previous_statement_id = previous_statement.id
+                continue
+
+            # Search for statement pointing to myself to change it's previous_statement_id to my previous_statement_id
+            # This does not need to be compute when we are creating a record (newId)
+            if not isinstance(st.id, models.NewId):
+                point_to_me_statement = self.search([('previous_statement_id', '=', st.id)], limit=1)
+                if point_to_me_statement:
+                    point_to_me_statement.previous_statement_id = st.previous_statement_id.id
+
+            # two cases here:
+            # 1- If we have a previous statement, it is possible that we are creating a statement between 2 others stmt
+            # so we have to change the link of the stmt that was already pointing to the previous statement to ourself
+            # We only do this if the record already exists in db, because we can't
+            # assign a newId to an existing next_statement
+            # 2- We have found no more previous statement, however it is possible that we have been moved first of the list
+            # so we have to search for any other existing statement and link that one to us (this again also make sense
+            # only if we already have an actual id)
+            st.previous_statement_id = previous_statement.id
+            if not isinstance(st.id, models.NewId):
+                next_statement = self.search([('previous_statement_id', '=', previous_statement.id), ('id', '!=', st.id), ('journal_id', '=', st.journal_id.id)], limit=1)
+                if next_statement:
+                    next_statement.previous_statement_id = st.id
+
+
     _name = "account.bank.statement"
     _description = "Bank Statement"
     _order = "date desc, id desc"
@@ -176,14 +262,14 @@ class AccountBankStatement(models.Model):
     reference = fields.Char(string='External Reference', states={'open': [('readonly', False)]}, copy=False, readonly=True, help="Used to hold the reference of the external mean that created this statement (name of imported file, reference of online synchronization...)")
     date = fields.Date(required=True, states={'confirm': [('readonly', True)]}, index=True, copy=False, default=fields.Date.context_today)
     date_done = fields.Datetime(string="Closed On")
-    balance_start = fields.Monetary(string='Starting Balance', states={'confirm': [('readonly', True)]}, default=_default_opening_balance)
-    balance_end_real = fields.Monetary('Ending Balance', states={'confirm': [('readonly', True)]})
+    balance_start = fields.Monetary(string='Starting Balance', states={'confirm': [('readonly', True)]}, compute='_compute_starting_balance', readonly=False, store=True)
+    balance_end_real = fields.Monetary('Ending Balance', states={'confirm': [('readonly', True)]}, compute='_compute_ending_balance', readonly=False, store=True)
     accounting_date = fields.Date(string="Accounting Date", help="If set, the accounting entries created during the bank statement reconciliation process will be created at this date.\n"
         "This is useful if the accounting period in which the entries should normally be booked is already closed.")
     state = fields.Selection([('open', 'New'), ('confirm', 'Validated')], string='Status', required=True, readonly=True, copy=False, default='open')
     currency_id = fields.Many2one('res.currency', compute='_compute_currency', string="Currency")
     journal_id = fields.Many2one('account.journal', string='Journal', required=True, states={'confirm': [('readonly', True)]}, default=_default_journal)
-    journal_type = fields.Selection(related='journal_id.type', help="Technical field used for usability purposes", readonly=False)
+    journal_type = fields.Selection(related='journal_id.type', help="Technical field used for usability purposes")
     company_id = fields.Many2one('res.company', related='journal_id.company_id', string='Company', store=True, readonly=True,
         default=lambda self: self.env.company)
 
@@ -200,10 +286,8 @@ class AccountBankStatement(models.Model):
     cashbox_start_id = fields.Many2one('account.bank.statement.cashbox', string="Starting Cashbox")
     cashbox_end_id = fields.Many2one('account.bank.statement.cashbox', string="Ending Cashbox")
     is_difference_zero = fields.Boolean(compute='_is_difference_zero', string='Is zero', help="Check if difference is zero.")
-
-    @api.onchange('journal_id')
-    def onchange_journal_id(self):
-        self._set_opening_balance(self.journal_id.id)
+    previous_statement_id = fields.Many2one('account.bank.statement', help='technical field to compute starting balance correctly', compute='_get_previous_statement', store=True)
+    is_valid_balance_start = fields.Boolean(string="Is Valid Balance Start", compute="_compute_is_valid_balance_start", help="technical field to display a warning message in case starting balance is different than previous ending balance")
 
     def _balance_check(self):
         for stmt in self:
@@ -239,6 +323,11 @@ class AccountBankStatement(models.Model):
                 raise UserError(_('In order to delete a bank statement, you must first cancel it to delete related journal items.'))
             # Explicitly unlink bank statement lines so it will check that the related journal entries have been deleted first
             statement.line_ids.unlink()
+            # Some other bank statements might be link to this one, so in that case we have to switch the previous_statement_id
+            # from that statement to the one linked to this statement
+            next_statement = self.search([('previous_statement_id', '=', statement.id)])
+            if next_statement:
+                next_statement.previous_statement_id = statement.previous_statement_id
         return super(AccountBankStatement, self).unlink()
 
     def open_cashbox_id(self):
@@ -300,7 +389,7 @@ class AccountBankStatement(models.Model):
                 self.env['ir.attachment'].create({
                     'name': statement.name and _("Bank Statement %s.pdf") % statement.name or _("Bank Statement.pdf"),
                     'type': 'binary',
-                    'datas': base64.encodestring(content),
+                    'datas': base64.encodebytes(content),
                     'res_model': statement._name,
                     'res_id': statement.id
                 })
@@ -332,14 +421,8 @@ class AccountBankStatement(models.Model):
                 statement.name = st_number
             statement.state = 'open'
 
-    def action_bank_reconcile_bank_statements(self):
-        self.ensure_one()
-        bank_stmt_lines = self.mapped('line_ids')
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'bank_statement_reconciliation_view',
-            'context': {'statement_line_ids': bank_stmt_lines.ids, 'company_ids': self.mapped('company_id').ids},
-        }
+    def button_reopen(self):
+        self.state = 'open'
 
 
 class AccountBankStatementLine(models.Model):
@@ -445,9 +528,9 @@ class AccountBankStatementLine(models.Model):
         if aml_to_cancel:
             aml_to_cancel.remove_move_reconcile()
             moves_to_cancel = aml_to_cancel.mapped('move_id')
-            moves_to_cancel.button_cancel()
             moves_to_cancel.button_draft()
-            moves_to_cancel.unlink()
+            moves_to_cancel.button_cancel()
+            moves_to_cancel.with_context(force_delete=True).unlink()
         if payment_to_cancel:
             payment_to_cancel.unlink()
 
@@ -722,7 +805,7 @@ class AccountBankStatementLine(models.Model):
             total -= aml_currency._convert(balance, currency, aml_rec.company_id, aml_rec.date)
             aml_rec.with_context(check_move_validity=False).write({'statement_line_id': self.id})
             counterpart_moves = (counterpart_moves | aml_rec.move_id)
-            if aml_rec.journal_id.post_at_bank_rec and aml_rec.payment_id and aml_rec.move_id.state == 'draft':
+            if aml_rec.journal_id.post_at == 'bank_rec' and aml_rec.payment_id and aml_rec.move_id.state == 'draft':
                 # In case the journal is set to only post payments when performing bank
                 # reconciliation, we modify its date and post it.
                 aml_rec.move_id.date = self.date
@@ -843,3 +926,6 @@ class AccountBankStatementLine(models.Model):
 
     def _check_invoice_state(self, invoice):
         invoice._compute_amount()
+
+    def button_confirm_bank(self):
+        self.statement_id.button_confirm_bank()

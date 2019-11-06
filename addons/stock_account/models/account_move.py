@@ -86,7 +86,7 @@ class AccountMove(models.Model):
             for line in move.invoice_line_ids:
 
                 # Filter out lines being not eligible for COGS.
-                if line.product_id.type != 'product' or line.product_id.valuation != 'real_time':
+                if line.product_id.type not in ('product', 'consu') or line.product_id.valuation != 'real_time':
                     continue
 
                 # Retrieve accounts needed to generate the COGS.
@@ -183,17 +183,18 @@ class AccountMove(models.Model):
                 else:
                     product_interim_account = product_accounts['stock_input']
 
-                # Search for anglo-saxon lines linked to the product in the journal entry.
-                product_account_moves = move.line_ids.filtered(
-                    lambda line: line.product_id == product and line.account_id == product_interim_account and not line.reconciled)
+                if product_interim_account.reconcile:
+                    # Search for anglo-saxon lines linked to the product in the journal entry.
+                    product_account_moves = move.line_ids.filtered(
+                        lambda line: line.product_id == product and line.account_id == product_interim_account and not line.reconciled)
 
-                # Search for anglo-saxon lines linked to the product in the stock moves.
-                product_stock_moves = stock_moves.filtered(lambda stock_move: stock_move.product_id == product)
-                product_account_moves += product_stock_moves.mapped('account_move_ids.line_ids')\
-                    .filtered(lambda line: line.account_id == product_interim_account and not line.reconciled)
+                    # Search for anglo-saxon lines linked to the product in the stock moves.
+                    product_stock_moves = stock_moves.filtered(lambda stock_move: stock_move.product_id == product)
+                    product_account_moves += product_stock_moves.mapped('account_move_ids.line_ids')\
+                        .filtered(lambda line: line.account_id == product_interim_account and not line.reconciled)
 
-                # Reconcile.
-                product_account_moves.reconcile()
+                    # Reconcile.
+                    product_account_moves.reconcile()
 
 
 class AccountMoveLine(models.Model):

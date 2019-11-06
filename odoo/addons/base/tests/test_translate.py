@@ -18,7 +18,7 @@ class TranslationToolsTestCase(BaseCase):
             #print "2:", repr(quoted)
             unquoted = unquote("".join(quoted.split('"\n"')))
             #print "3:", repr(unquoted)
-            self.assertEquals(str, unquoted)
+            self.assertEqual(str, unquoted)
 
         test_string("""test \nall kinds\n \n o\r
          \\\\ nope\n\n"
@@ -41,7 +41,7 @@ class TranslationToolsTestCase(BaseCase):
                         <field name="foo"/>
                     </form>"""
         result = xml_translate(terms.append, source)
-        self.assertEquals(result, source)
+        self.assertEqual(result, source)
         self.assertItemsEqual(terms,
             ['Form stuff', 'Blah blah blah', 'Put some more text here'])
 
@@ -50,7 +50,7 @@ class TranslationToolsTestCase(BaseCase):
         terms = []
         source = "Blah blah blah"
         result = xml_translate(terms.append, source)
-        self.assertEquals(result, source)
+        self.assertEqual(result, source)
         self.assertItemsEqual(terms, [source])
 
     def test_translate_xml_unicode(self):
@@ -58,7 +58,7 @@ class TranslationToolsTestCase(BaseCase):
         terms = []
         source = u"Un heureux évènement"
         result = xml_translate(terms.append, source)
-        self.assertEquals(result, source)
+        self.assertEqual(result, source)
         self.assertItemsEqual(terms, [source])
 
     def test_translate_xml_text_entity(self):
@@ -66,7 +66,7 @@ class TranslationToolsTestCase(BaseCase):
         terms = []
         source = "Blah&amp;nbsp;blah&amp;nbsp;blah"
         result = xml_translate(terms.append, source)
-        self.assertEquals(result, source)
+        self.assertEqual(result, source)
         self.assertItemsEqual(terms, [source])
 
     def test_translate_xml_inline1(self):
@@ -78,7 +78,7 @@ class TranslationToolsTestCase(BaseCase):
                         <field name="foo"/>
                     </form>"""
         result = xml_translate(terms.append, source)
-        self.assertEquals(result, source)
+        self.assertEqual(result, source)
         self.assertItemsEqual(terms,
             ['Form stuff', 'Blah <i>blah</i> blah', 'Put some <b>more text</b> here'])
 
@@ -91,7 +91,7 @@ class TranslationToolsTestCase(BaseCase):
                         <field name="foo"/>
                     </form>"""
         result = xml_translate(terms.append, source)
-        self.assertEquals(result, source)
+        self.assertEqual(result, source)
         self.assertItemsEqual(terms,
             ['Form stuff', 'Blah <i>blah</i> blah', 'Put <em>some <b>more text</b></em> here'])
 
@@ -108,7 +108,7 @@ class TranslationToolsTestCase(BaseCase):
                         </div>
                     </form>"""
         result = xml_translate(terms.append, source)
-        self.assertEquals(result, source)
+        self.assertEqual(result, source)
         self.assertItemsEqual(terms,
             ['Form stuff', 'Blah blah blah'])
 
@@ -122,7 +122,7 @@ class TranslationToolsTestCase(BaseCase):
                         </div>
                     </form>"""
         result = xml_translate(terms.append, source)
-        self.assertEquals(result, source)
+        self.assertEqual(result, source)
         self.assertItemsEqual(terms,
             ['Form stuff', '<span class="fa fa-globe" title="Title stuff"/>'])
 
@@ -136,7 +136,7 @@ class TranslationToolsTestCase(BaseCase):
                         </div>
                     </form>"""
         result = xml_translate(terms.append, source)
-        self.assertEquals(result, source)
+        self.assertEqual(result, source)
         self.assertItemsEqual(terms, ['Form stuff'])
 
     def test_translate_xml_t(self):
@@ -148,7 +148,7 @@ class TranslationToolsTestCase(BaseCase):
                         stuff after
                     </t>"""
         result = xml_translate(terms.append, source)
-        self.assertEquals(result, source)
+        self.assertEqual(result, source)
         self.assertItemsEqual(terms,
             ['stuff before', 'stuff after'])
 
@@ -161,7 +161,7 @@ class TranslationToolsTestCase(BaseCase):
                         stuff after
                     </div>"""
         result = xml_translate(terms.append, source)
-        self.assertEquals(result, source)
+        self.assertEqual(result, source)
         self.assertItemsEqual(terms,
             ['stuff before', 'stuff after'])
 
@@ -173,7 +173,7 @@ class TranslationToolsTestCase(BaseCase):
                         <attribute name="option">Do not translate this</attribute>
                     </field>"""
         result = xml_translate(terms.append, source)
-        self.assertEquals(result, source)
+        self.assertEqual(result, source)
         self.assertItemsEqual(terms,
             ['Translate this'])
 
@@ -190,7 +190,7 @@ class TranslationToolsTestCase(BaseCase):
                         </ul>
                     </t>"""
         result = xml_translate(terms.append, source)
-        self.assertEquals(result, source)
+        self.assertEqual(result, source)
         self.assertItemsEqual(terms,
             ['<span class="oe_menu_text">Blah</span>'])
 
@@ -205,10 +205,10 @@ class TranslationToolsTestCase(BaseCase):
                         </t>
                     </Invoice>"""
         result = xml_translate(terms.append, source)
-        self.assertEquals(result, source)
+        self.assertEqual(result, source)
         self.assertItemsEqual(terms, ['Oasis'])
         result = xml_translate(lambda term: term, source)
-        self.assertEquals(result, source)
+        self.assertEqual(result, source)
 
     def test_translate_xml_invalid_translations(self):
         """ Test xml_translate() with invalid translations. """
@@ -226,21 +226,21 @@ class TranslationToolsTestCase(BaseCase):
                         <field name="foo"/>
                     </form>"""
         result = xml_translate(translations.get, source)
-        self.assertEquals(result, expect)
+        self.assertEqual(result, expect)
 
     def test_translate_html(self):
         """ Test html_translate(). """
         source = """<blockquote>A <h2>B</h2> C</blockquote>"""
         result = html_translate(lambda term: term, source)
-        self.assertEquals(result, source)
+        self.assertEqual(result, source)
 
     def test_translate_html_i(self):
         """ Test xml_translate() and html_translate() with <i> elements. """
         source = """<p>A <i class="fa-check"></i> B</p>"""
         result = xml_translate(lambda term: term, source)
-        self.assertEquals(result, """<p>A <i class="fa-check"/> B</p>""")
+        self.assertEqual(result, """<p>A <i class="fa-check"/> B</p>""")
         result = html_translate(lambda term: term, source)
-        self.assertEquals(result, source)
+        self.assertEqual(result, source)
 
 
 class TestTranslation(TransactionCase):
@@ -363,6 +363,8 @@ class TestTranslation(TransactionCase):
         self.assertEqual(cheese.with_context(lang=None).name, 'Cheese')
         self.assertEqual(cheese.with_context(lang='fr_FR').name, 'Fromage')
         self.assertEqual(cheese.with_context(lang='en_US').name, 'The Cheese')
+        cheese.flush()
+        cheese.invalidate_cache()
 
         # set a new master value
         cheese.with_context(lang='en_US').write({'name': 'Delicious Cheese'})
@@ -477,7 +479,98 @@ class TestTranslationWrite(TransactionCase):
             {'src': 'English Name', 'value': 'English Name', 'lang': 'en_US'},
             {'src': 'English Name', 'value': 'French Name', 'lang': 'fr_FR'}
         ])
-      
+
+    def test_04_fr_multi_no_en(self):
+        self.env['res.lang'].load_lang('fr_FR')
+        self.env['res.users'].with_context(active_test=False).search([]).write({'lang': 'fr_FR'})
+        self.env['res.lang'].load_lang('es_ES')
+        self.env.ref('base.lang_en').active = False
+
+        langs = self.env['res.lang'].get_installed()
+        self.assertEqual([('fr_FR', 'French / Français'), ('es_ES', 'Spanish / Español')], langs,
+                         "Test did not start with the expected languages")
+
+        self.category.with_context(lang='fr_FR').write({'name': 'French Name'})
+        self.category.with_context(lang='es_ES').write({'name': 'Spanish Name'})
+        self.category.with_context(lang=None).write({'name': 'None Name'})
+
+        translations = self.env['ir.translation'].search([
+            ('name', '=', 'res.partner.category,name'),
+            ('res_id', '=', self.category.id),
+        ], order='lang')
+        self.assertRecordValues(translations, [
+            {'src': 'None Name', 'value': 'Spanish Name', 'lang': 'es_ES'},
+            {'src': 'None Name', 'value': 'French Name', 'lang': 'fr_FR'},
+        ])
+
+    def test_05_remove_multi(self):
+        self.env['res.lang'].load_lang('fr_FR')
+
+        langs = self.env['res.lang'].get_installed()
+        self.assertEqual([('en_US', 'English (US)'), ('fr_FR', 'French / Français')], langs,
+            "Test did not started with expected languages")
+
+        belgium = self.env.ref('base.be')
+        # vat_label is translatable and not required
+        belgium.with_context(lang='en_US').write({'vat_label': 'VAT'})
+
+        # create translations if not exists
+        self.env['ir.translation']._upsert_translations([{
+            'type': 'model',
+            'name': 'res.country,vat_label',
+            'lang': 'en_US',
+            'res_id': belgium.id,
+            'src': 'VAT',
+            'value': 'VAT',
+            'state': 'translated',
+        }, {
+            'type': 'model',
+            'name': 'res.country,vat_label',
+            'lang': 'fr_FR',
+            'res_id': belgium.id,
+            'src': 'VAT',
+            'value': 'TVA',
+            'state': 'translated',
+        }])
+
+        # remove the value
+        belgium.with_context(lang='fr_FR').write({'vat_label': False})
+        # should recover the initial value from db
+        self.assertEqual(
+            False, belgium.with_context(lang='fr_FR').vat_label,
+            "Value was not reset"
+        )
+        self.assertEqual(
+            False, belgium.with_context(lang='en_US').vat_label,
+            "Value was not reset in other languages"
+        )
+        self.assertEqual(
+            False, belgium.with_context(lang=None).vat_label,
+            "Value was not reset on the field model"
+        )
+
+        translations = self.env['ir.translation'].search([
+            ('name', '=', 'res.country,vat_label'),
+            ('res_id', '=', belgium.id),
+        ])
+        self.assertEqual(len(translations), 0, "Translations were not removed")
+
+    def test_field_selection(self):
+        """ Test translations of field selections. """
+        field = self.env['ir.model']._fields['state']
+        self.assertEqual([key for key, _ in field.selection], ['manual', 'base'])
+
+        ir_field = self.env['ir.model.fields']._get('ir.model', 'state')
+        ir_field = ir_field.with_context(lang='fr_FR')
+        ir_field.selection_ids[0].name = 'Custo'
+        ir_field.selection_ids[1].name = 'Pas touche!'
+
+        fg = self.env['ir.model'].fields_get(['state'])
+        self.assertEqual(fg['state']['selection'], field.selection)
+
+        fg = self.env['ir.model'].with_context(lang='fr_FR').fields_get(['state'])
+        self.assertEqual(fg['state']['selection'],
+                         [('manual', 'Custo'), ('base', 'Pas touche!')])
 
 
 class TestXMLTranslation(TransactionCase):
@@ -491,6 +584,12 @@ class TestXMLTranslation(TransactionCase):
             'model': 'res.partner',
             'arch': archf % terms,
         })
+        # DLE P70: `_sync_terms_translations`, which delete translations for which there is no value, is called sooner than before
+        # because it's called in `_write`, which is called by `flush`, which is called by the `search`.
+        # `arch_db` is in `_write` instead of `create` because `arch_db` is the inverse of `arch`.
+        # We need to flush `arch_db` before creating the translations otherwise the translation for which there is no value will be deleted,
+        # while the `test_sync_update` specifically needs empty translations
+        view.flush()
         for lang, trans_terms in kwargs.items():
             for src, val in zip(terms, trans_terms):
                 self.env['ir.translation'].create({

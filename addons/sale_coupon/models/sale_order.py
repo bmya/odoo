@@ -12,9 +12,9 @@ class SaleOrder(models.Model):
     generated_coupon_ids = fields.One2many('sale.coupon', 'order_id', string="Offered Coupons", copy=False)
     reward_amount = fields.Float(compute='_compute_reward_total')
     no_code_promo_program_ids = fields.Many2many('sale.coupon.program', string="Applied Immediate Promo Programs",
-        domain=[('promo_code_usage', '=', 'no_code_needed')], copy=False)
+        domain="[('promo_code_usage', '=', 'no_code_needed'), '|', ('company_id', '=', False), ('company_id', '=', company_id)]", copy=False)
     code_promo_program_id = fields.Many2one('sale.coupon.program', string="Applied Promo Program",
-        domain=[('promo_code_usage', '=', 'code_needed')], copy=False)
+        domain="[('promo_code_usage', '=', 'code_needed'), '|', ('company_id', '=', False), ('company_id', '=', company_id)]", copy=False)
     promo_code = fields.Char(related='code_promo_program_id.promo_code', help="Applied program code", readonly=False)
 
     @api.depends('order_line')
@@ -206,10 +206,12 @@ class SaleOrder(models.Model):
 
     def _get_reward_line_values(self, program):
         self.ensure_one()
+        self = self.with_context(lang=self.partner_id.lang)
+        program = program.with_context(lang=self.partner_id.lang)
         if program.reward_type == 'discount':
-            return self._get_reward_values_discount(program.with_context(lang=self.partner_id.lang))
+            return self._get_reward_values_discount(program)
         elif program.reward_type == 'product':
-            return [self._get_reward_values_product(program.with_context(lang=self.partner_id.lang))]
+            return [self._get_reward_values_product(program)]
 
     def _create_reward_line(self, program):
         self.write({'order_line': [(0, False, value) for value in self._get_reward_line_values(program)]})
@@ -303,14 +305,14 @@ class SaleOrder(models.Model):
             # Check commit 6bb42904a03 for next if/else
             # Remove reward line if price or qty equal to 0
             if values['product_uom_qty'] and values['price_unit']:
-                order.write({'order_line': [(1, line.id, values) for line in lines]})
+                lines.write(values)
             else:
                 if program.reward_type != 'free_shipping':
                     # Can't remove the lines directly as we might be in a recordset loop
                     lines_to_remove += lines
                 else:
                     values.update(price_unit=0.0)
-                    order.write({'order_line': [(1, line.id, values) for line in lines]})
+                    lines.write(values)
             return lines_to_remove
 
         self.ensure_one()
@@ -369,9 +371,11 @@ class SaleOrder(models.Model):
         coupons_to_remove.write({'state': 'new'})
 
         # Unbind promotion and coupon programs which requirements are not met anymore
-        order.no_code_promo_program_ids -= programs_to_remove
-        order.code_promo_program_id -= programs_to_remove
-        order.applied_coupon_ids -= coupons_to_remove
+        if programs_to_remove:
+            order.no_code_promo_program_ids -= programs_to_remove
+            order.code_promo_program_id -= programs_to_remove
+        if coupons_to_remove:
+            order.applied_coupon_ids -= coupons_to_remove
 
         # Remove their reward lines
         invalid_lines |= order.order_line.filtered(lambda line: line.product_id.id in products_to_remove.ids)
@@ -425,3 +429,22 @@ class SaleOrderLine(models.Model):
             # If company_id is set, always filter taxes by the company
             taxes = line.tax_id.filtered(lambda r: not line.company_id or r.company_id == line.company_id)
             line.tax_id = fpos.map_tax(taxes, line.product_id, line.order_id.partner_shipping_id) if fpos else taxes
+
+    # Invalidation of `sale.coupon.program.order_count`
+    # `test_program_rules_validity_dates_and_uses`,
+    # Overriding modified is quite hardcore as you need to know how works the cache and the invalidation system,
+    # but at least the below works and should be efficient.
+    # Another possibility is to add on product.product a one2many to sale.order.line 'order_line_ids',
+    # and then add the depends @api.depends('discount_line_product_id.order_line_ids'),
+    # but I am not sure this will as efficient as the below.
+    def modified(self, fnames, create=False):
+        super(SaleOrderLine, self).modified(fnames, create)
+        if 'product_id' in fnames:
+            Program = self.env['sale.coupon.program'].sudo()
+            field_order_count = Program._fields['order_count']
+            programs = self.env.cache.get_records(Program, field_order_count)
+            if programs:
+                products = self.filtered('is_reward_line').mapped('product_id')
+                for program in programs:
+                    if program.discount_line_product_id in products:
+                        self.env.cache.invalidate([(field_order_count, program.ids)])

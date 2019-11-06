@@ -50,7 +50,7 @@ class SaleOrderTemplate(models.Model):
             template_id = self.env['ir.default'].get('sale.order', 'sale_order_template_id')
             for template in self:
                 if template_id and template_id == template.id:
-                    raise UserError('Before archiving "%s" please select another default template in the settings.' % template.name)
+                    raise UserError(_('Before archiving "%s" please select another default template in the settings.') % template.name)
         return super(SaleOrderTemplate, self).write(vals)
 
 
@@ -61,10 +61,14 @@ class SaleOrderTemplateLine(models.Model):
 
     sequence = fields.Integer('Sequence', help="Gives the sequence order when displaying a list of sale quote lines.",
         default=10)
-    sale_order_template_id = fields.Many2one('sale.order.template', 'Quotation Template Reference', required=True,
-        ondelete='cascade', index=True)
+    sale_order_template_id = fields.Many2one(
+        'sale.order.template', 'Quotation Template Reference',
+        required=True, ondelete='cascade', index=True)
+    company_id = fields.Many2one('res.company', related='sale_order_template_id.company_id', store=True, index=True)
     name = fields.Text('Description', required=True, translate=True)
-    product_id = fields.Many2one('product.product', 'Product', domain=[('sale_ok', '=', True)])
+    product_id = fields.Many2one(
+        'product.product', 'Product', check_company=True,
+        domain=[('sale_ok', '=', True)])
     price_unit = fields.Float('Unit Price', required=True, digits='Product Price')
     discount = fields.Float('Discount (%)', digits='Discount', default=0.0)
     product_uom_qty = fields.Float('Quantity', required=True, digits='Product UoS', default=1)
@@ -99,7 +103,7 @@ class SaleOrderTemplateLine(models.Model):
 
     def write(self, values):
         if 'display_type' in values and self.filtered(lambda line: line.display_type != values.get('display_type')):
-            raise UserError("You cannot change the type of a sale quote line. Instead you should delete the current line and create a new line of the proper type.")
+            raise UserError(_("You cannot change the type of a sale quote line. Instead you should delete the current line and create a new line of the proper type."))
         return super(SaleOrderTemplateLine, self).write(values)
 
     _sql_constraints = [
@@ -116,11 +120,15 @@ class SaleOrderTemplateLine(models.Model):
 class SaleOrderTemplateOption(models.Model):
     _name = "sale.order.template.option"
     _description = "Quotation Template Option"
+    _check_company_auto = True
 
     sale_order_template_id = fields.Many2one('sale.order.template', 'Quotation Template Reference', ondelete='cascade',
         index=True, required=True)
+    company_id = fields.Many2one('res.company', related='sale_order_template_id.company_id', store=True, index=True)
     name = fields.Text('Description', required=True, translate=True)
-    product_id = fields.Many2one('product.product', 'Product', domain=[('sale_ok', '=', True)], required=True)
+    product_id = fields.Many2one(
+        'product.product', 'Product', domain=[('sale_ok', '=', True)],
+        required=True, check_company=True)
     price_unit = fields.Float('Unit Price', required=True, digits='Product Price')
     discount = fields.Float('Discount (%)', digits='Discount')
     uom_id = fields.Many2one('uom.uom', 'Unit of Measure ', required=True, domain="[('category_id', '=', product_uom_category_id)]")

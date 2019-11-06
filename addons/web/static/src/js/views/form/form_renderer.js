@@ -457,7 +457,7 @@ var FormRenderer = BasicRenderer.extend({
     * @returns {integer}
     */
     _renderButtonBoxNbButtons: function () {
-        return [2, 2, 4, 6][config.device.size_class] || 7;
+        return [2, 2, 2, 4][config.device.size_class] || 7;
     },
     /**
      * @private
@@ -1083,7 +1083,11 @@ var FormRenderer = BasicRenderer.extend({
      */
     _onTranslate: function (ev) {
         ev.preventDefault();
-        this.trigger_up('translate', {fieldName: ev.target.name, id: this.state.id});
+        this.trigger_up('translate', {
+            fieldName: ev.target.name,
+            id: this.state.id,
+            isComingFromTranslationAlert: true,
+        });
     },
     /**
      * remove alert fields of record from alertFields object

@@ -14,7 +14,7 @@
             <field name="res_model">ir.module.module</field>
             <field name="view_mode">kanban,tree,form</field>
             <field name="domain">['!', ('name', '=like', 'theme_%')]</field>
-            <field name="context" eval="{'search_default_category_id': ref('base.module_category_website')}"/>
+            <field name="context" eval="{'search_default_category_id': ref('base.module_category_website_website')}"/>
         </record>
 
 
@@ -62,22 +62,6 @@
             </field>
         </record>
 
-
-        <record id="view_redirect_search" model="ir.ui.view">
-            <field name="name">website.redirect.search</field>
-            <field name="model">website.redirect</field>
-            <field name="arch" type="xml">
-                <search string="Search Redirect">
-                    <field name="url_from"/>
-                    <field name="url_to"/>
-
-                    <group string="Group By">
-                        <filter string="Redirection Type" name="group_by_type" domain="[]" context="{'group_by': 'redirect_type'}"/>
-                    </group>
-                </search>
-            </field>
-        </record>
-
         <record id="action_website_list" model="ir.actions.act_window">
             <field name="name">Websites</field>
             <field name="res_model">website</field>
@@ -86,52 +70,6 @@
             <field name="target">current</field>
         </record>
 
-        <!-- website.redirect views -->
-        <record id="website_redirect_form_view" model="ir.ui.view">
-            <field name="name">website.redirect.form</field>
-            <field name="model">website.redirect</field>
-            <field name="arch" type="xml">
-                <form string="Website Redirect Settings">
-                    <sheet>
-                        <group>
-                            <group>
-                                <field name="redirect_type"/>
-                                <field name="url_from"/>
-                                <field name="url_to"/>
-                            </group>
-                            <group>
-                                <field name="website_id" options="{'no_create': True}" groups="website.group_multi_website"/>
-                                <field name="active"/>
-                            </group>
-                        </group>
-                    </sheet>
-                </form>
-            </field>
-        </record>
-
-        <record id="website_redirect_tree_view" model="ir.ui.view">
-            <field name="name">website.redirect.list</field>
-            <field name="model">website.redirect</field>
-            <field name="arch" type="xml">
-                <tree string="Website Redirects" editable="bottom">
-                    <field name="redirect_type"/>
-                    <field name="url_from"/>
-                    <field name="url_to"/>
-                    <field name="website_id" options="{'no_create': True}" groups="website.group_multi_website"/>
-                    <field name="active"/>
-                    <field name="sequence" widget="handle" />
-                </tree>
-            </field>
-        </record>
-
-        <record id="action_website_redirect_list" model="ir.actions.act_window">
-            <field name="name">Website Redirects</field>
-            <field name="res_model">website.redirect</field>
-            <field name="view_mode">tree,form</field>
-            <field name="view_id" ref="website_redirect_tree_view"/>
-            <field name="target">current</field>
-            <field name="search_view_id" ref="view_redirect_search"/>
-        </record>
 
         <!-- website.page views -->
         <record id="website_pages_form_view" model="ir.ui.view">
@@ -146,6 +84,7 @@
                                 <field name="url"/>
                                 <field name="view_id" context="{'display_website': True}"/>
                                 <field name="website_id" options="{'no_create': True}" groups="website.group_multi_website"/>
+                                <field name="track"/>
                             </group>
                             <group>
                                 <field name="website_indexed"/>
@@ -173,7 +112,22 @@
                     <field name="create_uid" invisible="1"/>
                     <field name="write_uid"/>
                     <field name="write_date"/>
+                    <field name="track"/>
                 </tree>
+            </field>
+        </record>
+
+        <record id="website_pages_view_search" model="ir.ui.view">
+            <field name="name">website.page.view.search</field>
+            <field name="model">website.page</field>
+            <field name="arch" type="xml">
+                <search string="Website Pages" >
+                    <filter string="Published" name="published" domain="[('website_published', '=', True)]"/>
+                    <filter string="Not published" name="not_published" domain="[('website_published', '=', False)]"/>
+                    <separator/>
+                    <filter string="Tracked" name="tracked" domain="[('track', '=', True)]"/>
+                    <filter string="Not tracked" name="not_tracked" domain="[('track', '=', False)]"/>
+                </search>
             </field>
         </record>
 
@@ -197,6 +151,7 @@
                                 <field name="name"/>
                                 <field name="url"/>
                                 <field name="page_id"/>
+                                <field name="is_mega_menu"/>
                             </group>
                             <group>
                                 <field name="new_window"/>
@@ -231,6 +186,7 @@
                     <field name="website_id" options="{'no_create': True}" groups="website.group_multi_website"/>
                     <field name="name"/>
                     <field name="url"/>
+                    <field name="is_mega_menu"/>
                     <field name="new_window"/>
                     <field name="parent_id" context="{'display_website': True}"/>
                     <field name="group_ids" widget="many2many_tags"/>
@@ -273,11 +229,14 @@
                 <field name="inherit_id" position="attributes">
                     <attribute name="context">{'display_website': True}</attribute>
                 </field>
-                <field name="name" position="after">
+                <field name="type" position="after">
                     <field name="website_id" options="{'no_create': True}" groups="website.group_multi_website"/>
                     <field name="key"/>
                     <field name="page_ids" invisible="1" />
                     <field name="first_page_id" attrs="{'invisible': [('page_ids', '=', [])]}" />
+                    <field name="visibility" attrs="{'invisible': [('type', '!=', 'qweb')]}" />
+                    <field name="visibility_group" attrs="{'invisible': [('visibility', '!=', 'restricted_group')]}" />
+                    <field name="visibility_password" attrs="{'invisible': [('visibility', '!=', 'password')]}" />
                 </field>
                 <sheet position="before">
                     <header>

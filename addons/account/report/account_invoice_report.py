@@ -19,7 +19,7 @@ class AccountInvoiceReport(models.Model):
     currency_id = fields.Many2one('res.currency', string='Currency', readonly=True)
     partner_id = fields.Many2one('res.partner', string='Partner', readonly=True)
     commercial_partner_id = fields.Many2one('res.partner', string='Partner Company', help="Commercial Entity")
-    country_id = fields.Many2one('res.country', string="Partner Company's Country")
+    country_id = fields.Many2one('res.country', string="Country")
     invoice_user_id = fields.Many2one('res.users', string='Salesperson', readonly=True)
     type = fields.Selection([
         ('out_invoice', 'Customer Invoice'),
@@ -181,10 +181,9 @@ class ReportInvoiceWithPayment(models.AbstractModel):
 
     @api.model
     def _get_report_values(self, docids, data=None):
-        report = self.env['ir.actions.report']._get_report_from_name('account.report_invoice_with_payments')
         return {
             'doc_ids': docids,
-            'doc_model': report.model,
-            'docs': self.env[report.model].browse(docids),
+            'doc_model': 'account.move',
+            'docs': self.env['account.move'].browse(docids),
             'report_type': data.get('report_type') if data else '',
         }

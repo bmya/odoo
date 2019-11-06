@@ -52,7 +52,6 @@
         width: 100%;
 
         > input {
-            height: 100%;
             padding-right: 15px;
             cursor: pointer;
         }
@@ -197,6 +196,7 @@
                 img {
                     height: 18px;
                     width: 18px;
+                    object-fit: cover;
                 }
                 &.o_tag_color_0 {
                     background-color: #F1F1F1;
@@ -453,6 +453,7 @@
         font-weight: $badge-font-weight;
         text-align: center;
         padding-right: 100px;
+        word-break: break-word;
         .o_clipboard_button {
             @include o-position-absolute($top: 0, $right: 0);
             &.o_btn_text_copy {

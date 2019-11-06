@@ -73,8 +73,8 @@
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='pricelist_id']" position="after">
                     <separator/>
-                    <field name="location_id" context="{'location': self}"/>
-                    <field name="warehouse_id" context="{'warehouse': self}"/>
+                    <field name="location_id" context="{'location': self}" filter_domain="[]"/>
+                    <field name="warehouse_id" context="{'warehouse': self}" filter_domain="[]"/>
                     <separator/>
                     <filter name="real_stock_available" string="Available Products" domain="[('qty_available','&gt;',0)]"/>
                     <filter name="real_stock_negative" string="Negative Forecasted Quantity" domain="[('virtual_available','&lt;',0)]"/>
@@ -116,19 +116,19 @@
                         <field name="tracking" widget="radio" attrs="{'invisible': [('type', 'in', ['service', 'digital'])]}"/>
                     </group>
                      <group string="Counterpart Locations" name="stock_property" groups="base.group_no_one">
-                        <field name="property_stock_production" domain="[('usage', '=', 'production')]"/>
-                        <field name="property_stock_inventory" domain="[('usage', '=', 'inventory')]"/>
+                        <field name="property_stock_production"/>
+                        <field name="property_stock_inventory"/>
                     </group>
                 </xpath>
                 <page name="inventory" position="inside">
                     <group string="Description for Delivery Orders">
-                        <field name="description_pickingout" nolabel="1" placeholder="This note will show up on delivery orders."/>
+                        <field name="description_pickingout" nolabel="1" placeholder="This note is added to delivery orders."/>
                     </group>
                     <group string="Description for Receipts">
-                        <field name="description_pickingin" nolabel="1" placeholder="This note will show up on receipt orders (e.g. where to store the product in the warehouse)."/>
+                        <field name="description_pickingin" nolabel="1" placeholder="This note is added to receipt orders (e.g. where to store the product in the warehouse)."/>
                     </group>
                     <group string="Description for Internal Transfers" groups="stock.group_stock_multi_locations">
-                        <field name="description_picking" placeholder="This note will show up on internal transfer orders (e.g. where to pick the product in the warehouse)." nolabel="1"/>
+                        <field name="description_picking" placeholder="This note is added to internal transfer orders (e.g. where to pick the product in the warehouse)." nolabel="1"/>
                     </group>
                 </page>
                 <page name="inventory" position="attributes">
@@ -142,9 +142,9 @@
             <field name="model">product.template</field>
             <field name="inherit_id" ref="product.product_template_kanban_view"/>
             <field name="arch" type="xml">
-                <field name="lst_price" position="after">
+                <xpath expr="//kanban" position="inside">
                     <field name="type"/>
-                </field>
+                </xpath>
                 <ul position="inside">
                     <li t-if="record.type.raw_value == 'product'">On hand: <field name="qty_available"/> <field name="uom_id"/></li>
                 </ul>
@@ -197,6 +197,7 @@
         <record model="ir.ui.view" id="product_form_view_procurement_button">
             <field name="name">product.product.procurement</field>
             <field name="model">product.product</field>
+            <field name="groups_id" eval="[(4, ref('stock.group_stock_user'))]"/>
             <field name="inherit_id" ref="product.product_normal_form_view"/>
             <field name="arch" type="xml">
                 <data>
@@ -224,17 +225,14 @@
                                     <span class="o_stat_text">On Hand</span>
                                </div>
                         </button>
-                        <button type="action"
-                            name="%(stock.report_stock_quantity_action_product)d"
+                        <button type="object"
+                            name="action_product_forecast_report"
                             attrs="{'invisible':[('type', '!=', 'product')]}"
-                            context="{'search_default_product_id': id, 'default_product_id': id}"
+                            context="{'default_product_id': id}"
                             class="oe_stat_button" icon="fa-cubes">
                             <div class="o_field_widget o_stat_info">
                                 <span class="o_stat_value">
-                                    <field name="virtual_available" widget="statinfo" nolabel="1"/>
-                                    <span attrs="{'invisible': [('outgoing_qty', '=', 0), ('incoming_qty', '=', 0)]}" groups="base.group_no_one">
-                                        (-<field name="outgoing_qty" widget="statinfo" nolabel="1"/>+<field name="incoming_qty" widget="statinfo" nolabel="1"/>)
-                                    </span>
+                                    <field name="virtual_available" widget="statinfo" nolabel="1" class="mr4"/>
                                     <field name="uom_name"/>
                                 </span>
                                 <span class="o_stat_text">Forecasted</span>
@@ -291,6 +289,7 @@
         <record model="ir.ui.view" id="product_template_form_view_procurement_button">
             <field name="name">product.template_procurement</field>
             <field name="model">product.template</field>
+            <field name="groups_id" eval="[(4, ref('stock.group_stock_user'))]"/>
             <field name="inherit_id" ref="product.product_template_only_form_view"/>
             <field name="arch" type="xml">
                 <data>
@@ -318,17 +317,14 @@
                                 <span class="o_stat_text">On Hand</span>
                             </div>
                         </button>
-                        <button type="action"
-                            name="%(stock.report_stock_quantity_action_product)d"
+                        <button type="object"
+                            name="action_product_tmpl_forecast_report"
                             attrs="{'invisible':[('type', '!=', 'product')]}"
-                            context="{'search_default_product_tmpl_id': id, 'default_product_tmpl_id': id}"
+                            context="{'default_product_tmpl_id': id}"
                             class="oe_stat_button" icon="fa-cubes">
                             <div class="o_field_widget o_stat_info">
                                 <span class="o_stat_value">
-                                    <field name="virtual_available" widget="statinfo" nolabel="1"/>
-                                    <span attrs="{'invisible':[('outgoing_qty', '=', 0),('incoming_qty','=',0)]}" groups="base.group_no_one">
-                                        (-<field name="outgoing_qty" widget="statinfo" nolabel="1"/>+<field name="incoming_qty" widget="statinfo" nolabel="1"/>)
-                                    </span>
+                                    <field name="virtual_available" widget="statinfo" nolabel="1" class="mr4"/>
                                     <field name="uom_name"/>
                                 </span>
                                 <span class="o_stat_text">Forecasted</span>

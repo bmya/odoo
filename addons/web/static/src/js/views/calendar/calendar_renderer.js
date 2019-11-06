@@ -57,6 +57,7 @@ var SidebarFilter = Widget.extend(FieldManagerMixin, {
         this.filters = options.filters;
         this.label = options.label;
         this.getColor = options.getColor;
+        this.isSwipeEnabled = true;
     },
     /**
      * @override
@@ -325,6 +326,9 @@ return AbstractRenderer.extend({
         });
         this.$calendar.on('touchend', function (event) {
             touchEndX = event.originalEvent.changedTouches[0].pageX;
+            if (!self.isSwipeEnabled) {
+                return;
+            }
             if (touchStartX - touchEndX > 100) {
                 self.trigger_up('next');
             } else if (touchStartX - touchEndX < -100) {
@@ -393,6 +397,7 @@ return AbstractRenderer.extend({
                 self._renderEventPopover(eventData, $(ev.currentTarget));
             },
             select: function (startDate, endDate) {
+                self.isSwipeEnabled = false;
                 // Clicking on the view, dispose any visible popover. Otherwise create a new event.
                 if (self.$('.o_cw_popover').length) {
                     self._unselectEvent();
@@ -406,6 +411,7 @@ return AbstractRenderer.extend({
                 self.$calendar.fullCalendar('unselect');
             },
             eventRender: function (event, element, view) {
+                self.isSwipeEnabled = false;
                 var $render = $(self._eventRender(event));
                 element.find('.fc-content').html($render.html());
                 element.addClass($render.attr('class'));
@@ -433,6 +439,9 @@ return AbstractRenderer.extend({
                     self.trigger_up('edit_event', {id: event.id});
                 });
             },
+            eventAfterAllRender: function () {
+                self.isSwipeEnabled = true;
+            },
             viewRender: function (view) {
                 // compute mode from view.name which is either 'month', 'agendaWeek' or 'agendaDay'
                 var mode = view.name === 'month' ? 'month' : (view.name === 'agendaWeek' ? 'week' : 'day');
@@ -450,10 +459,12 @@ return AbstractRenderer.extend({
             eventMouseout: function (eventData) {
                 self.$calendar.find(_.str.sprintf('[data-event-id=%s]', eventData.id)).removeClass('o_cw_custom_hover');
             },
-            eventDragStart: function () {
+            eventDragStart: function (eventData) {
+                self.$calendar.find(_.str.sprintf('[data-event-id=%s]', eventData.id)).addClass('o_cw_custom_hover');
                 self._unselectEvent();
             },
-            eventResizeStart: function () {
+            eventResizeStart: function (eventData) {
+                self.$calendar.find(_.str.sprintf('[data-event-id=%s]', eventData.id)).addClass('o_cw_custom_hover');
                 self._unselectEvent();
             },
             eventLimitClick: function () {
@@ -511,6 +522,18 @@ return AbstractRenderer.extend({
         this.$sidebar = this.$('.o_calendar_sidebar');
         this.$sidebar_container = this.$(".o_calendar_sidebar_container");
         this._initCalendarMini();
+    },
+    /**
+     * Finalise the popover
+     *
+     * @param {jQueryElement} $popoverElement
+     * @param {web.CalendarPopover} calendarPopover
+     * @private
+     */
+    _onPopoverShown: function ($popoverElement, calendarPopover) {
+        var $popover = $($popoverElement.data('bs.popover').tip);
+        $popover.find('.o_cw_popover_close').on('click', this._unselectEvent.bind(this));
+        $popover.find('.o_cw_body').replaceWith(calendarPopover.$el);
     },
     /**
      * Render the calendar view, this is the main entry point.
@@ -687,7 +710,7 @@ return AbstractRenderer.extend({
             } else {
                 context.eventDate.date = isSameDayEvent ? start.clone().format('dddd, LL') : start.clone().format('LL') + ' - ' + end.clone().format('LL');
             }
-    
+
             if (eventData.record.allday && isSameDayEvent) {
                 context.eventDate.duration = _t("All day");
             } else if (eventData.record.allday && !isSameDayEvent) {
@@ -698,6 +721,27 @@ return AbstractRenderer.extend({
         }
 
         return context;
+    },
+    /**
+     * Prepare the parameters for the popover.
+     * This allow the parameters to be extensible.
+     *
+     * @private
+     * @param {Object} eventData
+     */
+    _getPopoverParams: function (eventData) {
+        return {
+            animation: false,
+            delay: {
+                show: 50,
+                hide: 100
+            },
+            trigger: 'manual',
+            html: true,
+            title: eventData.record.display_name,
+            template: qweb.render('CalendarView.event.popover.placeholder', {color: this.getColor(eventData.color_index)}),
+            container: eventData.allDay ? '.fc-view' : '.fc-scroller',
+        }
     },
     /**
      * Render event popover
@@ -712,21 +756,10 @@ return AbstractRenderer.extend({
         // Initialize popover widget
         var calendarPopover = new self.config.CalendarPopover(self, self._getPopoverContext(eventData));
         calendarPopover.appendTo($('<div>')).then(() => {
-            $eventElement.popover({
-                animation: false,
-                delay: {
-                    show: 50,
-                    hide: 100
-                },
-                trigger: 'manual',
-                html: true,
-                title: eventData.record.display_name,
-                template: qweb.render('CalendarView.event.popover.placeholder', {color: this.getColor(eventData.color_index)}),
-                container: eventData.allDay ? '.fc-view' : '.fc-scroller',
-            }).on('shown.bs.popover', function () {
-                var $popover = $($(this).data('bs.popover').tip);
-                $popover.find('.o_cw_popover_close').on('click', self._unselectEvent.bind(self));
-                $popover.find('.o_cw_body').replaceWith(calendarPopover.$el);
+            $eventElement.popover(
+                self._getPopoverParams(eventData)
+            ).on('shown.bs.popover', function () {
+                self._onPopoverShown($(this), calendarPopover);
             }).popover('show');
         });
     },
@@ -750,7 +783,10 @@ return AbstractRenderer.extend({
      */
     _onEditEvent: function (event) {
         this._unselectEvent();
-        this.trigger_up('openEvent', {_id: event.data.id});
+        this.trigger_up('openEvent', {
+            _id: event.data.id,
+            title: event.data.title,
+        });
     },
     /**
      * @private
