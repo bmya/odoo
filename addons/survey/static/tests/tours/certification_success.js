@@ -5,7 +5,7 @@ var tour = require('web_tour.tour');
 
 tour.register('test_certification_success', {
     test: true,
-    url: '/survey/start/4ead4bc8-b8f2-4760-a682-1fde8ddb95ac'
+    url: '/survey/start/4ead4bc8-b8f2-4760-a682-1fde8daaaaac'
 },
 [{ // Page-1
         content: "Clicking on Start Certification",
@@ -62,7 +62,7 @@ tour.register('test_certification_success', {
         }
     }, {
         content: "Finish Survey",
-        trigger: 'button[value="finish"]',
+        trigger: 'button[type="submit"]',
     }, {
         content: "Thank you",
         trigger: 'h1:contains("Thank you!")',

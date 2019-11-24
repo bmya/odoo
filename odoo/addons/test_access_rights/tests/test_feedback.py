@@ -23,7 +23,15 @@ class TestSudo(Feedback):
     def test_sudo(self):
         record = self.env['test_access_right.some_obj'].create({'val': 5})
         user1 = self.user
-        user2 = self.env.ref('base.user_demo')
+        partner_demo = self.env['res.partner'].create({
+            'name': 'Marc Demo',
+        })
+        user2 = self.env['res.users'].create({
+            'login': 'demo2',
+            'password': 'demo2',
+            'partner_id': partner_demo.id,
+            'groups_id': [(6, 0, [self.env.ref('base.group_user').id, self.env.ref('base.group_partner_manager').id])],
+        })
 
         # with_user(user)
         record1 = record.with_user(user1)
@@ -181,11 +189,11 @@ class TestIRRuleFeedback(Feedback):
 
 
         p = self.env['test_access_right.parent'].create({'obj_id': self.record.id})
-        self.assertRaisesRegex(
+        with self.assertRaisesRegex(
             AccessError,
-            r"Implicitly accessed through \\'Object for testing related access rights\\' \(test_access_right.parent\)\.",
-            p.with_user(self.user).write, {'val': 1}
-        )
+            r"Implicitly accessed through 'Object for testing related access rights' \(test_access_right.parent\)\.",
+        ):
+            p.with_user(self.user).write({'val': 1})
 
     def test_locals(self):
         self.env.ref('base.group_no_one').write(
@@ -300,11 +308,11 @@ Note: this might be a multi-company issue.
         p = self.env['test_access_right.parent'].create({'obj_id': self.record.id})
         p.flush()
         p.invalidate_cache()
-        self.assertRaisesRegex(
+        with self.assertRaisesRegex(
             AccessError,
-            r"Implicitly accessed through \\'Object for testing related access rights\\' \(test_access_right.parent\)\.",
-            lambda: p.with_user(self.user).val
-        )
+            r"Implicitly accessed through 'Object for testing related access rights' \(test_access_right.parent\)\.",
+        ):
+            p.with_user(self.user).val
 
 class TestFieldGroupFeedback(Feedback):
 

@@ -20,12 +20,16 @@ except ImportError:
 
 import psycopg2
 
-from .tools import float_repr, float_round, frozendict, html_sanitize, human_size, pg_varchar, \
-    ustr, OrderedSet, pycompat, sql, date_utils, unique, IterableGenerator, image_process, merge_sequences
+from .tools import (
+    float_repr, float_round, float_compare, float_is_zero, frozendict, html_sanitize, human_size,
+    pg_varchar, ustr, OrderedSet, pycompat, sql, date_utils, unique, IterableGenerator,
+    image_process, merge_sequences,
+)
 from .tools import DEFAULT_SERVER_DATE_FORMAT as DATE_FORMAT
 from .tools import DEFAULT_SERVER_DATETIME_FORMAT as DATETIME_FORMAT
 from .tools.translate import html_translate, _
 from .tools.mimetypes import guess_mimetype
+
 from odoo.exceptions import CacheMiss
 
 DATE_LENGTH = len(date.today().strftime(DATE_FORMAT))
@@ -34,6 +38,11 @@ EMPTY_DICT = frozendict()
 
 RENAMED_ATTRS = [('select', 'index'), ('digits_compute', 'digits')]
 DEPRECATED_ATTRS = [("oldname", "use an upgrade script instead.")]
+
+IR_MODELS = (
+    'ir.model', 'ir.model.data', 'ir.model.fields', 'ir.model.fields.selection',
+    'ir.model.relation', 'ir.model.constraint', 'ir.module.module',
+)
 
 _logger = logging.getLogger(__name__)
 _schema = logging.getLogger(__name__[:-7] + '.schema')
@@ -351,7 +360,7 @@ class Field(MetaField('DummyField', (object,), {})):
             if not attrs.get('readonly'):
                 attrs['inverse'] = self._inverse_company_dependent
             attrs['search'] = self._search_company_dependent
-            attrs['depends_context'] = attrs.get('depends_context', ()) + ('force_company',)
+            attrs['depends_context'] = attrs.get('depends_context', ()) + ('company',)
         if attrs.get('translate'):
             # by default, translatable fields are context-dependent
             attrs['depends_context'] = attrs.get('depends_context', ()) + ('lang',)
@@ -439,7 +448,7 @@ class Field(MetaField('DummyField', (object,), {})):
 
         # display_name may depend on context['lang'] (`test_lp1071710`)
         if self.automatic and self.name == 'display_name' and model._rec_name:
-            if model._fields[model._rec_name].translate:
+            if model._fields[model._rec_name].base_field.translate:
                 self.depends_context += ('lang',)
 
     #
@@ -590,22 +599,14 @@ class Field(MetaField('DummyField', (object,), {})):
 
     def _compute_company_dependent(self, records):
         # read property as superuser, as the current user may not have access
-        context = records.env.context
-        if 'force_company' not in context:
-            company = records.env.company
-            context = dict(context, force_company=company.id)
-        Property = records.env(context=context, su=True)['ir.property']
+        Property = records.env['ir.property'].sudo()
         values = Property.get_multi(self.name, self.model_name, records.ids)
         for record in records:
             record[self.name] = values.get(record.id)
 
     def _inverse_company_dependent(self, records):
         # update property as superuser, as the current user may not have access
-        context = records.env.context
-        if 'force_company' not in context:
-            company = records.env.company
-            context = dict(context, force_company=company.id)
-        Property = records.env(context=context, su=True)['ir.property']
+        Property = records.env['ir.property'].sudo()
         values = {
             record.id: self.convert_to_write(record[self.name], record)
             for record in records
@@ -625,8 +626,8 @@ class Field(MetaField('DummyField', (object,), {})):
         get_context = env.context.get
 
         def get(key):
-            if key == 'force_company':
-                return get_context('force_company') or env.company.id
+            if key == 'company':
+                return env.company.id
             elif key == 'uid':
                 return (env.uid, env.su)
             elif key == 'active_test':
@@ -721,6 +722,12 @@ class Field(MetaField('DummyField', (object,), {})):
             field_help = env['ir.translation'].get_field_help(model_name)
             return field_help.get(self.name) or self.help
         return self.help
+
+    def is_editable(self):
+        """ Return whether the field can be editable in a view. """
+        return not self.readonly or self.states and any(
+            'readonly' in item for items in self.states.values() for item in items
+        )
 
     ############################################################################
     #
@@ -1141,6 +1148,36 @@ class Float(Field):
     :param digits: a pair (total, decimal) or a
         string referencing a `decimal.precision` record.
     :type digits: tuple(int,int) or str
+
+    When a float is a quantity associated with an unit of measure, it is important
+    to use the right tool to compare or round values with the correct precision.
+
+    The Float class provides some static methods for this purpose:
+
+    :func:`~odoo.fields.Float.round()` to round a float with the given precision.
+    :func:`~odoo.fields.Float.is_zero()` to check if a float equals zero at the given precision.
+    :func:`~odoo.fields.Float.compare()` to compare two floats at the given precision.
+
+    .. admonition:: Example
+
+        To round a quantity with the precision of the unit of mesure::
+
+            fields.Float.round(self.product_uom_qty, precision_rounding=self.product_uom_id.rounding)
+
+        To check if the quantity is zero with the precision of the unit of mesure::
+
+            fields.Float.is_zero(self.product_uom_qty, precision_rounding=self.product_uom_id.rounding)
+
+        To compare two quantities::
+
+            field.Float.compare(self.product_uom_qty, self.qty_done, precision_rounding=self.product_uom_id.rounding)
+
+        The compare helper uses the __cmp__ semantics for historic purposes, therefore
+        the proper, idiomatic way to use this helper is like so:
+
+            if result == 0, the first and second floats are equal
+            if result < 0, the first float is lower than the second
+            if result > 0, the first float is greater than the second
     """
 
     type = 'float'
@@ -1198,6 +1235,10 @@ class Float(Field):
         if value or value == 0.0:
             return value
         return ''
+
+    round = staticmethod(float_round)
+    is_zero = staticmethod(float_is_zero)
+    compare = staticmethod(float_compare)
 
 
 class Monetary(Field):
@@ -1258,10 +1299,14 @@ class Monetary(Field):
     def convert_to_cache(self, value, record, validate=True):
         # cache format: float
         value = float(value or 0.0)
-        if validate and record.sudo()[self.currency_field]:
+        if value and validate:
             # FIXME @rco-odoo: currency may not be already initialized if it is
             # a function or related field!
-            value = record[self.currency_field].round(value)
+            currency = record.sudo()[self.currency_field]
+            if len(currency) > 1:
+                raise ValueError("Got multiple currencies while assigning values of monetary field %s" % str(self))
+            elif currency:
+                value = currency.round(value)
         return value
 
     def convert_to_record(self, value, record):
@@ -2292,6 +2337,12 @@ class Many2one(_Relational):
                 "as being 'set null'. Only 'restrict' and 'cascade' make sense."
                 % (self.name, model._name)
             )
+        if self.ondelete == 'restrict' and self.comodel_name in IR_MODELS:
+            raise ValueError(
+                f"Field {self.name} of model {model._name} is defined as ondelete='restrict' "
+                f"while having {self.comodel_name} as comodel, the 'restrict' mode is not "
+                f"supported for this type of field as comodel."
+            )
 
     def update_db(self, model, columns):
         comodel = model.env[self.comodel_name]
@@ -2841,7 +2892,9 @@ class One2many(_RelationalMulti):
                     to_create.clear()
                 if to_inverse:
                     for record, inverse_ids in to_inverse.items():
-                        comodel.browse(inverse_ids)[inverse] = record
+                        lines = comodel.browse(inverse_ids)
+                        lines = lines.filtered(lambda line: int(line[inverse]) != record.id)
+                        lines[inverse] = record
 
             for recs, commands in records_commands_list:
                 for command in (commands or ()):

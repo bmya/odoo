@@ -7,12 +7,12 @@
     'category': 'Theme',
     'sequence': 1000,
     'version': '1.0',
-    'depends': ['website', 'website_theme_install'],
-    'data': [
-    ],
+    'depends': ['website'],
+    'data': [],
     'images': [
         'static/description/cover.png',
         'static/description/theme_default_screenshot.jpg',
     ],
     'application': False,
+    'auto_install': False,
 }

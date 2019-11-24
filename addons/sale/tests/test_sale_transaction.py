@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 from odoo import tests
-from odoo.addons.account.tests.account_test_classes import AccountingTestCase
+from odoo.addons.account.tests.common import AccountTestCommon
 
 
 @tests.tagged('post_install', '-at_install')
-class TestSaleTransaction(AccountingTestCase):
+class TestSaleTransaction(AccountTestCommon):
     def test_sale_invoicing_from_transaction(self):
         ''' Test the following scenario:
         - Create a sale order
@@ -17,8 +17,12 @@ class TestSaleTransaction(AccountingTestCase):
             'name': 'Product A',
         })
 
+        self.env.ref('payment.payment_acquirer_transfer').journal_id = self.cash_journal
+        if not self.env.user.company_id.country_id:
+            self.env.user.company_id.country_id = self.env.ref('base.us')
+
         order = self.env['sale.order'].create({
-            'partner_id': self.env.ref('base.res_partner_1').id,
+            'partner_id': self.env['res.partner'].create({'name': 'A partner'}).id,
             'order_line': [
                 (0, False, {
                     'product_id': product.id,

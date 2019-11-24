@@ -70,7 +70,8 @@ class MrpBom(models.Model):
         ('flexible', 'Flexible')],
         help="Defines if you can consume more or less components than the quantity defined on the BoM.",
         default='strict',
-        string='Consumption'
+        string='Consumption',
+        required=True
     )
 
     @api.onchange('product_id')
@@ -120,6 +121,13 @@ class MrpBom(models.Model):
     def onchange_routing_id(self):
         for line in self.bom_line_ids:
             line.operation_id = False
+
+    @api.model
+    def name_create(self, name):
+        # prevent to use string as product_tmpl_id
+        if isinstance(name, str):
+            raise UserError(_("You cannot create a new Bill of Material from here."))
+        return super(MrpBom, self).name_create(name)
 
     def name_get(self):
         return [(bom.id, '%s%s' % (bom.code and '%s: ' % bom.code or '', bom.product_tmpl_id.display_name)) for bom in self]

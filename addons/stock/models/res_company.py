@@ -40,7 +40,7 @@ class Company(models.Model):
 
             company.write({'internal_transit_location_id': location.id})
 
-            company.partner_id.with_context(force_company=company.id).write({
+            company.partner_id.with_company(company).write({
                 'property_stock_customer': location.id,
                 'property_stock_supplier': location.id,
             })
@@ -80,8 +80,8 @@ class Company(models.Model):
             })
 
     def _create_scrap_location(self):
+        parent_location = self.env.ref('stock.stock_location_locations_virtual', raise_if_not_found=False)
         for company in self:
-            parent_location = self.env.ref('stock.stock_location_locations_virtual', raise_if_not_found=False)
             scrap_location = self.env['stock.location'].create({
                 'name': 'Scrap',
                 'usage': 'inventory',

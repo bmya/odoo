@@ -4,21 +4,21 @@
 from datetime import datetime
 
 from odoo.tools import DEFAULT_SERVER_DATETIME_FORMAT
-from odoo.addons.account.tests.account_test_classes import AccountingTestCase
+from odoo.addons.account.tests.common import AccountTestCommon
 from odoo.tests import Form, tagged
 
 
 @tagged('post_install', '-at_install')
-class TestPurchaseOrder(AccountingTestCase):
+class TestPurchaseOrder(AccountTestCommon):
 
     def setUp(self):
         super(TestPurchaseOrder, self).setUp()
         # Useful models
         self.PurchaseOrder = self.env['purchase.order']
         self.PurchaseOrderLine = self.env['purchase.order.line']
-        self.partner_id = self.env.ref('base.res_partner_1')
-        self.product_id_1 = self.env.ref('product.product_product_8')
-        self.product_id_2 = self.env.ref('product.product_product_11')
+        self.partner_id = self.env['res.partner'].create({'name': 'Wood Corner Partner'})
+        self.product_id_1 = self.env['product.product'].create({'name': 'Large Desk'})
+        self.product_id_2 = self.env['product.product'].create({'name': 'Conference Chair'})
 
         (self.product_id_1 | self.product_id_2).write({'purchase_method': 'purchase'})
         self.po_vals = {

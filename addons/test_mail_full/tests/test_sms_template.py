@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
-from odoo.addons.sms.tests import common as sms_common
 from odoo.addons.test_mail_full.tests import common as test_mail_full_common
 
 
-class TestSmsTemplate(test_mail_full_common.BaseFunctionalTest, sms_common.MockSMS, test_mail_full_common.TestRecipients):
+class TestSmsTemplate(test_mail_full_common.TestSMSCommon, test_mail_full_common.TestRecipients):
 
     @classmethod
     def setUpClass(cls):
@@ -25,7 +24,7 @@ class TestSmsTemplate(test_mail_full_common.BaseFunctionalTest, sms_common.MockS
         self.assertEqual(rendered_body[self.test_record.id], 'Dear %s this is an SMS.' % self.test_record.display_name)
 
     def test_sms_template_lang(self):
-        self.env.ref('base.lang_fr').write({'active': True})
+        self.env['res.lang']._activate_lang('fr_FR')
         self.user_admin.write({'lang': 'en_US'})
         self.env['ir.translation'].create({
             'type': 'model',

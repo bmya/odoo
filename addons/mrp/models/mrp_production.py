@@ -538,7 +538,7 @@ class MrpProduction(models.Model):
             'date': self.date_planned_start,
             'date_expected': self.date_planned_finished,
             'picking_type_id': self.picking_type_id.id,
-            'location_id': self.product_id.with_context(force_company=self.company_id.id).property_stock_production.id,
+            'location_id': self.product_id.with_company(self.company_id).property_stock_production.id,
             'location_dest_id': self.location_dest_id.id,
             'company_id': self.company_id.id,
             'production_id': self.id,
@@ -574,31 +574,35 @@ class MrpProduction(models.Model):
                 if bom_line.child_bom_id and bom_line.child_bom_id.type == 'phantom' or\
                         bom_line.product_id.type not in ['product', 'consu']:
                     continue
-                moves.append(production._get_move_raw_values(bom_line, line_data))
+                operation = bom_line.operation_id.id or line_data['parent_line'] and line_data['parent_line'].operation_id.id
+                moves.append(production._get_move_raw_values(
+                    bom_line.product_id,
+                    line_data['qty'],
+                    bom_line.product_uom_id,
+                    operation,
+                    bom_line
+                ))
         return moves
 
-    def _get_move_raw_values(self, bom_line, line_data):
-        quantity = line_data['qty']
-        # alt_op needed for the case when you explode phantom bom and all the lines will be consumed in the operation given by the parent bom line
-        alt_op = line_data['parent_line'] and line_data['parent_line'].operation_id.id or False
+    def _get_move_raw_values(self, product_id, product_uom_qty, product_uom, operation_id=False, bom_line=False):
         source_location = self.location_src_id
         data = {
-            'sequence': bom_line.sequence,
+            'sequence': bom_line.sequence if bom_line else 10,
             'name': self.name,
             'reference': self.name,
             'date': self.date_planned_start,
             'date_expected': self.date_planned_start,
-            'bom_line_id': bom_line.id,
+            'bom_line_id': bom_line.id if bom_line else False,
             'picking_type_id': self.picking_type_id.id,
-            'product_id': bom_line.product_id.id,
-            'product_uom_qty': quantity,
-            'product_uom': bom_line.product_uom_id.id,
+            'product_id': product_id.id,
+            'product_uom_qty': product_uom_qty,
+            'product_uom': product_uom.id,
             'location_id': source_location.id,
-            'location_dest_id': self.product_id.with_context(force_company=self.company_id.id).property_stock_production.id,
+            'location_dest_id': self.product_id.with_company(self.company_id).property_stock_production.id,
             'raw_material_production_id': self.id,
             'company_id': self.company_id.id,
-            'operation_id': bom_line.operation_id.id or alt_op,
-            'price_unit': bom_line.product_id.standard_price,
+            'operation_id': operation_id,
+            'price_unit': product_id.standard_price,
             'procure_method': 'make_to_stock',
             'origin': self.name,
             'state': 'draft',
@@ -630,7 +634,14 @@ class MrpProduction(models.Model):
                 move[0].unlink()
                 return self.env['stock.move'], old_qty, quantity
         else:
-            move_values = self._get_move_raw_values(bom_line, line_data)
+            operation = bom_line.operation_id.id or line_data['parent_line'] and line_data['parent_line'].operation_id.id
+            move_values = self._get_move_raw_values(
+                bom_line.product_id,
+                line_data['qty'],
+                bom_line.product_uom_id,
+                operation,
+                bom_line
+            )
             move = self.env['stock.move'].create(move_values)
             return move, 0, quantity
 
@@ -703,6 +714,8 @@ class MrpProduction(models.Model):
         self.ensure_one()
 
         # Schedule all work orders (new ones and those already created)
+        qty_to_produce = max(self.product_qty - self.qty_produced, 0)
+        qty_to_produce = self.product_uom_id._compute_quantity(qty_to_produce, self.product_id.uom_id)
         start_date = self._get_start_date()
         for workorder in self.workorder_ids:
             workcenters = workorder.workcenter_id | workorder.workcenter_id.alternative_workcenter_ids
@@ -712,7 +725,7 @@ class MrpProduction(models.Model):
             for workcenter in workcenters:
                 # compute theoretical duration
                 time_cycle = workorder.operation_id.time_cycle
-                cycle_number = float_round(workorder.qty_producing / workcenter.capacity, precision_digits=0, rounding_method='UP')
+                cycle_number = float_round(qty_to_produce / workcenter.capacity, precision_digits=0, rounding_method='UP')
                 duration_expected = workcenter.time_start + workcenter.time_stop + cycle_number * time_cycle * 100.0 / workcenter.time_efficiency
 
                 # get first free slot
@@ -740,7 +753,7 @@ class MrpProduction(models.Model):
 
             # Instantiate start_date for the next workorder planning
             if workorder.next_work_order_id:
-                if workorder.operation_id.batch == 'no' or workorder.operation_id.batch_size >= workorder.qty_producing:
+                if workorder.operation_id.batch == 'no' or workorder.operation_id.batch_size >= qty_to_produce:
                     start_date = best_finished_date
                 else:
                     cycle_number = float_round(workorder.operation_id.batch_size / best_workcenter.capacity, precision_digits=0, rounding_method='UP')

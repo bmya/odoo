@@ -5,10 +5,11 @@ from odoo.addons.test_mail.tests.common import mail_new_test_user
 from odoo.tests import common
 
 
-class TestHrHolidaysBase(common.TransactionCase):
+class TestHrHolidaysCommon(common.TransactionCase):
 
     def setUp(self):
-        super(TestHrHolidaysBase, self).setUp()
+        super(TestHrHolidaysCommon, self).setUp()
+        self.env.user.tz = 'Europe/Brussels'
 
         # Test users to use through the various tests
         self.user_hruser = mail_new_test_user(self.env, login='armande', groups='base.group_user,hr_holidays.group_hr_holidays_user')

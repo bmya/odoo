@@ -193,6 +193,10 @@ odoo.define('website_form_editor.tour', function(require) {
             trigger:  ".s_website_form[data-model_name]",
         },
         {
+            content:  "Open custom fields menu",
+            trigger:  "we-select:contains('Multiple Checkboxes')",
+        },
+        {
             content:  "Click on Multiple Checkboxes in menu Add a custom field",
             trigger:  "we-button:contains('Multiple Checkboxes')",
         },
@@ -241,9 +245,22 @@ odoo.define('website_form_editor.tour', function(require) {
             trigger:  "[data-website_form_field_require]"
         },
         {
+            content:  "Click on first Check Box",
+            trigger:  "label:contains('Iphone') span",
+        },
+        {
+            content:  "Open display menu",
+            trigger:  "we-select:contains('Vertical')",
+        },
+        {
+            content:  "Click on 'Vertical' in menu 'Display'",
+            trigger:  "we-button:contains('Vertical')",
+        },
+        {
             content:  "Check the resulting field",
             trigger:  ".form-field.o_website_form_custom.o_website_form_required_custom" +
                             ":has(.col-form-label:contains('Products'))" +
+                            ":has(.o_website_form_flex[data-display='vertical'])" +
                             ":has(.checkbox label:contains('Iphone'):has(input[type='checkbox'][required]))" +
                             ":has(.checkbox label:contains('Galaxy S'):has(input[type='checkbox'][required]))" +
                             ":has(.checkbox label:contains('Xperia'):has(input[type='checkbox'][required]))" +
@@ -255,6 +272,10 @@ odoo.define('website_form_editor.tour', function(require) {
         {
             content:  "Click on Form snippet",
             trigger:  ".s_website_form[data-model_name]",
+        },
+        {
+            content:  "Open custom fields menu",
+            trigger:  "we-select:contains('Radio Buttons')"
         },
         {
             content:  "Click on Radio Buttons in menu Add a custom field",
@@ -325,6 +346,10 @@ odoo.define('website_form_editor.tour', function(require) {
         {
             content:  "Click on Form snippet",
             trigger:  ".s_website_form[data-model_name]",
+        },
+        {
+            content:  "Open custom fields menu",
+            trigger:  "we-select:contains('Selection')"
         },
         {
             content:  "Click on Selection in menu Add a custom field",

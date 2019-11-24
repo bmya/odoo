@@ -5,7 +5,7 @@ var tour = require('web_tour.tour');
 
 tour.register('test_survey', {
     test: true,
-    url: '/survey/start/b137640d-14d4-4748-9ef6-344ca256531e',
+    url: '/survey/start/b137640d-14d4-4748-9ef6-344caaaaaae',
 }, [
     // Page-1
     {
@@ -31,7 +31,7 @@ tour.register('test_survey', {
         trigger: 'div.js_question-wrapper:contains("How many times did you order products on our website") input',
         run: 'text 12',
     }, {
-        content: 'Click on Next Page',
+        content: 'Submit and go to Next Page',
         trigger: 'button[value="next"]',
     },
     // Page-2
@@ -61,7 +61,7 @@ tour.register('test_survey', {
         trigger: 'div.js_question-wrapper:contains("Do you have any other comments, questions, or concerns") textarea',
         run: 'text This is great. Really.',
     }, {
-        content: 'Click Submit',
+        content: 'Click Submit and finish the survey',
         trigger: 'button[value="finish"]',
     },
     // Final page

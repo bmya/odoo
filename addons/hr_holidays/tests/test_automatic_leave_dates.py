@@ -3,11 +3,11 @@ from datetime import date, datetime
 
 from odoo.tests.common import Form, tagged
 
-from odoo.addons.hr_holidays.tests.common import TestHrHolidaysBase
+from odoo.addons.hr_holidays.tests.common import TestHrHolidaysCommon
 
 
 @tagged('prout')
-class TestAutomaticLeaveDates(TestHrHolidaysBase):
+class TestAutomaticLeaveDates(TestHrHolidaysCommon):
     def setUp(self):
         super(TestAutomaticLeaveDates, self).setUp()
 
@@ -154,6 +154,7 @@ class TestAutomaticLeaveDates(TestHrHolidaysBase):
             self.assertEqual(leave_form.number_of_hours_display, 8)
 
     def test_attendance_next_day(self):
+        self.env.user.tz = 'Europe/Brussels'
         calendar = self.env['resource.calendar'].create({
             'name': 'auto next day',
             'attendance_ids': [(5, 0, 0),
@@ -183,6 +184,7 @@ class TestAutomaticLeaveDates(TestHrHolidaysBase):
             self.assertEqual(leave_form.date_to, datetime(2019, 9, 2, 10, 0, 0))
 
     def test_attendance_previous_day(self):
+        self.env.user.tz = 'Europe/Brussels'
         calendar = self.env['resource.calendar'].create({
             'name': 'auto next day',
             'attendance_ids': [(5, 0, 0),
@@ -212,6 +214,7 @@ class TestAutomaticLeaveDates(TestHrHolidaysBase):
             self.assertEqual(leave_form.date_to, datetime(2019, 9, 3, 10, 0, 0))
 
     def test_2weeks_calendar(self):
+        self.env.user.tz = 'Europe/Brussels'
         calendar = self.env['resource.calendar'].create({
             'name': 'auto next day',
             'two_weeks_calendar': True,
@@ -265,6 +268,7 @@ class TestAutomaticLeaveDates(TestHrHolidaysBase):
             self.assertEqual(leave_form.date_to, datetime(2019, 9, 9, 10, 0, 0))
 
     def test_2weeks_calendar_next_week(self):
+        self.env.user.tz = 'Europe/Brussels'
         calendar = self.env['resource.calendar'].create({
             'name': 'auto next day',
             'two_weeks_calendar': True,

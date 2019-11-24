@@ -38,7 +38,7 @@ class Property(models.Model):
     name = fields.Char(index=True)
     res_id = fields.Char(string='Resource', index=True, help="If not set, acts as a default value for new resources",)
     company_id = fields.Many2one('res.company', string='Company', index=True)
-    fields_id = fields.Many2one('ir.model.fields', string='Field', ondelete='cascade', required=True, index=True)
+    fields_id = fields.Many2one('ir.model.fields', string='Field', ondelete='cascade', required=True)
     value_float = fields.Float()
     value_integer = fields.Integer()
     value_text = fields.Text()  # will contain (char, text)
@@ -59,6 +59,14 @@ class Property(models.Model):
                             required=True,
                             default='many2one',
                             index=True)
+
+    def init(self):
+        # Ensure there is at most one active variant for each combination.
+        query = """
+            CREATE UNIQUE INDEX IF NOT EXISTS ir_property_unique_index
+            ON %s (fields_id, COALESCE(company_id, 0), COALESCE(res_id, ''))
+        """
+        self.env.cr.execute(query % self._table)
 
     def _update_values(self, values):
         if 'value' not in values:
@@ -168,6 +176,34 @@ class Property(models.Model):
         return False
 
     @api.model
+    def set_default(self, name, model, value, company=False):
+        """ Set the given field's generic value for the given company.
+
+        :param name: the field's name
+        :param model: the field's model name
+        :param value: the field's value
+        :param company: the company (record or id)
+        """
+        field_id = self.env['ir.model.fields']._get(model, name).id
+        company_id = int(company) if company else False
+        prop = self.search([
+            ('fields_id', '=', field_id),
+            ('company_id', '=', company_id),
+            ('res_id', '=', False),
+        ])
+        if prop:
+            prop.write({'value': value})
+        else:
+            self.create({
+                'fields_id': field_id,
+                'company_id': company_id,
+                'res_id': False,
+                'name': name,
+                'value': value,
+                'type': self.env[model]._fields[name].type,
+            })
+
+    @api.model
     def get(self, name, model, res_id=False):
         if not res_id:
             t, v = self._get_default_property(name, model)
@@ -182,7 +218,7 @@ class Property(models.Model):
 
     # only cache Property.get(res_id=False) as that's
     # sub-optimally.
-    COMPANY_KEY = "self.env.context.get('force_company') or self.env.company.id"
+    COMPANY_KEY = "self.env.company.id"
     @ormcache(COMPANY_KEY, 'name', 'model')
     def _get_default_property(self, name, model):
         prop = self._get_property(name, model, res_id=False)
@@ -206,7 +242,7 @@ class Property(models.Model):
         res = self._cr.fetchone()
         if not res:
             return None
-        company_id = self._context.get('force_company') or self.env.company.id
+        company_id = self.env.company.id
         return [('fields_id', '=', res[0]), ('company_id', 'in', [company_id, False])]
 
     @api.model
@@ -220,10 +256,7 @@ class Property(models.Model):
 
         field = self.env[model]._fields[name]
         field_id = self.env['ir.model.fields']._get(model, name).id
-        company_id = (
-            self._context.get('force_company')
-            or self.env.company.id
-        )
+        company_id = self.env.company.id
 
         if field.type == 'many2one':
             comodel = self.env[field.comodel_name]
@@ -302,7 +335,7 @@ class Property(models.Model):
         # retrieve the properties corresponding to the given record ids
         self._cr.execute("SELECT id FROM ir_model_fields WHERE name=%s AND model=%s", (name, model))
         field_id = self._cr.fetchone()[0]
-        company_id = self.env.context.get('force_company') or self.env.company.id
+        company_id = self.env.company.id
         refs = {('%s,%s' % (model, id)): id for id in values}
         props = self.search([
             ('fields_id', '=', field_id),

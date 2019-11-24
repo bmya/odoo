@@ -1,9 +1,13 @@
+# -*- coding: utf-8 -*-
+# Part of Odoo. See LICENSE file for full copyright and licensing details.
+
 import odoo.tests
 from odoo.tools import mute_logger
+from odoo.addons.base.tests.common import HttpCaseWithUserDemo
 
 
 @odoo.tests.common.tagged('post_install', '-at_install')
-class TestUi(odoo.tests.HttpCase):
+class TestUi(HttpCaseWithUserDemo):
 
     def test_01_admin_widget_x2many(self):
         # FIXME: breaks if too many children of base.menu_tests
@@ -23,7 +27,8 @@ class TestUiTranslation(odoo.tests.HttpCase):
     @mute_logger('odoo.sql_db', 'odoo.http')
     def test_01_sql_constraints(self):
         # Raise an SQL constraint and test the message
-        self.env['ir.translation']._load_module_terms(['test_new_api'], ['fr_FR'])
+        self.env['res.lang']._activate_lang('fr_FR')
+        self.env.ref('base.module_test_new_api')._update_translations(['fr_FR'])
         constraint = self.env.ref('test_new_api.constraint_test_new_api_category_positive_color')
         message = constraint.with_context(lang='fr_FR').message
         self.assertEqual(message, "La couleur doit être une valeur positive !")

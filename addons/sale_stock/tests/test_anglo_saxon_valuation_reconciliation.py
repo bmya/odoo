@@ -3,24 +3,24 @@
 
 import time
 
-from odoo.addons.stock_account.tests.test_anglo_saxon_valuation_reconciliation_common import ValuationReconciliationTestCase
+from odoo.addons.stock_account.tests.test_anglo_saxon_valuation_reconciliation_common import ValuationReconciliationTestCommon
 from odoo.tests import Form, tagged
 
 
 @tagged('post_install', '-at_install')
-class TestValuationReconciliation(ValuationReconciliationTestCase):
+class TestValuationReconciliation(ValuationReconciliationTestCommon):
 
     def setUp(self):
         super(TestValuationReconciliation, self).setUp()
         self.account_receivable = self.env['account.account'].create({
-            'code': 'X1111',
+            'code': 'X1111 - Test Sale Stock',
             'name': 'Sale - Test Receivable Account',
             'user_type_id': self.env.ref('account.data_account_type_receivable').id,
             'reconcile': True
         })
 
         self.account_income = self.env['account.account'].create({
-            'code': 'X1112',
+            'code': 'X1112 - Test Sale Stock',
             'name': 'Sale - Test Account',
             'user_type_id': self.env.ref('account.data_account_type_direct_costs').id
         })

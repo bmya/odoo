@@ -496,7 +496,7 @@
                     <field name="name" string="Packaging"/>
                     <field name="qty"/>
                     <field name="product_uom_id" options="{'no_open': True, 'no_create': True}" groups="uom.group_uom"/>
-                    <field name="company_id" group="base.group_multi_company"/>
+                    <field name="company_id" groups="base.group_multi_company"/>
                 </tree>
             </field>
         </record>
@@ -534,7 +534,7 @@
                                     <field name="product_uom_id" options="{'no_open': True, 'no_create': True}" groups="uom.group_uom"/>
                                 </div>
                                 <field name="barcode"/>
-                                <field name="company_id" group="base.group_multi_company"/>
+                                <field name="company_id" groups="base.group_multi_company"/>
                             </group>
                         </group>
                     </sheet>
@@ -657,7 +657,7 @@
             <field name="model">product.supplierinfo</field>
             <field name="arch" type="xml">
                 <tree string="Vendor Information" multi_edit="1">
-                    <field name="sequence" widget="handle" readonly="1"/>
+                    <field name="sequence" widget="handle"/>
                     <field name="name" readonly="1"/>
                     <field name="product_id" readonly="1" optional="hide"
                         invisible="context.get('product_template_invisible_variant', False)"

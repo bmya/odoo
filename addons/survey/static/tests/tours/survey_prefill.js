@@ -5,7 +5,7 @@ var tour = require('web_tour.tour');
 
 tour.register('test_survey_prefill', {
     test: true,
-    url: '/survey/start/b137640d-14d4-4748-9ef6-344ca256531e'
+    url: '/survey/start/b137640d-14d4-4748-9ef6-344caaaaaae'
 },
 [{      // Page-1
         trigger: 'a.btn.btn-primary.btn-lg:contains("Start Survey")',
@@ -17,7 +17,10 @@ tour.register('test_survey_prefill', {
         run: 'text 05/05/1980',
     }, { // Question: How frequently do you buy products online ?
         trigger: 'div.js_question-wrapper:contains("How frequently do you buy products online ?") select',
-        run: 'text 2', // value 2 = 'Once a week'
+        run: function() {
+            var optionID = $('option:contains("Once a week")').val();
+            $('div.js_question-wrapper:contains("How frequently do you buy products online ?") select').val(optionID);
+        },
     }, { // Question: How many times did you order products on our website ?
         trigger: 'div.js_question-wrapper:contains("How many times did you order products on our website ?") input',
         run: 'text 42',
@@ -52,23 +55,16 @@ tour.register('test_survey_prefill', {
         trigger: 'div.js_question-wrapper:contains("Do you have any other comments, questions, or concerns") textarea',
         run: 'text Is the prefill working?',
     }, {
-        content: 'Click on Previous Page',
-        trigger: 'button[value="previous"]',
+        // Go back to previous page
+        content: 'Click on the previous page name in the breadcrumb',
+        trigger: 'ol.breadcrumb a:first',
     }, {
         trigger: 'div.js_question-wrapper:contains("How many times did you order products on our website ?") input',
         run: function () {
-            // wait for prefill
-            // booo ugly (but will be removed when ajax prefill is removed)
-            var maxAttempts = 0;
-            var checkPrefillLoaded = setInterval(function () {
-                if ($('div.js_question-wrapper:contains("How many times did you order products on our website ?") input').val() === '42.0') {
-                    $('.o_survey_title').addClass('prefilled');
-                    clearInterval(checkPrefillLoaded);
-                } else if (maxAttempts >= 50) {
-                    clearInterval(checkPrefillLoaded);
-                }
-                maxAttempts++;
-            }, 100); // check every 100ms
+            var $inputQ3 = $('div.js_question-wrapper:contains("How many times did you order products on our website ?") input');
+            if ($inputQ3.val() === '42.0') {
+                $('.o_survey_title').addClass('prefilled');
+            }
         }
     }, {
         trigger: '.o_survey_title.prefilled',
@@ -104,18 +100,10 @@ tour.register('test_survey_prefill', {
     }, {
         trigger: 'div.js_question-wrapper:contains("Do you have any other comments, questions, or concerns") textarea',
         run: function () {
-            // wait for prefill
-            // booo ugly (but will be removed when ajax prefill is removed)
-            var maxAttempts = 0;
-            var checkPrefillLoaded = setInterval(function () {
-                if ($('div.js_question-wrapper:contains("Do you have any other comments, questions, or concerns") textarea').val() === "Is the prefill working?") {
-                    $('.o_survey_title').addClass('prefilled2');
-                    clearInterval(checkPrefillLoaded);
-                } else if (maxAttempts >= 50) {
-                    clearInterval(checkPrefillLoaded);
-                }
-                maxAttempts++;
-            }, 100); // check every 100ms
+            var $inputQ3 = $('div.js_question-wrapper:contains("Do you have any other comments, questions, or concerns") textarea');
+            if ($inputQ3.val() === "Is the prefill working?") {
+                $('.o_survey_title').addClass('prefilled2');
+            }
         }
     }, {
         trigger: '.o_survey_title.prefilled2',

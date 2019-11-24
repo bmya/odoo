@@ -616,7 +616,7 @@ class MailThread(models.AbstractModel):
                                             getattr(self._fields[col_name], 'track_sequence', 100))  # backward compatibility with old parameter name
                 if tracking_sequence is True:
                     tracking_sequence = 100
-                tracking = self.env['mail.tracking.value'].create_tracking_values(initial_value, new_value, col_name, col_info, tracking_sequence)
+                tracking = self.env['mail.tracking.value'].create_tracking_values(initial_value, new_value, col_name, col_info, tracking_sequence, self._name)
                 if tracking:
                     tracking_value_ids.append([0, 0, tracking])
                 changes.add(col_name)
@@ -1483,7 +1483,7 @@ class MailThread(models.AbstractModel):
         if partner and partner.id in [val[0] for val in result[self.ids[0]]]:  # already existing partner ID -> skip
             return result
         if partner and partner.email:  # complete profile: id, name <email>
-            result[self.ids[0]].append((partner.id, tools.formataddr((partner.name, partner.email)), reason))
+            result[self.ids[0]].append((partner.id, partner.email_formatted, reason))
         elif partner:  # incomplete profile: id, name
             result[self.ids[0]].append((partner.id, '%s' % (partner.name), reason))
         else:  # unknown partner, we are probably managing an email address
@@ -1673,9 +1673,14 @@ class MailThread(models.AbstractModel):
             # taking advantage of cache looks better in this case, to check
             filtered_attachment_ids = self.env['ir.attachment'].sudo().browse(attachment_ids).filtered(
                 lambda a: a.res_model == 'mail.compose.message' and a.create_uid.id == self._uid)
+            # update filtered (pending) attachments to link them to the proper record
             if filtered_attachment_ids:
                 filtered_attachment_ids.write({'res_model': model, 'res_id': res_id})
-            m2m_attachment_ids += [(4, id) for id in filtered_attachment_ids.ids]
+            # prevent public and portal users from using attachments that are not theirs
+            if not self.env.user.has_group('base.group_user'):
+                attachment_ids = filtered_attachment_ids.ids
+
+            m2m_attachment_ids += [(4, id) for id in attachment_ids]
         # Handle attachments parameter, that is a dictionary of attachments
 
         if attachments: # generate 

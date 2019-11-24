@@ -216,7 +216,7 @@ class Project(models.Model):
 
     # rating fields
     rating_request_deadline = fields.Datetime(compute='_compute_rating_request_deadline', store=True)
-    rating_status = fields.Selection([('stage', 'Rating when changing stage'), ('periodic', 'Periodical Rating'), ('no','No rating')], 'Customer(s) Ratings', help="How to get customer feedback?\n"
+    rating_status = fields.Selection([('stage', 'Rating when changing stage'), ('periodic', 'Periodical Rating'), ('no','No rating')], 'Customer Ratings', help="How to get customer feedback?\n"
                     "- Rating when changing stage: an email will be sent when a task is pulled in another stage.\n"
                     "- Periodical Rating: email will be sent periodically.\n\n"
                     "Don't forget to set up the mail templates on the stages for which you want to get the customer's feedbacks.", default="no", required=True)
@@ -436,24 +436,6 @@ class Task(models.Model):
     _order = "priority desc, sequence, id desc"
     _check_company_auto = True
 
-    @api.model
-    def default_get(self, fields_list):
-        result = super(Task, self).default_get(fields_list)
-        # find default value from parent for the not given ones
-        parent_task_id = result.get('parent_id') or self._context.get('default_parent_id')
-        if parent_task_id:
-            parent_values = self._subtask_values_from_parent(parent_task_id)
-            for fname, value in parent_values.items():
-                if fname not in result:
-                    result[fname] = value
-        return result
-
-    @api.model
-    def _get_default_partner(self):
-        if 'default_project_id' in self.env.context:
-            default_project_id = self.env['project.project'].browse(self.env.context['default_project_id'])
-            return default_project_id.exists().partner_id
-
     def _get_default_stage_id(self):
         """ Gives default stage_id """
         project_id = self.env.context.get('default_project_id')
@@ -504,7 +486,8 @@ class Task(models.Model):
         index=True,
         copy=False,
         readonly=True)
-    project_id = fields.Many2one('project.project', string='Project', default=lambda self: self.env.context.get('default_project_id'),
+    project_id = fields.Many2one('project.project', string='Project',
+        compute='_compute_project_id', store=True, readonly=False,
         index=True, tracking=True, check_company=True, change_default=True)
     planned_hours = fields.Float("Planned Hours", help='It is the time planned to achieve the task. If this document has sub-tasks, it means the time needed to achieve this tasks and its childs.',tracking=True)
     subtask_planned_hours = fields.Float("Subtasks", compute='_compute_subtask_planned_hours', help="Computed using sum of hours planned of all subtasks created from main task. Usually these hours are less or equal to the Planned Hours (of main task).")
@@ -514,8 +497,12 @@ class Task(models.Model):
         index=True, tracking=True)
     partner_id = fields.Many2one('res.partner',
         string='Customer',
-        default=lambda self: self._get_default_partner(),
+        compute='_compute_partner_id', store=True, readonly=False,
         domain="['|', ('company_id', '=', False), ('company_id', '=', company_id)]")
+    partner_is_company = fields.Boolean(related='partner_id.is_company', readonly=True)
+    commercial_partner_id = fields.Many2one(related='partner_id.commercial_partner_id')
+    partner_email = fields.Char(related='partner_id.email', string='Customer Email')
+    partner_phone = fields.Char(related='partner_id.phone')
     partner_city = fields.Char(related='partner_id.city', readonly=False)
     manager_id = fields.Many2one('res.users', string='Project Manager', related='project_id.user_id', readonly=True, related_sudo=False)
     company_id = fields.Many2one('res.company', string='Company', required=True, default=_default_company_id)
@@ -532,7 +519,8 @@ class Task(models.Model):
     child_ids = fields.One2many('project.task', 'parent_id', string="Sub-tasks", context={'active_test': False})
     subtask_project_id = fields.Many2one('project.project', related="project_id.subtask_project_id", string='Sub-task Project', readonly=True)
     subtask_count = fields.Integer("Sub-task count", compute='_compute_subtask_count')
-    email_from = fields.Char(string='Email', help="These people will receive email.", index=True)
+    email_from = fields.Char(string='Email', help="These people will receive email.", index=True,
+        compute='_compute_email_from', store="True", readonly=False)
     # Computed field about working time elapsed between record creation and assignation/closing.
     working_hours_open = fields.Float(compute='_compute_elapsed', string='Working hours to assign', store=True, group_operator="avg")
     working_hours_close = fields.Float(compute='_compute_elapsed', string='Working hours to close', store=True, group_operator="avg")
@@ -600,26 +588,12 @@ class Task(models.Model):
     @api.depends('child_ids.planned_hours')
     def _compute_subtask_planned_hours(self):
         for task in self:
-            task.subtask_planned_hours = sum(task.child_ids.mapped('planned_hours'))
+            task.subtask_planned_hours = sum(child_task.planned_hours + child_task.subtask_planned_hours for child_task in task.child_ids)
 
     @api.depends('child_ids')
     def _compute_subtask_count(self):
-        """ Note: since we accept only one level subtask, we can use a read_group here """
-        task_data = self.env['project.task'].read_group([('parent_id', 'in', self.ids)], ['parent_id'], ['parent_id'])
-        mapping = dict((data['parent_id'][0], data['parent_id_count']) for data in task_data)
         for task in self:
-            task.subtask_count = mapping.get(task.id, 0)
-
-    @api.onchange('partner_id')
-    def _onchange_partner_id(self):
-        self.email_from = self.partner_id.email
-
-    @api.onchange('parent_id')
-    def _onchange_parent_id(self):
-        if self.parent_id:
-            for field_name, value in self._subtask_values_from_parent(self.parent_id.id).items():
-                if not self[field_name]:
-                    self[field_name] = value
+            task.subtask_count = len(self._get_all_subtasks())
 
     @api.onchange('project_id')
     def _onchange_project(self):
@@ -713,11 +687,6 @@ class Task(models.Model):
         if vals.get('stage_id'):
             vals.update(self.update_date_end(vals['stage_id']))
             vals['date_last_stage_update'] = fields.Datetime.now()
-        # substask default values
-        if vals.get('parent_id'):
-            for fname, value in self._subtask_values_from_parent(vals['parent_id']).items():
-                if fname not in vals:
-                    vals[fname] = value
         task = super(Task, self.with_context(context)).create(vals)
         return task
 
@@ -750,19 +719,22 @@ class Task(models.Model):
     # Subtasks
     # ---------------------------------------------------
 
-    def _subtask_default_fields(self):
-        """ Return the list of field name for default value when creating a subtask """
-        return ['partner_id', 'email_from']
+    @api.depends('parent_id.partner_id', 'project_id.partner_id')
+    def _compute_partner_id(self):
+        for task in self:
+            if not task.partner_id:
+                task.partner_id = task.parent_id.partner_id or task.project_id.partner_id
 
-    def _subtask_values_from_parent(self, parent_id):
-        """ Get values for substask implied field of the given"""
-        result = {}
-        parent_task = self.env['project.task'].browse(parent_id)
-        for field_name in self._subtask_default_fields():
-            result[field_name] = parent_task[field_name]
-        # special case for the subtask default project
-        result['project_id'] = parent_task.project_id.subtask_project_id
-        return self._convert_to_write(result)
+    @api.depends('partner_id.email', 'parent_id.email_from')
+    def _compute_email_from(self):
+        for task in self:
+            task.email_from = task.partner_id.email or task.email_from or task.parent_id.email_from
+
+    @api.depends('parent_id.project_id.subtask_project_id')
+    def _compute_project_id(self):
+        for task in self:
+            if not task.project_id:
+                task.project_id = task.parent_id.project_id.subtask_project_id
 
     # ---------------------------------------------------
     # Mail gateway
@@ -907,21 +879,17 @@ class Task(models.Model):
     def action_assign_to_me(self):
         self.write({'user_id': self.env.user.id})
 
-    def action_open_parent_task(self):
-        return {
-            'name': _('Parent Task'),
-            'view_mode': 'form',
-            'res_model': 'project.task',
-            'res_id': self.parent_id.id,
-            'type': 'ir.actions.act_window',
-            'context': dict(self._context, create=False)
-        }
+    def _get_all_subtasks(self):
+        children = self.mapped('child_ids')
+        if not children:
+            return self.env['project.task']
+        return children + children._get_all_subtasks()
 
     def action_subtask(self):
         action = self.env.ref('project.project_task_action_sub_task').read()[0]
 
-        # only display subtasks of current task
-        action['domain'] = [('id', 'child_of', self.id), ('id', '!=', self.id)]
+        # display all subtasks of current task
+        action['domain'] = [('id', 'in', self._get_all_subtasks().ids)]
 
         # update context, with all default values as 'quick_create' does not contains all field in its view
         if self._context.get('default_project_id'):
@@ -933,12 +901,8 @@ class Task(models.Model):
             'default_name': self.env.context.get('name', self.name) + ':',
             'default_parent_id': self.id,  # will give default subtask field in `default_get`
             'default_company_id': default_project.company_id.id if default_project else self.env.company.id,
-            'search_default_parent_id': self.id,
         })
-        parent_values = self._subtask_values_from_parent(self.id)
-        for fname, value in parent_values.items():
-            if 'default_' + fname not in ctx:
-                ctx['default_' + fname] = value
+
         action['context'] = ctx
 
         return action
