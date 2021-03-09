@@ -42,7 +42,6 @@ class AccountMove(models.Model):
             domain += [('code', 'in', [])]
         return domain
 
-
     def _check_document_types_post(self):
         for rec in self.filtered(
                 lambda r: r.company_id.account_fiscal_country_id.code == "CL" and
