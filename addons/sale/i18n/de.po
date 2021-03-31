@@ -14,7 +14,6 @@
 # Maik Steinfeld <info@streward.de>, 2018
 # brokemeister <work@maltejansen.de>, 2018
 # Andreas Perhab <a.perhab@wtioit.at>, 2018
-# Ermin Trevisan <trevi@twanda.com>, 2018
 # Katharina Moritz <kmo@e2f.com>, 2018
 # e2f <projects@e2f.com>, 2018
 # Rudolf Schnapka <rs@techno-flex.de>, 2018
@@ -26,17 +25,19 @@
 # Johannes Croe <jcr@odoo.com>, 2019
 # Joerg Hueneburg <melikeymedia@gmail.com>, 2019
 # Caroline Renson <car@odoo.com>, 2019
+# Leon Grill <leg@odoo.com>, 2019
 # Felix Schubert <felix.schubert@go-erp.com>, 2019
 # Chris Egal <sodaswed@web.de>, 2019
-# Leon Grill <leg@odoo.com>, 2019
+# e2f FFE <e2f_de_FFE@outlook.com>, 2019
+# Ermin Trevisan <trevi@twanda.com>, 2020
 # 
 msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-03-29 10:09+0000\n"
+"POT-Creation-Date: 2019-11-14 07:34+0000\n"
 "PO-Revision-Date: 2018-08-24 09:24+0000\n"
-"Last-Translator: Leon Grill <leg@odoo.com>, 2019\n"
+"Last-Translator: Ermin Trevisan <trevi@twanda.com>, 2020\n"
 "Language-Team: German (https://www.transifex.com/odoo/teams/41243/de/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -134,22 +135,22 @@ msgid ""
 msgstr ""
 "<div style=\"margin: 0px; padding: 0px;\">\n"
 "    <p style=\"margin: 0px; padding: 0px; font-size: 13px;\">\n"
-"        % set doc_name = 'quotation' if object.state in ('draft', 'sent') else 'order'\n"
-"        sehr geehrte(r) ${object.partner_id.name}\n"
+"        % set doc_name = 'Angebot' if object.state in ('draft', 'sent') else 'Auftrag'\n"
+"        Guten Tag ${object.partner_id.name}\n"
 "        % if object.partner_id.parent_id:\n"
 "            (${object.partner_id.parent_id.name})\n"
 "        % endif\n"
 "        <br/><br/>\n"
-"        Hier ist\n"
+"        Anbei finden Sie \n"
 "        % if ctx.get('proforma')\n"
-"           im anhang ihre pro-forma rechnung\n"
+"           Ihre Proforma-Rechnung\n"
 "        % else\n"
-"            das ${doc_name} <strong>${object.name}</strong>\n"
+"            Ihr(en)  ${doc_name} <strong>${object.name}</strong>\n"
 "        % endif\n"
 "        % if object.origin:\n"
-"            (with reference: ${object.origin} )\n"
+"            (mit Referenz: ${object.origin} )\n"
 "        % endif\n"
-"        belaufen sich auf <strong>${format_amount(object.amount_total, object.pricelist_id.currency_id)}</strong>\n"
+"        im Totalbetrag von <strong>${format_amount(object.amount_total, object.pricelist_id.currency_id)}</strong>\n"
 "        from ${object.company_id.name}.\n"
 "        <br/><br/>\n"
 "        Zögern Sie nicht, uns zu kontaktieren, wenn Sie Fragen haben.\n"
@@ -165,7 +166,7 @@ msgstr "<i class=\"fa fa-check\"/> Annehmen &amp; unterzeichnen"
 #. module: sale
 #: model_terms:ir.ui.view,arch_db:sale.sale_order_portal_template
 msgid "<i class=\"fa fa-clock-o\" aria-title=\"Dates\" title=\"Dates\"/>"
-msgstr ""
+msgstr "<i class=\"fa fa-clock-o\" aria-title=\"Dates\" title=\"Dates\"/>"
 
 #. module: sale
 #: model_terms:ir.ui.view,arch_db:sale.sale_order_portal_template
@@ -197,6 +198,8 @@ msgid ""
 "<i class=\"fa fa-download mr-1\" role=\"img\" aria-label=\"Download\" "
 "title=\"Download\"/>"
 msgstr ""
+"<i class=\"fa fa-download mr-1\" role=\"img\" aria-label=\"Download\" "
+"title=\"Download\"/>"
 
 #. module: sale
 #: model_terms:ir.ui.view,arch_db:sale.sale_order_portal_template
@@ -236,6 +239,8 @@ msgid ""
 "<i class=\"fa fa-fw fa-usd\" role=\"img\" aria-label=\"Sale orders\" "
 "title=\"Sales orders\"/>"
 msgstr ""
+"<i class=\"fa fa-fw fa-usd\" role=\"img\" aria-label=\"Sale orders\" "
+"title=\"Sales orders\"/>"
 
 #. module: sale
 #: model_terms:ir.ui.view,arch_db:sale.sale_order_portal_template
@@ -280,6 +285,9 @@ msgid ""
 "specific.\" aria-label=\"Values set here are company-specific.\" "
 "groups=\"base.group_multi_company\" role=\"img\"/>"
 msgstr ""
+"<span class=\"fa fa-lg fa-building-o\" title=\"Values set here are company-"
+"specific.\" aria-label=\"Values set here are company-specific.\" "
+"groups=\"base.group_multi_company\" role=\"img\"/>"
 
 #. module: sale
 #: model_terms:ir.ui.view,arch_db:sale.res_config_settings_view_form
@@ -651,7 +659,6 @@ msgstr "Ermöglicht es Ihnen, eine Proformarechnung zu versenden."
 
 #. module: sale
 #: model_terms:ir.ui.view,arch_db:sale.report_saleorder_document
-#: model_terms:ir.ui.view,arch_db:sale.sale_order_portal_content
 msgid "Amount"
 msgstr "Betrag"
 
@@ -659,6 +666,12 @@ msgstr "Betrag"
 #: model:ir.model.fields,field_description:sale.field_sale_order__amount_undiscounted
 msgid "Amount Before Discount"
 msgstr "Betrag ohne Rabatt"
+
+#. module: sale
+#: code:addons/sale/models/payment.py:90
+#, python-format
+msgid "Amount Mismatch (%s)"
+msgstr "Betrag stimmt nicht überein (%s)"
 
 #. module: sale
 #: model:ir.model.fields,field_description:sale.field_crm_team__quotations_amount
@@ -3733,6 +3746,14 @@ msgstr ""
 "dem Produktmaske berechnet."
 
 #. module: sale
+#: code:addons/sale/models/payment.py:97
+#, python-format
+msgid ""
+"The order was not confirmed despite response from the acquirer (%s): order "
+"total is %r but acquirer replied with %r."
+msgstr ""
+
+#. module: sale
 #: model:ir.model.fields,help:sale.field_sale_order__reference
 msgid "The payment communication of this sale order."
 msgstr "Die Zahlungsmitteilung dieses Verkaufsauftrags."
@@ -3975,7 +3996,6 @@ msgstr "Total"
 #. module: sale
 #: model_terms:ir.ui.view,arch_db:sale.report_all_channels_sales_view_pivot
 #: model_terms:ir.ui.view,arch_db:sale.report_saleorder_document
-#: model_terms:ir.ui.view,arch_db:sale.sale_order_portal_content
 msgid "Total Price"
 msgstr "Gesamtpreis"
 
@@ -4288,6 +4308,14 @@ msgstr ""
 "Sie können hier die Kommunikationsart einstellen, die auf Kundenaufträgen "
 "angezeigt wird, die dem Kunden bei der Auswahl der Zahlungsmethode "
 "mitgeteilt wird."
+
+#. module: sale
+#: code:addons/sale/models/sale.py:1115
+#, python-format
+msgid ""
+"You cannot change the type of a sale order line. Instead you should delete "
+"the current line and create a new line of the proper type."
+msgstr ""
 
 #. module: sale
 #: model_terms:ir.actions.act_window,help:sale.product_template_action

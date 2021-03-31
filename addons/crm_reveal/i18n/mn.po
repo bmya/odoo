@@ -9,6 +9,13 @@
 # Baskhuu Lodoikhuu <baskhuujacara@gmail.com>, 2019
 # Martin Trigaux, 2019
 # Khishigbat Ganbold <khishigbat@asterisk-tech.mn>, 2019
+# Baasansuren Sharavsuren <baasansuren@bumanit.mn>, 2019
+# tserendavaa tsogtoo <tseegii011929@gmail.com>, 2019
+# Minj P <pminj322@gmail.com>, 2019
+# Батболд <batbold.ts@gmail.com>, 2019
+# Batmunkh Ganbat <batmunkh.g@bumanit.mn>, 2019
+# Uuganbayar Batbaatar <uuganaaub33@gmail.com>, 2020
+# Батмөнх Ганбат <batmunkh2522@gmail.com>, 2020
 # 
 msgid ""
 msgstr ""
@@ -16,7 +23,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2019-07-01 06:19+0000\n"
 "PO-Revision-Date: 2019-07-01 06:20+0000\n"
-"Last-Translator: Khishigbat Ganbold <khishigbat@asterisk-tech.mn>, 2019\n"
+"Last-Translator: Батмөнх Ганбат <batmunkh2522@gmail.com>, 2020\n"
 "Language-Team: Mongolian (https://www.transifex.com/odoo/teams/41243/mn/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -42,7 +49,7 @@ msgstr ""
 #. module: crm_reveal
 #: model_terms:ir.ui.view,arch_db:crm_reveal.lead_message_template
 msgid "(Time Now)"
-msgstr ""
+msgstr "(Одоо цаг)"
 
 #. module: crm_reveal
 #: model:crm.reveal.industry,name:crm_reveal.crm_reveal_industry_1
@@ -52,27 +59,27 @@ msgstr ""
 #. module: crm_reveal
 #: model_terms:ir.ui.view,arch_db:crm_reveal.lead_message_template
 msgid "<b>Contacts</b>"
-msgstr ""
+msgstr "<b>Хаягууд</b>"
 
 #. module: crm_reveal
 #: model_terms:ir.ui.view,arch_db:crm_reveal.lead_message_template
 msgid "<b>Phone :</b>"
-msgstr ""
+msgstr "<b>Утасны дугаар :</b>"
 
 #. module: crm_reveal
 #: model_terms:ir.ui.view,arch_db:crm_reveal.lead_message_template
 msgid "<b>Timezone : </b>"
-msgstr ""
+msgstr "<b>Цагийн бүс : </b>"
 
 #. module: crm_reveal
 #: model_terms:ir.ui.view,arch_db:crm_reveal.crm_reveal_rule_form
 msgid "<span class=\"o_stat_text\"> Leads </span>"
-msgstr ""
+msgstr "<span class=\"o_stat_text\"> Сэжим </span>"
 
 #. module: crm_reveal
 #: model_terms:ir.ui.view,arch_db:crm_reveal.crm_reveal_rule_form
 msgid "<span class=\"o_stat_text\"> Opportunities </span>"
-msgstr ""
+msgstr "<span class=\"o_stat_text\"> Боломжууд </span>"
 
 #. module: crm_reveal
 #: model_terms:ir.ui.view,arch_db:crm_reveal.crm_reveal_rule_form
@@ -592,7 +599,7 @@ msgstr ""
 #. module: crm_reveal
 #: model:crm.reveal.industry,name:crm_reveal.crm_reveal_industry_48
 msgid "Finance"
-msgstr ""
+msgstr "Санхүү"
 
 #. module: crm_reveal
 #: model:crm.reveal.industry,name:crm_reveal.crm_reveal_industry_49
@@ -825,7 +832,7 @@ msgstr ""
 #. module: crm_reveal
 #: model:crm.reveal.industry,name:crm_reveal.crm_reveal_industry_66
 msgid "Import & Export"
-msgstr ""
+msgstr "Импорт ба экспорт"
 
 #. module: crm_reveal
 #: model:crm.reveal.industry,name:crm_reveal.crm_reveal_industry_168
@@ -1029,7 +1036,7 @@ msgstr ""
 #. module: crm_reveal
 #: model:crm.reveal.industry,name:crm_reveal.crm_reveal_industry_204
 msgid "Leisure Facilities"
-msgstr ""
+msgstr "Leisure Facilities"
 
 #. module: crm_reveal
 #: model:crm.reveal.industry,name:crm_reveal.crm_reveal_industry_80
@@ -1165,7 +1172,7 @@ msgstr "Нэр"
 #. module: crm_reveal
 #: sql_constraint:crm.reveal.seniority:0
 msgid "Name already exists!"
-msgstr ""
+msgstr "Нэр бүртгэлтэй байна!"
 
 #. module: crm_reveal
 #: model:crm.reveal.industry,name:crm_reveal.crm_reveal_industry_93
@@ -1459,7 +1466,7 @@ msgstr ""
 #. module: crm_reveal
 #: model:ir.model.fields,field_description:crm_reveal.field_crm_reveal_role__name
 msgid "Role Name"
-msgstr ""
+msgstr "Дүрийн нэр"
 
 #. module: crm_reveal
 #: sql_constraint:crm.reveal.role:0
@@ -1594,7 +1601,7 @@ msgstr "Пайзын нэр"
 #. module: crm_reveal
 #: sql_constraint:crm.reveal.industry:0
 msgid "Tag name already exists!"
-msgstr ""
+msgstr "Пайзын нэр аль хэдийн үүссэн байна !"
 
 #. module: crm_reveal
 #: model:ir.model.fields,field_description:crm_reveal.field_crm_reveal_rule__tag_ids
@@ -1664,7 +1671,7 @@ msgstr "Гарчиг"
 #. module: crm_reveal
 #: selection:crm.reveal.view,reveal_state:0
 msgid "To Process"
-msgstr ""
+msgstr "Боловсруулах"
 
 #. module: crm_reveal
 #: model:crm.reveal.industry,name:crm_reveal.crm_reveal_industry_133
@@ -1689,7 +1696,7 @@ msgstr "Орчуулга"
 #. module: crm_reveal
 #: model:crm.reveal.industry,name:crm_reveal.crm_reveal_industry_136
 msgid "Transportation"
-msgstr ""
+msgstr "Тээвэр"
 
 #. module: crm_reveal
 #: model:crm.reveal.industry,name:crm_reveal.crm_reveal_industry_137
@@ -1716,7 +1723,7 @@ msgstr ""
 #. module: crm_reveal
 #: model:crm.reveal.industry,name:crm_reveal.crm_reveal_industry_138
 msgid "Utilities"
-msgstr ""
+msgstr "Хэрэгсэл"
 
 #. module: crm_reveal
 #: model:crm.reveal.industry,name:crm_reveal.crm_reveal_industry_139
@@ -1766,17 +1773,17 @@ msgstr ""
 #. module: crm_reveal
 #: model:crm.reveal.role,name:crm_reveal.crm_reveal_role_1
 msgid "ceo"
-msgstr ""
+msgstr "компанийн захирал"
 
 #. module: crm_reveal
 #: model:crm.reveal.role,name:crm_reveal.crm_reveal_role_2
 msgid "communications"
-msgstr ""
+msgstr "харилцаа холбоо"
 
 #. module: crm_reveal
 #: model:crm.reveal.role,name:crm_reveal.crm_reveal_role_3
 msgid "consulting"
-msgstr ""
+msgstr "зөвлөгөө"
 
 #. module: crm_reveal
 #: model_terms:ir.ui.view,arch_db:crm_reveal.crm_reveal_rule_form
@@ -1786,12 +1793,12 @@ msgstr ""
 #. module: crm_reveal
 #: model:crm.reveal.role,name:crm_reveal.crm_reveal_role_4
 msgid "customer_service"
-msgstr ""
+msgstr "харилцагчдын дэмжлэг үйлчилгээ"
 
 #. module: crm_reveal
 #: model:crm.reveal.seniority,name:crm_reveal.crm_reveal_seniority_1
 msgid "director"
-msgstr ""
+msgstr "удирдагч"
 
 #. module: crm_reveal
 #: model_terms:ir.ui.view,arch_db:crm_reveal.crm_reveal_rule_form
@@ -1801,77 +1808,77 @@ msgstr ""
 #. module: crm_reveal
 #: model:crm.reveal.role,name:crm_reveal.crm_reveal_role_5
 msgid "education"
-msgstr ""
+msgstr "боловсрол"
 
 #. module: crm_reveal
 #: model:crm.reveal.role,name:crm_reveal.crm_reveal_role_6
 msgid "engineering"
-msgstr ""
+msgstr "инженер"
 
 #. module: crm_reveal
 #: model:crm.reveal.seniority,name:crm_reveal.crm_reveal_seniority_2
 msgid "executive"
-msgstr ""
+msgstr "гүйцэтгэгч"
 
 #. module: crm_reveal
 #: model:crm.reveal.role,name:crm_reveal.crm_reveal_role_7
 msgid "finance"
-msgstr ""
+msgstr "санхүү"
 
 #. module: crm_reveal
 #: model:crm.reveal.role,name:crm_reveal.crm_reveal_role_8
 msgid "founder"
-msgstr ""
+msgstr "үүсгэгч"
 
 #. module: crm_reveal
 #: model:crm.reveal.role,name:crm_reveal.crm_reveal_role_9
 msgid "health_professional"
-msgstr ""
+msgstr "хөгжлийн мэргэжилтэн"
 
 #. module: crm_reveal
 #: model:crm.reveal.role,name:crm_reveal.crm_reveal_role_10
 msgid "human_resources"
-msgstr ""
+msgstr "хүний_нөөц"
 
 #. module: crm_reveal
 #: model:crm.reveal.role,name:crm_reveal.crm_reveal_role_11
 msgid "information_technology"
-msgstr ""
+msgstr "мэдээллийн_технологи"
 
 #. module: crm_reveal
 #: model:crm.reveal.role,name:crm_reveal.crm_reveal_role_12
 msgid "legal"
-msgstr ""
+msgstr "эрх зүй"
 
 #. module: crm_reveal
 #: model:crm.reveal.seniority,name:crm_reveal.crm_reveal_seniority_3
 msgid "manager"
-msgstr ""
+msgstr "менежер"
 
 #. module: crm_reveal
 #: model:crm.reveal.role,name:crm_reveal.crm_reveal_role_13
 msgid "marketing"
-msgstr ""
+msgstr "маркетинг"
 
 #. module: crm_reveal
 #: model:crm.reveal.role,name:crm_reveal.crm_reveal_role_14
 msgid "operations"
-msgstr ""
+msgstr "боловсруулалт"
 
 #. module: crm_reveal
 #: model:crm.reveal.role,name:crm_reveal.crm_reveal_role_15
 msgid "owner"
-msgstr ""
+msgstr "эзэмшигч"
 
 #. module: crm_reveal
 #: model:crm.reveal.role,name:crm_reveal.crm_reveal_role_16
 msgid "president"
-msgstr ""
+msgstr "тэргүүлэгч"
 
 #. module: crm_reveal
 #: model:crm.reveal.role,name:crm_reveal.crm_reveal_role_17
 msgid "product"
-msgstr ""
+msgstr "бараа"
 
 #. module: crm_reveal
 #: model:crm.reveal.role,name:crm_reveal.crm_reveal_role_18
@@ -1896,4 +1903,4 @@ msgstr ""
 #. module: crm_reveal
 #: model:crm.reveal.role,name:crm_reveal.crm_reveal_role_22
 msgid "sale"
-msgstr ""
+msgstr "борлуулалт"

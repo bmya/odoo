@@ -2,6 +2,7 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 import itertools
+from collections import defaultdict
 
 from odoo.addons import decimal_precision as dp
 
@@ -304,7 +305,7 @@ class ProductTemplate(models.Model):
         for template in unique_variants:
             template.default_code = template.product_variant_ids.default_code
         for template in (self - unique_variants):
-            template.default_code = ''
+            template.default_code = False
 
     @api.one
     def _set_default_code(self):
@@ -394,7 +395,7 @@ class ProductTemplate(models.Model):
     @api.multi
     def name_get(self):
         # Prefetch the fields used by the `name_get`, so `browse` doesn't fetch other fields
-        self.read(['name', 'default_code'])
+        self.browse(self.ids).read(['name', 'default_code'])
         return [(template.id, '%s%s' % (template.default_code and '[%s] ' % template.default_code or '', template.name))
                 for template in self]
 
@@ -407,13 +408,20 @@ class ProductTemplate(models.Model):
 
         Product = self.env['product.product']
         templates = self.browse([])
+        domain_no_variant = [('product_variant_ids', '=', False)]
         while True:
             domain = templates and [('product_tmpl_id', 'not in', templates.ids)] or []
             args = args if args is not None else []
             products_ns = Product._name_search(name, args+domain, operator=operator, name_get_uid=name_get_uid)
             products = Product.browse([x[0] for x in products_ns])
             templates |= products.mapped('product_tmpl_id')
-            if (not products) or (limit and (len(templates) > limit)):
+            current_round_templates = self.browse([])
+            if not products:
+                domain_template = args + domain_no_variant + (templates and [('id', 'not in', templates.ids)] or [])
+                template_ns = super(ProductTemplate, self)._name_search(name=name, args=domain_template, operator=operator, limit=limit, name_get_uid=name_get_uid)
+                current_round_templates |= self.browse([ns[0] for ns in template_ns])
+                templates |= current_round_templates
+            if (not products and not current_round_templates) or (limit and (len(templates) > limit)):
                 break
 
         # re-apply product.template order + name_get
@@ -523,10 +531,12 @@ class ProductTemplate(models.Model):
             #   deleted
             valid_value_ids = tmpl_id.valid_product_attribute_value_wnva_ids
             valid_attribute_ids = tmpl_id.valid_product_attribute_wnva_ids
+            seen_attributes = set(p.attribute_value_ids for p in tmpl_id.product_variant_ids if p.active)
             for product_id in tmpl_id.product_variant_ids:
                 if product_id._has_valid_attributes(valid_attribute_ids, valid_value_ids):
-                    if not product_id.active:
+                    if not product_id.active and product_id.attribute_value_ids not in seen_attributes:
                         variants_to_activate += product_id
+                        seen_attributes.add(product_id.attribute_value_ids)
                 else:
                     variants_to_unlink += product_id
 
@@ -897,7 +907,7 @@ class ProductTemplate(models.Model):
         for pav in attribute_values:
             domain = expression.AND([[('attribute_value_ids', 'in', pav.id)], domain])
 
-        res = self.env['product.product'].with_context(active_test=False).search(domain, order='active DESC')
+        res = self.env['product.product'].with_context(active_test=False).search(domain, order='active DESC, id ASC')
 
         # The domain above is checking for the `product.attribute.value`, but we
         # need to make sure it's the same `product.template.attribute.value`.
@@ -929,6 +939,92 @@ class ProductTemplate(models.Model):
         """
         return next(self._get_possible_combinations(parent_combination, necessary_values), self.env['product.template.attribute.value'])
 
+    def _cartesian_product(self, product_template_attribute_values_per_line, parent_combination):
+        """
+        Generate all possible combination for attributes values (aka cartesian product).
+        It is equivalent to itertools.product except it skips invalid partial combinations before they are complete.
+
+        Imagine the cartesian product of 'A', 'CD' and range(1_000_000) and let's say that 'A' and 'C' are incompatible.
+        If you use itertools.product or any normal cartesian product, you'll need to filter out of the final result
+        the 1_000_000 combinations that start with 'A' and 'C' . Instead, This implementation will test if 'A' and 'C' are
+        compatible before even considering range(1_000_000), skip it and and continue with combinations that start
+        with 'A' and 'D'.
+
+        It's necessary for performance reason because filtering out invalid combinations from standard Cartesian product
+        can be extremely slow
+
+        :param product_template_attribute_values_per_line: the values we want all the possibles combinations of.
+        One list of values by attribute line
+        :return: a generator of product template attribute value
+        """
+        if not product_template_attribute_values_per_line:
+            return
+
+        all_exclusions = {self.env['product.template.attribute.value'].browse(k):
+                          self.env['product.template.attribute.value'].browse(v) for k, v in
+                          self._get_own_attribute_exclusions().items()}
+        # The following dict uses product template attribute values as keys
+        # 0 means the value is acceptable, greater than 0 means it's rejected, it cannot be negative
+        # Bear in mind that several values can reject the same value and the latter can only be included in the
+        #  considered combination if no value rejects it.
+        # This dictionary counts how many times each value is rejected.
+        # Each time a value is included in the considered combination, the values it rejects are incremented
+        # When a value is discarded from the considered combination, the values it rejects are decremented
+        current_exclusions = defaultdict(int)
+        for exclusion in self._get_parent_attribute_exclusions(parent_combination):
+            current_exclusions[self.env['product.template.attribute.value'].browse(exclusion)] += 1
+        partial_combination = self.env['product.template.attribute.value']
+
+        # The following list reflects product_template_attribute_values_per_line
+        # For each line, instead of a list of values, it contains the index of the selected value
+        # -1 means no value has been picked for the line in the current (partial) combination
+        value_index_per_line = [-1] * len(product_template_attribute_values_per_line)
+        # determines which line line we're working on
+        line_index = 0
+
+        while True:
+            current_line_values = product_template_attribute_values_per_line[line_index]
+            current_ptav_index = value_index_per_line[line_index]
+            current_ptav = current_line_values[current_ptav_index]
+
+            # removing exclusions from current_ptav as we're removing it from partial_combination
+            if current_ptav_index >= 0:
+                for ptav_to_include_back in all_exclusions[current_ptav]:
+                    current_exclusions[ptav_to_include_back] -= 1
+                partial_combination -= current_ptav
+
+            if current_ptav_index < len(current_line_values) - 1:
+                # go to next value of current line
+                value_index_per_line[line_index] += 1
+                current_line_values = product_template_attribute_values_per_line[line_index]
+                current_ptav_index = value_index_per_line[line_index]
+                current_ptav = current_line_values[current_ptav_index]
+            elif line_index != 0:
+                # reset current line, and then go to previous line
+                value_index_per_line[line_index] = - 1
+                line_index -= 1
+                continue
+            else:
+                # we're done if we must reset first line
+                break
+
+            # adding exclusions from current_ptav as we're incorporating it in partial_combination
+            for ptav_to_exclude in all_exclusions[current_ptav]:
+                current_exclusions[ptav_to_exclude] += 1
+            partial_combination += current_ptav
+
+            # test if included values excludes current value or if current value exclude included values
+            if current_exclusions[current_ptav] or \
+                    any(intersection in partial_combination for intersection in all_exclusions[current_ptav]):
+                continue
+
+            if line_index == len(product_template_attribute_values_per_line) - 1:
+                # submit combination if we're on the last line
+                yield partial_combination
+            else:
+                # else we go to the next line
+                line_index += 1
+
     @api.multi
     def _get_possible_combinations(self, parent_combination=None, necessary_values=None):
         """Generator returning combinations that are possible, following the
@@ -958,23 +1054,21 @@ class ProductTemplate(models.Model):
 
         necessary_values = necessary_values or self.env['product.template.attribute.value']
         necessary_attributes = necessary_values.mapped('attribute_id')
-        ptal_stack = [self.valid_product_template_attribute_line_ids.filtered(lambda ptal: ptal.attribute_id not in necessary_attributes)]
-        combination_stack = [necessary_values]
 
-        # keep going while we have attribute lines to test
-        while len(ptal_stack):
-            attribute_lines = ptal_stack.pop()
-            combination = combination_stack.pop()
+        attribute_lines = self.valid_product_template_attribute_line_ids.filtered(lambda ptal: ptal.attribute_id not in necessary_attributes)
 
-            if not attribute_lines:
-                # full combination, if it's possible return it, otherwise skip it
-                if self._is_combination_possible(combination, parent_combination):
-                    yield(combination)
-            else:
-                # we have remaining attribute lines to consider
-                for ptav in reversed(attribute_lines[0].product_template_value_ids):
-                    ptal_stack.append(attribute_lines[1:])
-                    combination_stack.append(combination + ptav)
+        if not attribute_lines and self._is_combination_possible(necessary_values, parent_combination):
+            yield necessary_values
+
+        product_template_attribute_values_per_line = [
+            attribute.product_template_value_ids
+            for attribute in attribute_lines
+        ]
+
+        for partial_combination in self._cartesian_product(product_template_attribute_values_per_line, parent_combination):
+            combination = partial_combination + necessary_values
+            if self._is_combination_possible(combination, parent_combination):
+                yield combination
 
         return _("There are no remaining possible combination.")
 

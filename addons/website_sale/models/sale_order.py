@@ -111,6 +111,7 @@ class SaleOrder(models.Model):
             'quantity': qty,
             'date': order.date_order,
             'pricelist': order.pricelist_id.id,
+            'force_company': order.company_id.id,
         })
         product = self.env['product.product'].with_context(product_context).browse(product_id)
         discount = 0
@@ -179,12 +180,12 @@ class SaleOrder(models.Model):
 
         try:
             if add_qty:
-                add_qty = float(add_qty)
+                add_qty = int(add_qty)
         except ValueError:
             add_qty = 1
         try:
             if set_qty:
-                set_qty = float(set_qty)
+                set_qty = int(set_qty)
         except ValueError:
             set_qty = 0
         quantity = 0
@@ -289,6 +290,7 @@ class SaleOrder(models.Model):
                     'quantity': quantity,
                     'date': order.date_order,
                     'pricelist': order.pricelist_id.id,
+                    'force_company': order.company_id.id,
                 })
                 product = self.env['product.product'].with_context(product_context).browse(product_id)
                 values['price_unit'] = self.env['account.tax']._fix_tax_included_price_company(

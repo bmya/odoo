@@ -141,7 +141,7 @@ return AbstractWebClient.extend({
             var stringstate = $.bbq.getState(false);
             if (!_.isEqual(self._current_state, stringstate)) {
                 var state = $.bbq.getState(true);
-                if (state.action || (state.model && (state.view_type || state.id))) {
+                if (state.sa || state.action || (state.model && (state.view_type || state.id))) {
                     return self.action_manager.loadState(state, !!self._current_state).then(function () {
                         if (state.menu_id) {
                             if (state.menu_id !== self.menu.current_primary_menu) {
@@ -273,7 +273,7 @@ return AbstractWebClient.extend({
      */
     _onScrollTo: function (ev) {
         var offset = {top: ev.data.top, left: ev.data.left || 0};
-        if (!offset.top) {
+        if (ev.data.selector) {
             offset = dom.getPosition(document.querySelector(ev.data.selector));
             // Substract the position of the action_manager as it is the scrolling part
             offset.top -= dom.getPosition(this.action_manager.el).top;

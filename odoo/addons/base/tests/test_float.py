@@ -4,7 +4,7 @@
 from math import log10
 
 from odoo.tests.common import TransactionCase
-from odoo.tools import float_compare, float_is_zero, float_repr, float_round, float_split_str, pycompat
+from odoo.tools import float_compare, float_is_zero, float_repr, float_round, float_split, float_split_str, pycompat
 
 
 class TestFloatPrecision(TransactionCase):
@@ -27,6 +27,8 @@ class TestFloatPrecision(TransactionCase):
         try_round(0.0049,'0.00')   # 0.0049 is closer to 0 than to 0.01, so should round down
         try_round(0.005,'0.01')   # the rule is to round half away from zero
         try_round(-0.005,'-0.01') # the rule is to round half away from zero
+        try_round(6.6 * 0.175, '1.16') # 6.6 * 0.175 is rounded to 1.15 with epsilon = 53
+        try_round(-6.6 * 0.175, '-1.16')
 
         def try_zero(amount, expected):
             self.assertEqual(currency.is_zero(amount), expected,
@@ -185,16 +187,29 @@ class TestFloatPrecision(TransactionCase):
         """ Test split method with 2 digits. """
         currency = self.env.ref('base.EUR')
 
-        def try_split(value, expected):
-            digits = max(0, -int(log10(currency.rounding)))
-            result = float_split_str(value, precision_digits=digits)
+        def try_split(value, expected, split_fun, rounding=None):
+            digits = max(0, -int(log10(currency.rounding))) if rounding is None else rounding
+            result = split_fun(value, precision_digits=digits)
             self.assertEqual(result, expected, 'Split error: got %s, expected %s' % (result, expected))
 
-        try_split(2.674, ('2', '67'))
-        try_split(2.675, ('2', '68'))   # in Python 2.7.2, round(2.675,2) gives 2.67
-        try_split(-2.675, ('-2', '68')) # in Python 2.7.2, round(2.675,2) gives 2.67
-        try_split(0.001, ('0', '00'))
-        try_split(-0.001, ('-0', '00'))
+        try_split(2.674, ('2', '67'), float_split_str)
+        try_split(2.675, ('2', '68'), float_split_str)   # in Python 2.7.2, round(2.675,2) gives 2.67
+        try_split(-2.675, ('-2', '68'), float_split_str) # in Python 2.7.2, round(2.675,2) gives 2.67
+        try_split(0.001, ('0', '00'), float_split_str)
+        try_split(-0.001, ('-0', '00'), float_split_str)
+        try_split(42, ('42', '00'), float_split_str)
+        try_split(0.1, ('0', '10'), float_split_str)
+        try_split(13.0, ('13', ''), float_split_str, rounding=0)
+
+        try_split(2.674, (2, 67), float_split)
+        try_split(2.675, (2, 68), float_split)   # in Python 2.7.2, round(2.675,2) gives 2.67
+        try_split(-2.675, (-2, 68), float_split) # in Python 2.7.2, round(2.675,2) gives 2.67
+        try_split(0.001, (0, 0), float_split)
+        try_split(-0.001, (0, 0), float_split)
+        try_split(42, (42, 0), float_split)
+        try_split(0.1, (0, 10), float_split)
+        try_split(13.0, (13, 0), float_split, rounding=0)
+
 
     def test_rounding_invalid(self):
         """ verify that invalid parameters are forbidden """

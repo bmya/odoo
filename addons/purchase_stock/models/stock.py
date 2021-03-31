@@ -114,7 +114,7 @@ class StockMove(models.Model):
         """ Overridden to return the vendor bills related to this stock move.
         """
         rslt = super(StockMove, self)._get_related_invoices()
-        rslt += self.mapped('picking_id.purchase_id.invoice_ids').filtered(lambda x: x.state not in ('draft', 'cancel'))
+        rslt += self.mapped('picking_id.purchase_id.invoice_ids').filtered(lambda x: x.sudo().state not in ('draft', 'cancel'))
         return rslt
 
 
@@ -210,7 +210,8 @@ class ProductionLot(models.Model):
             stock_moves = self.env['stock.move.line'].search([
                 ('lot_id', '=', lot.id),
                 ('state', '=', 'done')
-            ]).mapped('move_id').filtered(
+            ]).mapped('move_id')
+            stock_moves = stock_moves.search([('id', 'in', stock_moves.ids)]).filtered(
                 lambda move: move.picking_id.location_id.usage == 'supplier' and move.state == 'done')
             lot.purchase_order_ids = stock_moves.mapped('purchase_line_id.order_id')
             lot.purchase_order_count = len(lot.purchase_order_ids)

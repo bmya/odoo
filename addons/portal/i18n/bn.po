@@ -4,15 +4,15 @@
 # 
 # Translators:
 # Martin Trigaux, 2019
-# Abu Zafar <azmikbal@gmail.com>, 2019
+# Abu Zafar <azmikbal@gmail.com>, 2021
 # 
 msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-01-09 10:32+0000\n"
+"POT-Creation-Date: 2019-08-08 13:50+0000\n"
 "PO-Revision-Date: 2018-08-24 09:22+0000\n"
-"Last-Translator: Abu Zafar <azmikbal@gmail.com>, 2019\n"
+"Last-Translator: Abu Zafar <azmikbal@gmail.com>, 2021\n"
 "Language-Team: Bengali (https://www.transifex.com/odoo/teams/41243/bn/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -25,6 +25,12 @@ msgstr ""
 #: code:addons/portal/static/src/js/portal_sidebar.js:43
 #, python-format
 msgid "%d days overdue"
+msgstr "%dদিন বিলম্বিত "
+
+#. module: portal
+#: code:addons/portal/controllers/portal.py:277
+#, python-format
+msgid "%s is not the reference of a report"
 msgstr ""
 
 #. module: portal
@@ -222,6 +228,13 @@ msgstr ""
 
 #. module: portal
 #: model_terms:ir.ui.view,arch_db:portal.portal_my_details
+msgid ""
+"Changing company name is not allowed once document(s) have been issued for "
+"your account. Please contact us directly for this operation."
+msgstr ""
+
+#. module: portal
+#: model_terms:ir.ui.view,arch_db:portal.portal_my_details
 msgid "City"
 msgstr ""
 
@@ -248,7 +261,7 @@ msgstr "বদ্ধ"
 #. module: portal
 #: model_terms:ir.ui.view,arch_db:portal.portal_my_details
 msgid "Company Name"
-msgstr ""
+msgstr "কোমপানির নাম"
 
 #. module: portal
 #: model_terms:ir.ui.view,arch_db:portal.portal_my_details
@@ -271,7 +284,7 @@ msgstr "পরিচিতদের তালিকা"
 #. module: portal
 #: model_terms:ir.ui.view,arch_db:portal.portal_my_details
 msgid "Country"
-msgstr ""
+msgstr "দেশ"
 
 #. module: portal
 #: model_terms:ir.ui.view,arch_db:portal.portal_my_details
@@ -376,6 +389,12 @@ msgstr ""
 #: code:addons/portal/controllers/portal.py:201
 #, python-format
 msgid "Invalid Email! Please enter a valid email address."
+msgstr ""
+
+#. module: portal
+#: code:addons/portal/controllers/portal.py:272
+#, python-format
+msgid "Invalid report type: %s"
 msgstr ""
 
 #. module: portal
@@ -556,7 +575,7 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:portal.portal_share_wizard
 #, python-format
 msgid "Send"
-msgstr ""
+msgstr "পাঠান"
 
 #. module: portal
 #: code:addons/portal/wizard/portal_wizard.py:100
@@ -610,6 +629,12 @@ msgstr ""
 #: code:addons/portal/static/src/xml/portal_chatter.xml:12
 #, python-format
 msgid "There are no comments for now."
+msgstr ""
+
+#. module: portal
+#: code:addons/portal/controllers/portal.py:237
+#, python-format
+msgid "This document does not exist."
 msgstr ""
 
 #. module: portal
