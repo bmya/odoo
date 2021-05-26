@@ -51,7 +51,9 @@
                                         <strong t-att-style="'color: %s;' % o.company_id.primary_color">
                                             <br/>
                                             <span style="line-height: 180%;">RUT:</span>
-                                            <span t-field="o.company_id.partner_id.vat"/>
+                                            <t t-set="vat" t-value="o.company_id.partner_id.vat.split('-')[0]"/>
+                                            <t t-set="dv" t-value="o.company_id.partner_id.vat.split('-')[1]"/>
+                                            <span t-esc="'%s-%s' % ('{:,.0f}'.format(int(vat)).replace(',','.'), dv)"/>
                                             <br/>
                                             <span class="text-uppercase" t-esc="report_name"/>
                                             <br/>
