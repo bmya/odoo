@@ -31,9 +31,11 @@
 # Léonie Bouchat <lbo@odoo.com>, 2019
 # Luigia Cimmino Caserta <lcc@odoo.com>, 2019
 # Stefano Consolaro <stefano.consolaro@mymage.it>, 2019
-# Lorenzo Battistini <lb@takobi.online>, 2021
-# Sergio Zanchetta <primes2h@gmail.com>, 2021
 # Francesco Foresti <francesco.foresti@ooops404.com>, 2021
+# Sergio Zanchetta <primes2h@gmail.com>, 2021
+# Friederike Fasterling-Nesselbosch, 2021
+# BigBlu <paolo.moroni@air-srl.com>, 2021
+# Lorenzo Battistini <lb@takobi.online>, 2021
 # 
 msgid ""
 msgstr ""
@@ -41,7 +43,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2019-12-10 14:44+0000\n"
 "PO-Revision-Date: 2018-08-24 09:14+0000\n"
-"Last-Translator: Francesco Foresti <francesco.foresti@ooops404.com>, 2021\n"
+"Last-Translator: Lorenzo Battistini <lb@takobi.online>, 2021\n"
 "Language-Team: Italian (https://www.transifex.com/odoo/teams/41243/it/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -2816,6 +2818,9 @@ msgid ""
 "Contains the enterprise views for Stock management\n"
 "    "
 msgstr ""
+"\n"
+"Contiene le viste Enterprise per la gestione della giacenza\n"
+"    "
 
 #. module: base
 #: model:ir.module.module,description:base.module_website_survey
@@ -8930,17 +8935,17 @@ msgstr "Uso azione"
 #. module: base
 #: model:ir.model,name:base.model_ir_actions_act_window
 msgid "Action Window"
-msgstr "Finestra azione"
+msgstr "Azione finestra"
 
 #. module: base
 #: model:ir.model,name:base.model_ir_actions_act_window_close
 msgid "Action Window Close"
-msgstr "Chiusura finestra azione"
+msgstr "Azione chiusura finestra"
 
 #. module: base
 #: model:ir.model,name:base.model_ir_actions_act_window_view
 msgid "Action Window View"
-msgstr "Vista finestra azione"
+msgstr "Azione visualizzazione finestra"
 
 #. module: base
 #: model:ir.actions.act_window,name:base.ir_sequence_actions
@@ -9042,6 +9047,8 @@ msgstr "Aggiungi nel menu 'Stampa'"
 #: model:ir.module.module,summary:base.module_mass_mailing_crm
 msgid "Add lead / opportunities UTM info on mass mailing"
 msgstr ""
+"Aggiunge informazioni UTM per contatto / opportunità all'invio e-mail di "
+"massa"
 
 #. module: base
 #: model:ir.module.module,summary:base.module_im_livechat_mail_bot
@@ -11024,7 +11031,7 @@ msgstr "Commenti"
 #: model:ir.model.fields,field_description:base.field_res_partner__commercial_partner_id
 #: model:ir.model.fields,field_description:base.field_res_users__commercial_partner_id
 msgid "Commercial Entity"
-msgstr "Ente commerciale"
+msgstr "Entità commerciale"
 
 #. module: base
 #: model_terms:ir.ui.view,arch_db:base.view_res_bank_form
@@ -11284,14 +11291,14 @@ msgid ""
 "Connection Test Failed! Here is what we got instead:\n"
 " %s"
 msgstr ""
-"Test di Connessione Fallito! Ecco cosa abbiamo invece:\n"
+"Prova di connessione non riuscita, esito:\n"
 " %s"
 
 #. module: base
 #: code:addons/base/models/ir_mail_server.py:196
 #, python-format
 msgid "Connection Test Succeeded! Everything seems properly set up!"
-msgstr "Test di Connessione Superato! Tutto sembra configurato correttamente!"
+msgstr "Prova di connessione superata, tutto sembra impostato correttamente."
 
 #. module: base
 #: model:ir.model.fields,field_description:base.field_ir_model_constraint__name
@@ -13195,6 +13202,9 @@ msgid ""
 "partner is a customer without access or with a limited access created for "
 "sharing data."
 msgstr ""
+"Un cliente (non utente), o un'utente condiviso. È stato indicato che il "
+"partner attuale è un cliente senza accesso o con un accesso limitato creato "
+"per la condivisione di dati."
 
 #. module: base
 #: model:res.country,name:base.sv
@@ -13554,7 +13564,7 @@ msgstr "Executive 4   7.5 x 10 pollici, 190.5 x 254 mm"
 #: model:ir.module.category,name:base.module_category_hr_expense
 #: model:ir.module.module,shortdesc:base.module_hr_expense
 msgid "Expenses"
-msgstr "Note spese"
+msgstr "Spese"
 
 #. module: base
 #: model:ir.model.fields,help:base.field_report_paperformat__report_ids
@@ -15766,6 +15776,9 @@ msgid ""
 "* if False, the view currently does not extend its parent but can be enabled\n"
 "         "
 msgstr ""
+"Se questa è una vista ereditata,\n"
+"* se True, la vista estende sempre la vista genitore\n"
+"* se False, la vista attualmente non estende la vista genitore ma si può abilitare"
 
 #. module: base
 #: model_terms:ir.ui.view,arch_db:base.view_rule_form
@@ -16327,6 +16340,8 @@ msgid ""
 "Invalid inheritance mode: if the mode is 'extension', the view must extend "
 "an other view"
 msgstr ""
+"Modo di ereditarietà non valido: se è una \"estensione\", la vista deve "
+"estendere un'altra vista"
 
 #. module: base
 #: sql_constraint:ir.ui.view:0
@@ -17308,7 +17323,7 @@ msgstr "Registrazione"
 #: model:ir.model.fields,field_description:base.field_res_users__login
 #: model_terms:ir.ui.view,arch_db:base.view_res_users_kanban
 msgid "Login"
-msgstr "Accedi"
+msgstr "Login"
 
 #. module: base
 #: model_terms:ir.ui.view,arch_db:base.res_partner_kanban_view
@@ -20771,6 +20786,15 @@ msgid ""
 "(<xpath/>) are applied, and the result is used as if it were this view's\n"
 "actual arch.\n"
 msgstr ""
+"Viene impiegato solo se la vista eredita da un'altra vista (inherit_id non è falso/nullo).\n"
+"\n"
+"* Se estensione (predefinito), ed è richiesta la vista, viene cercata la\n"
+"primaria più vicina (via inherit_id). Quindi vengono applicate, con il\n"
+"suo modello, tutte quelle che ereditano dalla vista stessa\n"
+"* Se primario, viene pienamente risolta la vista primaria più vicina (anche\n"
+"se usa un modello diverso), quindi vengono applicate le specifiche\n"
+"di ereditarietà della vista stessa (<xpath/>) usando il risultato come fosse\n"
+"l'attuale architettura.\n"
 
 #. module: base
 #: sql_constraint:res.currency.rate:0
@@ -22500,7 +22524,7 @@ msgstr "Errore di ricorsione delle dipendenze dei moduli !"
 #: code:addons/base/models/ir_actions.py:413
 #, python-format
 msgid "Recursion found in child server actions"
-msgstr ""
+msgstr "Trovata ricorsività nelle azioni server secondarie"
 
 #. module: base
 #: code:addons/models.py:3703
@@ -22550,7 +22574,7 @@ msgstr "Campo collegato"
 #: code:addons/base/models/ir_model.py:440
 #, python-format
 msgid "Related field '%s' does not have comodel '%s'"
-msgstr ""
+msgstr "Il campo correlato \"%s\" non possiede il comodello \"%s\""
 
 #. module: base
 #: code:addons/base/models/ir_model.py:438
@@ -22651,7 +22675,7 @@ msgstr "Ripeti ogni x."
 #: model_terms:ir.ui.view,arch_db:base.act_report_xml_search_view
 #: model_terms:ir.ui.view,arch_db:base.act_report_xml_view
 msgid "Report"
-msgstr "Resoconto"
+msgstr "Report"
 
 #. module: base
 #: model:ir.model,name:base.model_ir_actions_report
@@ -23076,7 +23100,7 @@ msgstr "San Marino"
 #. module: base
 #: model:ir.model.fields,field_description:base.field_res_partner_bank__sanitized_acc_number
 msgid "Sanitized Account Number"
-msgstr ""
+msgstr "Numero conto pulito"
 
 #. module: base
 #: selection:res.lang,week_start:0
@@ -23914,7 +23938,7 @@ msgstr "Stato di Palestina"
 #. module: base
 #: model:ir.model.fields,field_description:base.field_res_company__base_onboarding_company_state
 msgid "State of the onboarding company step"
-msgstr ""
+msgstr "Stato della fase di configurazione azienda"
 
 #. module: base
 #: model:ir.model.fields,field_description:base.field_res_country__state_ids
@@ -24061,8 +24085,7 @@ msgstr "Sottomenù"
 #. module: base
 #: model:ir.module.module,summary:base.module_hr_expense
 msgid "Submit, validate and reinvoice employee expenses"
-msgstr ""
-"Presentazione, conferma e rifatturazione delle note spese dei dipendenti"
+msgstr "Presentazione, conferma e rifatturazione delle spese dei dipendenti"
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_sale_subscription
@@ -24872,7 +24895,7 @@ msgstr "TaxCloud e Consegna - eCommerce"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_sale_subscription_taxcloud
 msgid "TaxCloud and Subscriptions"
-msgstr "TaxCloud e sottoscrizioni"
+msgstr "TaxCloud e abbonamenti"
 
 #. module: base
 #: model:ir.module.module,summary:base.module_account_taxcloud
@@ -25011,6 +25034,8 @@ msgstr "Thailandia - Rendiconti contabili"
 #, python-format
 msgid "The \"App Switcher\" action cannot be selected as home action."
 msgstr ""
+"Non si può impostare l'azione \"Cambia applicazione\" come azione "
+"principale."
 
 #. module: base
 #: model:ir.model.fields,help:base.field_res_country__code
@@ -25249,6 +25274,12 @@ msgid "The internal user in charge of this contact."
 msgstr "L'utente interno responsabile di questo contatto. "
 
 #. module: base
+#: code:addons/base/models/res_country.py:106
+#, python-format
+msgid "The layout contains an invalid format key"
+msgstr "Lo schema contiene una chiave di formato non valido"
+
+#. module: base
 #: model:ir.model.fields,help:base.field_ir_model__inherited_model_ids
 msgid "The list of models that extends the current model."
 msgstr "L'elenco dei modelli che estende il modello attuale."
@@ -25408,6 +25439,9 @@ msgid ""
 "\n"
 "Can not separate file to save as attachment because the report's template does not contains the attributes 'data-oe-model' and 'data-oe-id' on the div with 'article' classname."
 msgstr ""
+"Il modello del report '%s' è errato, prego contattare l'amministratore.\n"
+"\n"
+"Impossibile separare il file da salvare come allegato, poichè il modello del report è privo degli attributi data-oe-model' e 'data-oe-id' sul div con classname 'article'."
 
 #. module: base
 #: code:addons/models.py:2923
@@ -26321,7 +26355,7 @@ msgid ""
 "Unable to upgrade module \"%s\" because an external dependency is not met: "
 "%s"
 msgstr ""
-"Impossibile eseguire l'avanzamento. Al modulo \"%s\" manca una dipendenza "
+"Impossibile eseguire l'aggiornamento. Al modulo \"%s\" manca una dipendenza "
 "esterna: %s"
 
 #. module: base
@@ -26418,7 +26452,7 @@ msgstr "Campo %r sconosciuto per la dipendenza %r"
 #: code:addons/base/models/ir_model.py:426
 #, python-format
 msgid "Unknown field name '%s' in related field '%s'"
-msgstr "Nome campo \"%s\" sconosciuto nel campo relazione \"%s\""
+msgstr "Nome campo \"%s\" sconosciuto nel campo correlato \"%s\""
 
 #. module: base
 #: code:addons/base/models/ir_fields.py:361
@@ -26528,7 +26562,7 @@ msgstr "Aggiorna"
 #. module: base
 #: model:ir.model,name:base.model_base_module_upgrade
 msgid "Upgrade Module"
-msgstr "Avanzamento modulo"
+msgstr "Aggiornamento modulo"
 
 #. module: base
 #: model:ir.model.fields,field_description:base.field_ir_attachment__url
@@ -27290,7 +27324,7 @@ msgid ""
 "sequence. Low number means high priority."
 msgstr ""
 "Per le azioni multiple, l'ordine di esecuzione è basato sulla sequenza. Un "
-"numero piccolo indica alta priorità."
+"numero basso indica alta priorità."
 
 #. module: base
 #: model:ir.model.fields,help:base.field_ir_mail_server__sequence
@@ -27501,8 +27535,10 @@ msgstr "Impossibile attivare il superutente."
 #. module: base
 #: code:addons/base/models/res_partner.py:509
 #, python-format
-msgid "You cannot archive a contact linked to an internal user."
-msgstr "Impossibile archiviare un contatto collegato a un utente interno."
+msgid "You cannot archive a contact linked to a portal or internal user."
+msgstr ""
+"Impossibile archiviare un contatto collegato a un portale o a un utente "
+"interno."
 
 #. module: base
 #: code:addons/base/models/res_partner.py:330

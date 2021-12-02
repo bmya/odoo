@@ -152,6 +152,22 @@ class SaleOrder(models.Model):
             """, (list(value),))
             so_ids = self.env.cr.fetchone()[0] or []
             return [('id', 'in', so_ids)]
+        elif operator == '=' and not value:
+            # special case for [('invoice_ids', '=', False)], i.e. "Invoices is not set"
+            #
+            # We cannot just search [('order_line.invoice_lines', '=', False)]
+            # because it returns orders with uninvoiced lines, which is not
+            # same "Invoices is not set" (some lines may have invoices and some
+            # doesn't)
+            #
+            # A solution is making inverted search first ("orders with invoiced
+            # lines") and then invert results ("get all other orders")
+            #
+            # Domain below returns subset of ('order_line.invoice_lines', '!=', False)
+            order_ids = self._search([
+                ('order_line.invoice_lines.invoice_id.type', 'in', ('out_invoice', 'out_refund'))
+            ])
+            return [('id', 'not in', order_ids)]
         return ['&', ('order_line.invoice_lines.invoice_id.type', 'in', ('out_invoice', 'out_refund')), ('order_line.invoice_lines.invoice_id', operator, value)]
 
     name = fields.Char(string='Order Reference', required=True, copy=False, readonly=True, states={'draft': [('readonly', False)]}, index=True, default=lambda self: _('New'))
@@ -258,6 +274,7 @@ class SaleOrder(models.Model):
         """ For service and consumable, we only take the min dates. This method is extended in sale_stock to
             take the picking_policy of SO into account.
         """
+        self.mapped("order_line")  # Prefetch indication
         for order in self:
             dates_list = []
             confirm_date = fields.Datetime.from_string((order.confirmation_date or order.write_date) if order.state == 'sale' else fields.Datetime.now())
@@ -1373,18 +1390,17 @@ class SaleOrderLine(models.Model):
                 # amount and not zero. Since we compute untaxed amount, we can use directly the price
                 # reduce (to include discount) without using `compute_all()` method on taxes.
                 price_subtotal = 0.0
-                if line.product_id.invoice_policy == 'delivery':
-                    price_subtotal = line.price_reduce * line.qty_delivered
-                else:
-                    price_subtotal = line.price_reduce * line.product_uom_qty
+                uom_qty_to_consider = line.qty_delivered if line.product_id.invoice_policy == 'delivery' else line.product_uom_qty
+                price_reduce = line.price_unit * (1 - (line.discount or 0.0) / 100.0)
+                price_subtotal = price_reduce * uom_qty_to_consider
                 if len(line.tax_id.filtered(lambda tax: tax.price_include)) > 0:
                     # As included taxes are not excluded from the computed subtotal, `compute_all()` method
                     # has to be called to retrieve the subtotal without them.
                     # `price_reduce_taxexcl` cannot be used as it is computed from `price_subtotal` field. (see upper Note)
                     price_subtotal = line.tax_id.compute_all(
-                        line.price_reduce,
+                        price_reduce,
                         currency=line.order_id.currency_id,
-                        quantity=line.product_uom_qty,
+                        quantity=uom_qty_to_consider,
                         product=line.product_id,
                         partner=line.order_id.partner_shipping_id)['total_excluded']
 

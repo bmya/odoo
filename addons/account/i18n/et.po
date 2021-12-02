@@ -19,8 +19,9 @@
 # Algo Kärp <algokarp@gmail.com>, 2020
 # Eneli Õigus <enelioigus@gmail.com>, 2020
 # Piia Paurson <piia@avalah.ee>, 2021
-# atriine <triine@avalah.ee>, 2021
 # Andre Roomet <andreroomet@gmail.com>, 2021
+# Triine Aavik <triine@avalah.ee>, 2021
+# Aveli Kannel <aveli@avalah.ee>, 2021
 # 
 msgid ""
 msgstr ""
@@ -28,7 +29,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2019-11-14 07:33+0000\n"
 "PO-Revision-Date: 2018-08-24 09:14+0000\n"
-"Last-Translator: Andre Roomet <andreroomet@gmail.com>, 2021\n"
+"Last-Translator: Aveli Kannel <aveli@avalah.ee>, 2021\n"
 "Language-Team: Estonian (https://www.transifex.com/odoo/teams/41243/et/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -1405,7 +1406,7 @@ msgstr "Lisa märkus"
 #: selection:account.tax,type_tax_use:0
 #: selection:account.tax.template,type_tax_use:0
 msgid "Adjustment"
-msgstr ""
+msgstr "Korrigeerimine"
 
 #. module: account
 #: model:ir.model.fields,field_description:account.field_tax_adjustments_wizard__tax_id
@@ -6593,7 +6594,7 @@ msgstr "Postiteenuste tüüp"
 #. module: account
 #: model:ir.model.fields,field_description:account.field_account_invoice_send__mailing_list_ids
 msgid "Mailing List"
-msgstr ""
+msgstr "Meililist"
 
 #. module: account
 #: model:ir.model.fields,field_description:account.field_account_bank_statement__message_main_attachment_id
@@ -7907,7 +7908,7 @@ msgstr ""
 #: code:addons/account/models/account_payment.py:444
 #, python-format
 msgid "Payments without a customer can't be matched"
-msgstr ""
+msgstr "Ilma partnerit valimata ei saa makset sobitada"
 
 #. module: account
 #: model:ir.actions.act_window,name:account.action_invoice_tree_pending_invoice
@@ -10105,7 +10106,7 @@ msgstr ""
 #: code:addons/account/models/account_move.py:1059
 #, python-format
 msgid "The account %s (%s) is deprecated."
-msgstr ""
+msgstr "Konto %s (%s) on aegunud."
 
 #. module: account
 #: code:addons/account/models/account_invoice.py:521
@@ -10161,6 +10162,7 @@ msgid ""
 "The application scope of taxes in a group must be either the same as the "
 "group or left empty."
 msgstr ""
+"Rakenduse maksude määr grupis peab olema kas grupiga sama suur või tühi."
 
 #. module: account
 #: code:addons/account/models/account.py:551
@@ -10276,7 +10278,7 @@ msgstr ""
 #: code:addons/account/models/account_fiscal_year.py:42
 #, python-format
 msgid "The ending date must not be prior to the starting date."
-msgstr ""
+msgstr "Lõppkuupäev ei saa olla enne alguskuupäeva"
 
 #. module: account
 #: model:ir.model.fields,help:account.field_product_category__property_account_expense_categ_id
@@ -11319,6 +11321,7 @@ msgstr "Kasuta koondmakseid"
 #: model_terms:ir.ui.view,arch_db:account.res_config_settings_view_form
 msgid "Use budgets to compare actual with expected revenues and costs"
 msgstr ""
+"Kasutage eelarveid, et võrrelda tegelikke ja eeldatud tulusid ja kulusid"
 
 #. module: account
 #: model_terms:ir.ui.view,arch_db:account.res_config_settings_view_form
@@ -11452,7 +11455,7 @@ msgstr "Kinnita konto liikumine"
 msgid ""
 "Validate the statement line automatically (reconciliation based on your "
 "rule)."
-msgstr ""
+msgstr "Kinnita väljavõtte rida automaatselt (sobitamine vastavalt reeglile)"
 
 #. module: account
 #: selection:account.bank.statement,state:0
@@ -11719,7 +11722,7 @@ msgstr ""
 #: code:addons/account/models/account_move.py:944
 #, python-format
 msgid "You are trying to reconcile some entries that are already reconciled."
-msgstr ""
+msgstr "Te üritate sobitada kirjeid, mis on juba omavahel ühendatud."
 
 #. module: account
 #: model:ir.model.fields,help:account.field_account_move_line__blocked
@@ -11754,6 +11757,14 @@ msgstr ""
 msgid ""
 "You can not have an overlap between two fiscal years, please correct the "
 "start and/or end dates of your fiscal years."
+msgstr ""
+
+#. module: account
+#: code:addons/account/models/partner.py:441
+#, python-format
+msgid ""
+"You can't change the company of a partner if the latter already has some "
+"invoices."
 msgstr ""
 
 #. module: account
@@ -12220,7 +12231,7 @@ msgstr ""
 #: code:addons/account/static/src/xml/account_reconciliation.xml:323
 #, python-format
 msgid "have been reconciled automatically."
-msgstr ""
+msgstr "on sobitatud automaatselt"
 
 #. module: account
 #: model:ir.model.fields,field_description:account.field_account_invoice_send__invoice_without_email
@@ -12259,7 +12270,7 @@ msgstr "saamata makseid"
 #: code:addons/account/static/src/xml/account_reconciliation.xml:169
 #, python-format
 msgid "reconciliation models"
-msgstr ""
+msgstr "sobitamise mudelid"
 
 #. module: account
 #. openerp-web

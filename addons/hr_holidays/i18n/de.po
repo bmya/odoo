@@ -11,6 +11,9 @@
 # Olivier Jossen <olivier.jossen@braintec-group.com>, 2019
 # Chris Egal <sodaswed@web.de>, 2019
 # Martin Trigaux, 2019
+# Felix Schubert <felix.schubert@go-erp.com>, 2021
+# Ahmed Aly <ahmed.aly@datenpol.at>, 2021
+# Friederike Fasterling-Nesselbosch, 2021
 # 
 msgid ""
 msgstr ""
@@ -18,7 +21,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2019-01-09 10:31+0000\n"
 "PO-Revision-Date: 2018-08-24 09:19+0000\n"
-"Last-Translator: Martin Trigaux, 2019\n"
+"Last-Translator: Friederike Fasterling-Nesselbosch, 2021\n"
 "Language-Team: German (https://www.transifex.com/odoo/teams/41243/de/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -106,6 +109,18 @@ msgstr "%s auf %s : %.2f Tag(e)"
 #, python-format
 msgid "%s on %s : %.2f hour(s)"
 msgstr "%s auf %s : %.2f Stunde(n)"
+
+#. module: hr_holidays
+#: code:addons/hr_holidays/models/hr_holidays.py:643
+#, python-format
+msgid "%s on Time Off : %.2f day(s)"
+msgstr "%s zur Abwesenheit : %.2f Tag(en)"
+
+#. module: hr_holidays
+#: code:addons/hr_holidays/models/hr_leave.py:643
+#, python-format
+msgid "%s on Time Off : %.2f hour(s)"
+msgstr "%s zur Abwesenheit : %.2f Stunde(n)"
 
 #. module: hr_holidays
 #: model_terms:ir.ui.view,arch_db:hr_holidays.report_holidayssummary
@@ -419,6 +434,31 @@ msgstr "<span class=\"o_stat_text\">Belegte Tage</span>"
 #: model_terms:ir.ui.view,arch_db:hr_holidays.edit_holiday_status_form
 msgid "<span class=\"o_stat_text\">Group Leaves</span>"
 msgstr "<span class=\"o_stat_text\">Gruppen-Abwesenheiten</span>"
+
+#. module: hr_holidays
+#: model_terms:ir.ui.view,arch_db:hr_holidays.hr_leave_view_form
+msgid ""
+"<span attrs=\"{'invisible': [('holiday_type', '!=', 'employee')]}\">\n"
+"                        The employee has a different timezone than yours! Here dates and times are displayed in the employee's timezone\n"
+"                    </span>\n"
+"                    <span attrs=\"{'invisible': [('holiday_type', '!=', 'department')]}\">\n"
+"                        The department's company has a different timezone than yours! Here dates and times are displayed in the company's timezone\n"
+"                    </span>\n"
+"                    <span attrs=\"{'invisible': [('holiday_type', '!=', 'company')]}\">\n"
+"                        The company has a different timezone than yours! Here dates and times are displayed in the company's timezone\n"
+"                    </span>\n"
+"                    ("
+msgstr ""
+"<span attrs=\"{'invisible': [('holiday_type', '!=', 'employee')]}\">\n"
+"                        Der Mitarbeiter hat eine andere Zeitzone als Sie! Hier werden Daten und Uhrzeiten entsprechend der Zeitzone des Mitarbeiters angezeigt\n"
+"                    </span>\n"
+"                    <span attrs=\"{'invisible': [('holiday_type', '!=', 'department')]}\">\n"
+"                        Das Unternehmen der Abteilung hat eine andere Zeitzone als Sie! Hier werden Daten und Uhrzeiten entsprechend der Zeitzone des Unternehmens angezeigt\n"
+"                    </span>\n"
+"                    <span attrs=\"{'invisible': [('holiday_type', '!=', 'company')]}\">\n"
+"                        Das Unternehmen hat eine andere Zeitzone als Sie! Hier werden Daten und Uhrzeiten entsprechend der Zeitzone des Unternehmens angezeigt\n"
+"                    </span>\n"
+"                    ("
 
 #. module: hr_holidays
 #: model_terms:ir.ui.view,arch_db:hr_holidays.hr_leave_view_form
@@ -740,7 +780,7 @@ msgstr "# Anhänge"
 #. module: hr_holidays
 #: model:ir.model.fields,field_description:hr_holidays.field_hr_leave_allocation__accrual_limit
 msgid "Balance limit"
-msgstr ""
+msgstr "Saldo Limit"
 
 #. module: hr_holidays
 #: selection:hr.leave.type,color_name:0
@@ -948,7 +988,7 @@ msgstr "Benutzerdefinierte Stunden"
 #. module: hr_holidays
 #: model:ir.model.fields,field_description:hr_holidays.field_hr_leave__request_date_from_period
 msgid "Date Period Start"
-msgstr ""
+msgstr "Startdatum des Zeitraums"
 
 #. module: hr_holidays
 #: model:ir.model.fields,field_description:hr_holidays.field_hr_leave_allocation__nextcall
@@ -1140,6 +1180,8 @@ msgid ""
 "Field allowing to see the leave request duration in days or hours depending "
 "on the leave_type_request_unit"
 msgstr ""
+"Feld zur Anzeige der Dauer des Urlaubsantrags in Tagen oder Stunden, je nach"
+" leave_type_request_unit"
 
 #. module: hr_holidays
 #: model_terms:ir.ui.view,arch_db:hr_holidays.view_hr_leave_allocation_filter
@@ -1789,6 +1831,12 @@ msgid "New"
 msgstr "Neu"
 
 #. module: hr_holidays
+#: code:addons/hr_holidays/models/hr_leave.py:0
+#, python-format
+msgid "New %s Request created by %s from %s to %s"
+msgstr ""
+
+#. module: hr_holidays
 #: model:ir.actions.act_window,name:hr_holidays.hr_leave_action_new_request
 #: model:ir.ui.menu,name:hr_holidays.hr_leave_menu_new_request
 msgid "New Request"
@@ -1878,7 +1926,7 @@ msgstr "Anzahl der Nachrichten mit einem Fehler beim Senden."
 #. module: hr_holidays
 #: model:ir.model.fields,field_description:hr_holidays.field_hr_leave_allocation__interval_number
 msgid "Number of unit between two intervals"
-msgstr ""
+msgstr "Anzahl Einheiten zwischen zwei Intervallen"
 
 #. module: hr_holidays
 #: model:ir.model.fields,field_description:hr_holidays.field_hr_leave_allocation__number_per_interval
@@ -1932,7 +1980,7 @@ msgstr ""
 #: code:addons/hr_holidays/models/hr_leave_allocation.py:484
 #, python-format
 msgid "Only a Leave Manager can reset other people leaves."
-msgstr ""
+msgstr "Nur Abwesenheitsmanager können Anträge zurücksetzen."
 
 #. module: hr_holidays
 #: code:addons/hr_holidays/models/hr_leave.py:702
@@ -1988,7 +2036,7 @@ msgstr "Übergeordnet"
 #. module: hr_holidays
 #: model:hr.leave.type,name:hr_holidays.hr_holiday_status_dv
 msgid "Parental Leaves"
-msgstr ""
+msgstr "Elternzeit"
 
 #. module: hr_holidays
 #: model:ir.ui.menu,name:hr_holidays.hr_holidays_menu_manager_payroll
@@ -2083,12 +2131,12 @@ msgstr "Berichtswesen"
 #. module: hr_holidays
 #: model:ir.model.fields,field_description:hr_holidays.field_hr_leave__request_date_to
 msgid "Request End Date"
-msgstr ""
+msgstr "Anfrage Enddatum"
 
 #. module: hr_holidays
 #: model:ir.model.fields,field_description:hr_holidays.field_hr_leave__request_date_from
 msgid "Request Start Date"
-msgstr ""
+msgstr "Anfrage Startdatum"
 
 #. module: hr_holidays
 #: model:ir.model.fields,field_description:hr_holidays.field_hr_leave_report__type
@@ -2238,6 +2286,9 @@ msgid ""
 "The employee, department, company or employee category of this request is "
 "missing. Please make sure that your user login is linked to an employee."
 msgstr ""
+"Der Mitarbeiter, die Abteilung, die Unternehmung oder die Mitarbeitergruppe "
+"dieser Anfrage fehlt. Bitte stellen Sie sicher, dass Ihr User an einen "
+"Mitarbeiter gelinkt ist."
 
 #. module: hr_holidays
 #: sql_constraint:hr.leave.allocation:0
@@ -2317,7 +2368,7 @@ msgstr ""
 #. module: hr_holidays
 #: model:ir.model.fields,help:hr_holidays.field_hr_leave_type__valid
 msgid "This indicates if it is still possible to use this type of leave"
-msgstr ""
+msgstr "Zeigt an, ob Sie diesen Abwesenheitstyp noch benutzen können"
 
 #. module: hr_holidays
 #: model:ir.model.fields,help:hr_holidays.field_hr_leave_type__leaves_taken
@@ -2426,12 +2477,12 @@ msgstr ""
 #. module: hr_holidays
 #: model:ir.model.fields,field_description:hr_holidays.field_hr_leave_allocation__unit_per_interval
 msgid "Unit of time added at each interval"
-msgstr ""
+msgstr "Hinzugefügte Zeit in jedem Intervall"
 
 #. module: hr_holidays
 #: model:ir.model.fields,field_description:hr_holidays.field_hr_leave_allocation__interval_unit
 msgid "Unit of time between two intervals"
-msgstr ""
+msgstr "Zeit zwischen zwei Intervallen"
 
 #. module: hr_holidays
 #: model:hr.leave.type,name:hr_holidays.holiday_status_unpaid
@@ -2616,6 +2667,7 @@ msgstr "day(s)"
 
 #. module: hr_holidays
 #: code:addons/hr_holidays/models/hr_leave_allocation.py:222
+#: code:addons/hr_holidays/models/hr_leave_allocation.py:330
 #: model_terms:ir.ui.view,arch_db:hr_holidays.hr_leave_allocation_view_kanban
 #: model_terms:ir.ui.view,arch_db:hr_holidays.hr_leave_report_kanban
 #: model_terms:ir.ui.view,arch_db:hr_holidays.hr_leave_view_kanban
@@ -2637,6 +2689,7 @@ msgstr "Stunde(n)"
 
 #. module: hr_holidays
 #: code:addons/hr_holidays/models/hr_leave_allocation.py:222
+#: code:addons/hr_holidays/models/hr_leave_allocation.py:330
 #, python-format
 msgid "hours"
 msgstr "Stunden"

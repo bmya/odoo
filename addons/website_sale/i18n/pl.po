@@ -23,6 +23,8 @@
 # Natalia Gros <nag@odoo.com>, 2019
 # Krystian Harkot <kharkot@trilab.pl>, 2019
 # Paweł Wodyński <pw@myodoo.pl>, 2020
+# Piotr Strębski <strebski@gmail.com>, 2021
+# Daniel Demedziuk <daniel.demedziuk@gmail.com>, 2021
 # 
 msgid ""
 msgstr ""
@@ -30,7 +32,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2019-11-04 14:42+0000\n"
 "PO-Revision-Date: 2018-08-24 09:35+0000\n"
-"Last-Translator: Paweł Wodyński <pw@myodoo.pl>, 2020\n"
+"Last-Translator: Daniel Demedziuk <daniel.demedziuk@gmail.com>, 2021\n"
 "Language-Team: Polish (https://www.transifex.com/odoo/teams/41243/pl/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -598,6 +600,8 @@ msgid ""
 "Apply manual discounts on sales order lines or display discounts computed "
 "from pricelists (option to activate in the pricelist configuration)."
 msgstr ""
+"Zastosuj ręczne rabaty na liniach zamówień sprzedaży lub wyświetl rabaty "
+"wyliczone z cenników (opcja do włączenia w konfiguracji cenników)."
 
 #. module: website_sale
 #: model_terms:ir.ui.view,arch_db:website_sale.res_config_settings_view_form
@@ -1961,7 +1965,7 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:website_sale.cart_lines
 #: model_terms:ir.ui.view,arch_db:website_sale.product_quantity
 msgid "Remove one"
-msgstr ""
+msgstr "Usuń jeden"
 
 #. module: website_sale
 #: model:ir.ui.menu,name:website_sale.menu_reporting
@@ -2805,7 +2809,7 @@ msgstr ""
 #. module: website_sale
 #: model_terms:ir.ui.view,arch_db:website_sale.address
 msgid "new address"
-msgstr ""
+msgstr "nowy adres"
 
 #. module: website_sale
 #: model_terms:ir.ui.view,arch_db:website_sale.products

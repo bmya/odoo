@@ -9,8 +9,9 @@
 # Ricardo Martins <ricardo.nbs.martins@gmail.com>, 2018
 # Diogo Fonseca <dsf@thinkopensolutions.pt>, 2018
 # Marcelo Pereira <marcelo.pereira@arxi.pt>, 2020
-# Manuela Silva <manuelarodsilva@gmail.com>, 2020
 # Nuno Silva <nuno.silva@arxi.pt>, 2020
+# Tiago Santos <tiago.santos@arxi.pt>, 2021
+# Manuela Silva <mmsrs@sky.com>, 2021
 # Reinaldo Ramos <reinaldo.ramos@arxi.pt>, 2021
 # 
 msgid ""
@@ -1039,6 +1040,8 @@ msgstr "Nome a Exibir"
 #, python-format
 msgid "Do not have access, skip this data for user's digest email"
 msgstr ""
+"Se não tem acesso, ignore estes dados para o \"e-mail\" de resumo do "
+"utilizador"
 
 #. module: website_sale
 #: selection:res.company,website_sale_onboarding_payment_acquirer_state:0
@@ -2213,7 +2216,7 @@ msgstr ""
 #: code:addons/website_sale/static/src/xml/website_sale_dashboard.xml:108
 #, python-format
 msgid "Sold"
-msgstr ""
+msgstr "Vendido"
 
 #. module: website_sale
 #: code:addons/website_sale/controllers/main.py:539
@@ -2299,7 +2302,7 @@ msgstr ""
 #. module: website_sale
 #: model_terms:ir.ui.view,arch_db:website_sale.suggested_products_list
 msgid "Suggested Accessories:"
-msgstr ""
+msgstr "Acessórios Sugeridos:"
 
 #. module: website_sale
 #: model_terms:ir.ui.view,arch_db:website_sale.address_b2b

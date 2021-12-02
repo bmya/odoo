@@ -33,7 +33,7 @@
 # Olivier Jossen <olivier.jossen@braintec-group.com>, 2019
 # Matt <matt.fasola@braintec-group.com>, 2019
 # Felix Schubert <felix.schubert@go-erp.com>, 2019
-# JEK Odoo <jek@odoo.com>, 2020
+# Jérôme JEK <jek@odoo.com>, 2020
 # Tom Bache, 2020
 # philku79 <philip.kuss@gmx.de>, 2020
 # Chris Egal <sodaswed@web.de>, 2020
@@ -11530,7 +11530,7 @@ msgstr "Unverteilte Gewinne/Verluste"
 #. module: account
 #: model:ir.model.fields,field_description:account.field_account_invoice_line__price_unit
 msgid "Unit Price"
-msgstr "Preis pro ME"
+msgstr "Stückpreis"
 
 #. module: account
 #: model_terms:ir.ui.view,arch_db:account.invoice_form
@@ -12148,6 +12148,14 @@ msgid ""
 msgstr ""
 "Es darf keine Überschneidung zwischen zwei Geschäftsjahren geben. Bitte "
 "korrigieren Sie das Start- und / oder Enddatum Ihrer Geschäftsjahre."
+
+#. module: account
+#: code:addons/account/models/partner.py:441
+#, python-format
+msgid ""
+"You can't change the company of a partner if the latter already has some "
+"invoices."
+msgstr ""
 
 #. module: account
 #: code:addons/account/models/account_invoice.py:1784

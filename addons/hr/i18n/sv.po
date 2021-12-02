@@ -10,11 +10,13 @@
 # Martin Trigaux, 2019
 # Frida E, 2019
 # Chrille Hedberg <hedberg.chrille@gmail.com>, 2019
-# Anders Wallenquist <anders.wallenquist@vertel.se>, 2019
 # Kim Asplund <kim.asplund@gmail.com>, 2020
 # Åke C. Engquist <ake.engquist@arbetsformedlingen.se>, 2020
-# Jakob Krabbe <jakob.krabbe@vertel.se>, 2020
 # Mikael Holm <mikael.holm@vertel.se>, 2020
+# Anders Wallenquist <anders.wallenquist@vertel.se>, 2021
+# Jakob Krabbe <jakob.krabbe@vertel.se>, 2021
+# STefan Rundgren <stefanrundgren@cellglas.com>, 2021
+# Simon S, 2021
 # 
 msgid ""
 msgstr ""
@@ -22,7 +24,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2019-04-12 12:19+0000\n"
 "PO-Revision-Date: 2018-08-24 09:18+0000\n"
-"Last-Translator: Mikael Holm <mikael.holm@vertel.se>, 2020\n"
+"Last-Translator: Simon S, 2021\n"
 "Language-Team: Swedish (https://www.transifex.com/odoo/teams/41243/sv/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -90,6 +92,9 @@ msgid ""
 "specific.\" role=\"img\" aria-label=\"Values set here are company-"
 "specific.\" groups=\"base.group_multi_company\"/>"
 msgstr ""
+"<span class=\"fa fa-lg fa-building-o\" title=\"Values set here are company-"
+"specific.\" role=\"img\" aria-label=\"Values set here are company-"
+"specific.\" groups=\"base.group_multi_company\"/>"
 
 #. module: hr
 #: model_terms:ir.ui.view,arch_db:hr.hr_department_view_kanban
@@ -185,7 +190,7 @@ msgstr "Aktiviteter"
 #. module: hr
 #: model:ir.model.fields,field_description:hr.field_hr_employee__activity_state
 msgid "Activity State"
-msgstr ""
+msgstr "Aktivitetsstatus"
 
 #. module: hr
 #: model_terms:ir.actions.act_window,help:hr.act_employee_from_department
@@ -247,7 +252,7 @@ msgstr ""
 #. module: hr
 #: selection:hr.employee,certificate:0
 msgid "Bachelor"
-msgstr ""
+msgstr "Kandidat"
 
 #. module: hr
 #: model:ir.model.fields,field_description:hr.field_hr_employee__bank_account_id
@@ -291,7 +296,7 @@ msgstr "Född"
 #. module: hr
 #: model:ir.model.fields,field_description:hr.field_hr_employee__certificate
 msgid "Certificate Level"
-msgstr ""
+msgstr "Utbildningsnivå"
 
 #. module: hr
 #: model:hr.job,name:hr.job_ceo
@@ -611,7 +616,7 @@ msgstr "Kvinna"
 #. module: hr
 #: model:ir.model.fields,field_description:hr.field_hr_employee__study_field
 msgid "Field of Study"
-msgstr ""
+msgstr "Studieområde"
 
 #. module: hr
 #: model_terms:hr.job,website_description:hr.job_consultant
@@ -783,7 +788,7 @@ msgstr ""
 #: model:ir.model.fields,help:hr.field_hr_employee__message_has_error
 #: model:ir.model.fields,help:hr.field_hr_job__message_has_error
 msgid "If checked, some messages have a delivery error."
-msgstr ""
+msgstr "Om markerad så har det blivit ett leveransfel för några  meddelanden."
 
 #. module: hr
 #: model:ir.model.fields,help:hr.field_hr_employee__active
@@ -938,7 +943,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:hr.field_hr_employee__message_main_attachment_id
 #: model:ir.model.fields,field_description:hr.field_hr_job__message_main_attachment_id
 msgid "Main Attachment"
-msgstr ""
+msgstr "Huvudbilaga"
 
 #. module: hr
 #: selection:hr.employee,gender:0
@@ -971,7 +976,7 @@ msgstr "Gift"
 #. module: hr
 #: selection:hr.employee,certificate:0
 msgid "Master"
-msgstr ""
+msgstr "Mästare"
 
 #. module: hr
 #: model_terms:hr.job,website_description:hr.job_cto
@@ -1006,7 +1011,7 @@ msgstr "Medlemmar"
 #: model:ir.model.fields,field_description:hr.field_hr_employee__message_has_error
 #: model:ir.model.fields,field_description:hr.field_hr_job__message_has_error
 msgid "Message Delivery error"
-msgstr ""
+msgstr "Fel vid meddelandeleverans"
 
 #. module: hr
 #: model:ir.model.fields,field_description:hr.field_hr_department__message_ids
@@ -1039,17 +1044,17 @@ msgstr "Nationalitet (land)"
 #. module: hr
 #: model:ir.model.fields,field_description:hr.field_hr_employee__activity_date_deadline
 msgid "Next Activity Deadline"
-msgstr ""
+msgstr "Nästa slutdatum för aktivitet"
 
 #. module: hr
 #: model:ir.model.fields,field_description:hr.field_hr_employee__activity_summary
 msgid "Next Activity Summary"
-msgstr ""
+msgstr "Nästa aktivitetssummering"
 
 #. module: hr
 #: model:ir.model.fields,field_description:hr.field_hr_employee__activity_type_id
 msgid "Next Activity Type"
-msgstr ""
+msgstr "Nästa aktivitetstyp"
 
 #. module: hr
 #: model_terms:hr.job,website_description:hr.job_ceo
@@ -1119,7 +1124,7 @@ msgstr "Antal meddelanden som kräver en åtgärd"
 #: model:ir.model.fields,help:hr.field_hr_employee__message_has_error_counter
 #: model:ir.model.fields,help:hr.field_hr_job__message_has_error_counter
 msgid "Number of messages with delivery error"
-msgstr ""
+msgstr "Antal meddelanden med leveransfel"
 
 #. module: hr
 #: model:ir.model.fields,help:hr.field_hr_job__no_of_recruitment
@@ -1260,7 +1265,7 @@ msgstr ""
 #. module: hr
 #: model_terms:ir.actions.act_window,help:hr.action_hr_job
 msgid "Ready to recruit more efficiently?"
-msgstr ""
+msgstr "Redo att rekrytera mer effektivt?"
 
 #. module: hr
 #: model_terms:ir.ui.view,arch_db:hr.view_hr_job_form
@@ -1421,12 +1426,12 @@ msgstr "Personnummer"
 #. module: hr
 #: model:ir.model.fields,field_description:hr.field_hr_employee__spouse_birthdate
 msgid "Spouse Birthdate"
-msgstr ""
+msgstr "Partnerns födelsedatum"
 
 #. module: hr
 #: model:ir.model.fields,field_description:hr.field_hr_employee__spouse_complete_name
 msgid "Spouse Complete Name"
-msgstr ""
+msgstr "Partnerns fullständiga namn"
 
 #. module: hr
 #: model_terms:ir.ui.view,arch_db:hr.view_hr_job_form
@@ -1448,6 +1453,10 @@ msgid ""
 "Today: Activity date is today\n"
 "Planned: Future activities."
 msgstr ""
+"Status baserad på aktiviteter\n"
+"Försenade: Förfallodagen har passerat\n"
+"Idag: Aktivitetsdatum är idag\n"
+"Kommande: Framtida aktiviteter."
 
 #. module: hr
 #: model_terms:ir.ui.view,arch_db:hr.view_hr_job_form
@@ -1497,7 +1506,7 @@ msgstr ""
 #. module: hr
 #: model:res.groups,comment:hr.group_hr_user
 msgid "The user will be able to approve document created by employees."
-msgstr ""
+msgstr "Användaren kommer kunna godkänna dokument som skapas av anställda."
 
 #. module: hr
 #: model:res.groups,comment:hr.group_hr_manager
@@ -1505,6 +1514,8 @@ msgid ""
 "The user will have access to the human resources configuration as well as "
 "statistic reports."
 msgstr ""
+"Användaren kommer att ha tillgång till HR-inställningar samt statistiska "
+"rapporter."
 
 #. module: hr
 #: model:ir.model.fields,help:hr.field_hr_employee__image
@@ -1709,7 +1720,7 @@ msgstr ""
 #. module: hr
 #: model:ir.model.fields,field_description:hr.field_hr_employee__address_id
 msgid "Work Address"
-msgstr ""
+msgstr "Arbetsadress"
 
 #. module: hr
 #: model:ir.model.fields,field_description:hr.field_hr_employee__work_email
@@ -1719,12 +1730,12 @@ msgstr "E-post arbete"
 #. module: hr
 #: model_terms:ir.ui.view,arch_db:hr.view_employee_form
 msgid "Work Information"
-msgstr ""
+msgstr "Arbetsinformation"
 
 #. module: hr
 #: model:ir.model.fields,field_description:hr.field_hr_employee__work_location
 msgid "Work Location"
-msgstr ""
+msgstr "Arbetsplats"
 
 #. module: hr
 #: model:ir.model.fields,field_description:hr.field_hr_employee__mobile_phone
@@ -1954,4 +1965,4 @@ msgstr "eg Deltid"
 #. module: hr
 #: model_terms:ir.ui.view,arch_db:hr.view_hr_job_form
 msgid "e.g. Sales Manager"
-msgstr ""
+msgstr "t.ex. säljare"

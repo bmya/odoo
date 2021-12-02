@@ -6,12 +6,14 @@ import socket
 from odoo.addons.test_mail.data.test_mail_data import \
     MAIL_TEMPLATE, MAIL_TEMPLATE_PLAINTEXT, MAIL_MULTIPART_MIXED, MAIL_MULTIPART_MIXED_TWO, \
     MAIL_MULTIPART_IMAGE, MAIL_SINGLE_BINARY, MAIL_EML_ATTACHMENT, MAIL_ATTACHMENT_BAD_ENCODING, \
-    MAIL_XHTML
+    MAIL_XHTML, MAIL_TEMPLATE_EXTRA_HTML
 from odoo.addons.test_mail.tests.common import BaseFunctionalTest, MockEmails
 from odoo.addons.test_mail.tests.common import mail_new_test_user
+from odoo.tests import tagged
 from odoo.tools import mute_logger, formataddr
 
 
+@tagged('mail_gateway')
 class TestEmailParsing(BaseFunctionalTest, MockEmails):
 
     @mute_logger('odoo.addons.mail.models.mail_thread')
@@ -51,6 +53,7 @@ class TestEmailParsing(BaseFunctionalTest, MockEmails):
         self.assertEqual(res['attachments'][0][0], 'thetruth.pdf')
 
 
+@tagged('mail_gateway')
 class TestMailgateway(BaseFunctionalTest, MockEmails):
 
     @classmethod
@@ -172,6 +175,24 @@ class TestMailgateway(BaseFunctionalTest, MockEmails):
     # --------------------------------------------------
     # Alias configuration
     # --------------------------------------------------
+
+    @mute_logger('odoo.addons.mail.models.mail_thread', 'odoo.addons.mail.models.mail_mail', 'odoo.models.unlink')
+    def test_message_process_alias_bounce_message_to(self):
+        """ Check bounce message contains the bouncing alias, not a generic "to" """
+        self.alias.write({'alias_contact': 'partners'})
+        bounce_message_with_alias = "The following email sent to %s cannot be accepted because this is a private email address." % self.alias.display_name.lower()
+
+        # Bounce is To
+        self.format_and_process(MAIL_TEMPLATE, to='groups@example.com', cc='other@gmail.com', subject='Should Bounce')
+        self.assertIn(bounce_message_with_alias, self._mails[0].get('body'))
+
+        # Bounce is CC
+        self.format_and_process(MAIL_TEMPLATE, to='other@gmail.com', cc='groups@example.com', subject='Should Bounce')
+        self.assertIn(bounce_message_with_alias, self._mails[1].get('body'))
+
+        # Bounce is part of To
+        self.format_and_process(MAIL_TEMPLATE, to='other@gmail.com, groups@example.com', subject='Should Bounce')
+        self.assertIn(bounce_message_with_alias, self._mails[1].get('body'))
 
     @mute_logger('odoo.addons.mail.models.mail_thread', 'odoo.models')
     def test_message_process_alias_user_id(self):
@@ -674,3 +695,52 @@ class TestMailgateway(BaseFunctionalTest, MockEmails):
         self.assertEqual(msg_fw.model, 'mail.test.simple')
         self.assertFalse(msg_fw.parent_id)
         self.assertTrue(msg_fw.res_id == new_record.id)
+
+    # --------------------------------------------------
+    # Gateway / Record synchronization
+    # --------------------------------------------------
+
+    @mute_logger('odoo.addons.mail.models.mail_thread', 'odoo.models')
+    def test_gateway_values_base64_image(self):
+        """New record with mail that contains base64 inline image."""
+        target_model = "mail.test.field.type"
+        alias = self.env["mail.alias"].create({
+            "alias_name": "base64-lover",
+            "alias_model_id": self.env["ir.model"]._get(target_model).id,
+            "alias_defaults": "{}",
+            "alias_contact": "everyone",
+        })
+        record = self.format_and_process(
+            MAIL_TEMPLATE_EXTRA_HTML,
+            to='%s@%s' % (alias.alias_name, self.catchall_domain),
+            subject='base64 image to alias',
+            target_model=target_model,
+            extra_html='<img src="data:image/png;base64,iV/+OkI=">',
+        )
+        self.assertEqual(record.type, "first")
+        self.assertEqual(len(record.message_ids[0].attachment_ids), 1)
+        self.assertEqual(record.message_ids[0].attachment_ids[0].name, "image0")
+        self.assertEqual(record.message_ids[0].attachment_ids[0].type, "binary")
+
+    @mute_logger('odoo.addons.mail.models.mail_thread', 'odoo.models')
+    def test_gateway_values_base64_image_walias(self):
+        """New record with mail that contains base64 inline image + default values
+        coming from alias."""
+        target_model = "mail.test.field.type"
+        alias = self.env["mail.alias"].create({
+            "alias_name": "base64-lover",
+            "alias_model_id": self.env["ir.model"]._get(target_model).id,
+            "alias_defaults": "{'type': 'second'}",
+            "alias_contact": "everyone",
+        })
+        record = self.format_and_process(
+            MAIL_TEMPLATE_EXTRA_HTML,
+            to='%s@%s' % (alias.alias_name, self.catchall_domain),
+            subject='base64 image to alias',
+            target_model=target_model,
+            extra_html='<img src="data:image/png;base64,iV/+OkI=">',
+        )
+        self.assertEqual(record.type, "second")
+        self.assertEqual(len(record.message_ids[0].attachment_ids), 1)
+        self.assertEqual(record.message_ids[0].attachment_ids[0].name, "image0")
+        self.assertEqual(record.message_ids[0].attachment_ids[0].type, "binary")

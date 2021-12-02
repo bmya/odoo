@@ -22,6 +22,7 @@
 # Martin Trigaux, 2019
 # efraimbiffi <eab@odoo.com>, 2019
 # Luigia Cimmino Caserta <lcc@odoo.com>, 2019
+# Alex Comba <alex.comba@agilebg.com>, 2021
 # Sergio Zanchetta <primes2h@gmail.com>, 2021
 # 
 msgid ""
@@ -481,12 +482,12 @@ msgstr "Azione da eseguire"
 #. module: mail
 #: model:ir.model,name:mail.model_ir_actions_act_window_view
 msgid "Action Window View"
-msgstr "Vista finestra azione"
+msgstr "Azione visualizzazione finestra"
 
 #. module: mail
 #: model:ir.model.fields,help:mail.field_mail_message_subtype__default
 msgid "Activated by default when subscribing."
-msgstr "Attivati di default dopo l'iscrizione."
+msgstr "Attivato in modo predefinito all'iscrizione."
 
 #. module: mail
 #: model:ir.model.fields,field_description:mail.field_mail_activity_type__active
@@ -1149,7 +1150,7 @@ msgstr "Destinatari messaggio in copia carbone"
 #: model:ir.model.fields,help:mail.field_email_template_preview__email_cc
 #: model:ir.model.fields,help:mail.field_mail_template__email_cc
 msgid "Carbon copy recipients (placeholders may be used here)"
-msgstr "Destinatari in copia carbone (ammessi segnaposto)"
+msgstr "Destinatari in copia carbone (sono ammessi segnaposto)"
 
 #. module: mail
 #: model:ir.model.fields,field_description:mail.field_res_company__catchall
@@ -1753,7 +1754,7 @@ msgstr "Discussioni"
 #. module: mail
 #: model:ir.model,name:mail.model_mail_resend_cancel
 msgid "Dismiss notification for resend by model"
-msgstr ""
+msgstr "Ignoramento notifiche per reinvio per modello"
 
 #. module: mail
 #: model:ir.model.fields,field_description:mail.field_email_template_preview__display_name
@@ -2111,6 +2112,8 @@ msgid ""
 "Error without exception. Probably due do concurrent access update of "
 "notification records. Please see with an administrator."
 msgstr ""
+"Errore senza eccezione. È dovuto probabilmente all'aggiornamento di accesso "
+"simultaneo ai record di notifica. Contattare un amministratore."
 
 #. module: mail
 #: code:addons/mail/models/mail_mail.py:329
@@ -2175,7 +2178,7 @@ msgstr "Estrarre le pagine:&nbsp;"
 #. module: mail
 #: model:ir.model.fields,field_description:mail.field_res_config_settings__fail_counter
 msgid "Fail Mail"
-msgstr "Invio email fallito"
+msgstr "E-mail con errore"
 
 #. module: mail
 #: model_terms:ir.ui.view,arch_db:mail.view_mail_search
@@ -2460,7 +2463,7 @@ msgstr "Gestire tramite Odoo"
 #. module: mail
 #: model:ir.model.fields,field_description:mail.field_mail_resend_message__has_cancel
 msgid "Has Cancel"
-msgstr "Ha cancellato"
+msgstr "Ha annullato"
 
 #. module: mail
 #: model_terms:ir.ui.view,arch_db:mail.view_message_search
@@ -2555,7 +2558,7 @@ msgid ""
 "ID of the parent record holding the alias (example: project holding the task"
 " creation alias)"
 msgstr ""
-"ID del record principale contenente l’alias (esempio: progetto che contiene "
+"ID del record primario contenente l’alias (esempio: progetto che contiene "
 "l’alias di creazione del lavoro)"
 
 #. module: mail
@@ -2653,7 +2656,7 @@ msgid ""
 "If the email address is on the blacklist, the contact won't receive mass "
 "mailing anymore, from any list"
 msgstr ""
-"Se l'indirizzo e-mail è nella lista nera il contatto non sarà più soggetto "
+"Se l'indirizzo e-mail è in lista nera, il contatto non sarà più soggetto "
 "all'invio massivo di e-mail, da nessuna lista."
 
 #. module: mail
@@ -4097,6 +4100,7 @@ msgstr "In linea"
 #, python-format
 msgid "Only administrators are allowed to export mail message"
 msgstr ""
+"L'esportazione dei messaggi di posta è consentita solo agli amministratori"
 
 #. module: mail
 #: code:addons/mail/models/mail_message.py:1043
@@ -4292,7 +4296,7 @@ msgstr "Messaggio principale"
 #: model:ir.model.fields,field_description:mail.field_mail_alias_mixin__alias_parent_model_id
 #: model:ir.model.fields,field_description:mail.field_mail_channel__alias_parent_model_id
 msgid "Parent Model"
-msgstr "Modello principale"
+msgstr "Modello primario"
 
 #. module: mail
 #: model:ir.model.fields,field_description:mail.field_mail_alias__alias_parent_thread_id
@@ -5971,6 +5975,8 @@ msgid ""
 "View \"mail.mail_channel_send_guidelines\" was not found. No email has been "
 "sent. Please contact an administrator to fix this issue."
 msgstr ""
+"Vista \"mail.mail_channel_send_guidelines\" non trovata, non è stata inviata"
+" alcuna e-mail. Per risolvere il problema contattare un amministratore."
 
 #. module: mail
 #: code:addons/mail/models/mail_thread.py:752
@@ -6154,6 +6160,13 @@ msgstr "Sei in una conversazione privata con  <b>@%s</b>."
 #, python-format
 msgid "You are in channel <b>#%s</b>."
 msgstr "Sei nel canale <b>#%s</b>."
+
+#. module: mail
+#. openerp-web
+#: code:addons/mail/static/src/js/attachment_box.js:132
+#, python-format
+msgid "You are not allowed to upload an attachment here."
+msgstr ""
 
 #. module: mail
 #. openerp-web
@@ -6663,7 +6676,7 @@ msgstr "senza nome"
 #. module: mail
 #: model_terms:ir.ui.view,arch_db:mail.message_notification_email
 msgid "using"
-msgstr ""
+msgstr "usando"
 
 #. module: mail
 #: selection:mail.activity.type,delay_unit:0
