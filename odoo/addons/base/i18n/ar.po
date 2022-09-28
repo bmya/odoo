@@ -557,6 +557,9 @@ msgid ""
 "            Bridge Sign functionalities with the Rental application\n"
 "        "
 msgstr ""
+"\n"
+"            وظائف وسيطة للتوقيع مع تطبيق التأجير\n"
+"        "
 
 #. module: base
 #: model:ir.module.module,description:base.module_helpdesk_timesheet
@@ -8714,6 +8717,8 @@ msgid ""
 "<code>log(message, level='info')</code>:logging function to record debug "
 "information in <code>ir.logging</code> table"
 msgstr ""
+"<code>log(message, level='info')</code>:logging function to record debug "
+"information in <code>ir.logging</code> table"
 
 #. module: base
 #: model_terms:ir.ui.view,arch_db:base.view_server_action_form
@@ -9567,7 +9572,7 @@ msgstr "استخراج فاتورة الحساب"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_account_invoice_extract_purchase
 msgid "Account Invoice Extract Purchase"
-msgstr ""
+msgstr "استخراج فاتورة الحساب للمشتريات "
 
 #. module: base
 #: model:ir.model.fields,field_description:base.field_res_company__account_no
@@ -9941,7 +9946,7 @@ msgstr "إضافة معلومات UTM لأمر المبيعات في المرا�
 #. module: base
 #: model:ir.module.module,summary:base.module_sale_product_matrix
 msgid "Add variants to Sales Order through a grid entry."
-msgstr ""
+msgstr "أضف المتغيرات لأوامر البيع من خلال قيد الشبكة. "
 
 #. module: base
 #: model_terms:ir.ui.view,arch_db:base.contact
@@ -11188,7 +11193,7 @@ msgstr "الأساس: التفريغ التلقائي للبيانات الدا�
 #. module: base
 #: model:ir.module.module,summary:base.module_web_grid
 msgid "Basic 2D Grid view for odoo"
-msgstr ""
+msgstr "نافذة عرض شبكة بسيطة ثنائية الأبعاد لأودو "
 
 #. module: base
 #: model:ir.module.module,summary:base.module_web_cohort
@@ -13620,7 +13625,7 @@ msgid ""
 "\n"
 "    name, partner_id.name"
 msgstr ""
-"تبعيات طريقة الاحتساب؛ قائمة بأسماء حقول مفصولة بقائيمة، مثل\n"
+"تبعيات طريقة الاحتساب؛ قائمة بأسماء حقول مفصولة بفواصل، مثل\n"
 "\n"
 "    الاسم، partner_id.name "
 
@@ -17397,7 +17402,7 @@ msgstr "اسم كائن غير صالح %r في تعريف الإجراء."
 #: code:addons/base/models/ir_actions.py:611
 #, python-format
 msgid "many2many fields cannot be evaluated by reference"
-msgstr ""
+msgstr "لا يمكن تقييم حقول متعدد إلى متعدد عن طريق المرجع "
 
 #. module: base
 #: code:addons/template_inheritance.py:0
@@ -17700,7 +17705,7 @@ msgstr "كيريباتي"
 #. module: base
 #: model:ir.module.module,summary:base.module_website_helpdesk_forum
 msgid "Knowledge base for helpdesk based on Odoo Forum"
-msgstr "قاعدة المعرفة لمكتب المساعدة الموجودة في منتدى أودو "
+msgstr "قاعدة المعرفة لمكتب المساعدة المبنية على منتدى أودو "
 
 #. module: base
 #: model:ir.module.module,description:base.module_l10n_si
@@ -19275,7 +19280,7 @@ msgstr "مستندات مفقودة"
 #: code:addons/models.py:0
 #, python-format
 msgid "Missing required value for the field '%s'"
-msgstr ""
+msgstr "توجد قيمة مطلوبة غير موجودة في الحقل '%s' "
 
 #. module: base
 #: code:addons/models.py:0
@@ -19287,7 +19292,7 @@ msgstr "قيمة مطلوبة مفقودة للحقل '%s' (%s)"
 #: code:addons/base/models/ir_ui_view.py:0
 #, python-format
 msgid "Missing view architecture."
-msgstr ""
+msgstr "Missing view architecture."
 
 #. module: base
 #: model:res.partner.title,name:base.res_partner_title_mister
@@ -19352,7 +19357,7 @@ msgstr "الوصول للكائن"
 #. module: base
 #: model:ir.model,name:base.model_ir_model_constraint
 msgid "Model Constraint"
-msgstr ""
+msgstr "قيود النموذج "
 
 #. module: base
 #: model:ir.actions.act_window,name:base.action_model_constraint
@@ -19478,7 +19483,7 @@ msgstr "اسم الموديول"
 #. module: base
 #: model:ir.model,name:base.model_report_base_report_irmodulereference
 msgid "Module Reference Report (base)"
-msgstr ""
+msgstr "التقرير المرجعي للتطبيق (الأساس) "
 
 #. module: base
 #: model:ir.model,name:base.model_base_module_uninstall
@@ -19559,12 +19564,12 @@ msgstr "منغوليا"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_l10n_mn
 msgid "Mongolia - Accounting"
-msgstr ""
+msgstr "Mongolia - Accounting"
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_l10n_mn_reports
 msgid "Mongolia - Accounting Reports"
-msgstr ""
+msgstr "Mongolia - Accounting Reports"
 
 #. module: base
 #: model:res.country,name:base.me
@@ -19587,7 +19592,7 @@ msgstr "مونتسيرات"
 #: model_terms:ir.ui.view,arch_db:base.view_users_form
 #: model_terms:ir.ui.view,arch_db:base.view_users_form_simple_modif
 msgid "More languages"
-msgstr ""
+msgstr "المزيد من اللغات "
 
 #. module: base
 #: model:res.country,name:base.ma
@@ -19643,17 +19648,17 @@ msgstr "ميانمار"
 #. module: base
 #: model:res.partner.industry,full_name:base.res_partner_industry_N
 msgid "N ADMINISTRATIVE AND SUPPORT SERVICE ACTIVITIES"
-msgstr ""
+msgstr "N الأنشطة الإدارية وخدمات الدعم "
 
 #. module: base
 #: model:res.country,vat_label:base.co model:res.country,vat_label:base.gt
 msgid "NIT"
-msgstr ""
+msgstr "NIT"
 
 #. module: base
 #: model:res.country,vat_label:base.id
 msgid "NPWP"
-msgstr ""
+msgstr "NPWP"
 
 #. module: base
 #: model:ir.model.fields,field_description:base.field_base_partner_merge_automatic_wizard__group_by_name
@@ -19847,13 +19852,13 @@ msgstr "لا توجد فجوة"
 #: code:addons/base/models/ir_model.py:0
 #, python-format
 msgid "No group currently allows this operation."
-msgstr ""
+msgstr "لا توجد مجموعة تسمح بهذه العملية حالياً. "
 
 #. module: base
 #: code:addons/fields.py:0
 #, python-format
 msgid "No inverse field %r found for %r"
-msgstr ""
+msgstr "No inverse field %r found for %r"
 
 #. module: base
 #: code:addons/base/wizard/base_update_translations.py:0
@@ -19884,7 +19889,7 @@ msgstr ""
 #. module: base
 #: model_terms:ir.actions.act_window,help:base.open_module_tree
 msgid "No module found!"
-msgstr ""
+msgstr "لم يتم العثور على تطبيق! "
 
 #. module: base
 #: model:ir.model.fields,field_description:base.field_ir_actions_act_window__view_ids
@@ -19900,13 +19905,13 @@ msgstr "لا يمكن تحديثه"
 #: code:addons/base/models/ir_model.py:0
 #, python-format
 msgid "Non-relational field %r in dependency %r"
-msgstr ""
+msgstr "Non-relational field %r in dependency %r"
 
 #. module: base
 #: code:addons/base/models/ir_model.py:0
 #, python-format
 msgid "Non-relational field name '%s' in related field '%s'"
-msgstr ""
+msgstr "Non-relational field name '%s' in related field '%s'"
 
 #. module: base
 #: model:ir.module.module,description:base.module_test_testing_utilities
@@ -19917,6 +19922,11 @@ msgid ""
 "supposed to do\n"
 "    "
 msgstr ""
+"قد تتطلب أدوات الاختبار غير البسيطة وجود نماذج وما إلى ذلك\n"
+"    \n"
+"يمكنك الاستفادة من هذا التطبيق لتأكيد أن تلك الأدوات تقوم بالوظائف التي \n"
+"من المفترض أن تقوم بها\n"
+"    "
 
 #. module: base
 #: model:ir.model.fields.selection,name:base.selection__ir_mail_server__smtp_encryption__none
@@ -19957,7 +19967,7 @@ msgstr "النرويج - المحاسبة"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_l10n_no_saft
 msgid "Norwegian Standard Audit File for Tax"
-msgstr ""
+msgstr "Norwegian Standard Audit File for Tax"
 
 #. module: base
 #: model:ir.model.fields.selection,name:base.selection__ir_module_module__state__uninstalled
@@ -19982,7 +19992,7 @@ msgstr "لا توجد صلاحيات وصول كافية للمعرف الخار
 #: code:addons/base/models/ir_rule.py:0
 #, python-format
 msgid "Note: this might be a multi-company issue."
-msgstr ""
+msgstr "ملاحظة: قد تكون هذه المشكلة في عدة شركات. "
 
 #. module: base
 #: model:ir.model.fields,field_description:base.field_res_partner__comment
@@ -20011,12 +20021,12 @@ msgstr "عدد المؤسسات"
 #. module: base
 #: model:ir.model.fields,help:base.field_res_users__accesses_count
 msgid "Number of access rights that apply to the current user"
-msgstr ""
+msgstr "عدد صلاحيات الوصول التي تنطبق على المستخدم الحالي "
 
 #. module: base
 #: model:ir.model.fields,help:base.field_res_users__groups_count
 msgid "Number of groups that apply to the current user"
-msgstr ""
+msgstr "عدد المجموعات التي تنطبق على المستخدم الحالي "
 
 #. module: base
 #: model:ir.model.fields,field_description:base.field_base_module_update__added
@@ -20031,12 +20041,12 @@ msgstr "عدد الموديولات المحدثة"
 #. module: base
 #: model:ir.model.fields,help:base.field_res_users__rules_count
 msgid "Number of record rules that apply to the current user"
-msgstr ""
+msgstr "عدد قواعد السجل التي تنطبق على المستخدم الحالي "
 
 #. module: base
 #: model:res.partner.industry,full_name:base.res_partner_industry_O
 msgid "O PUBLIC ADMINISTRATION AND DEFENCE;COMPULSORY SOCIAL SECURITY"
-msgstr ""
+msgstr "O الإدارة العامة والدفاع؛ ضمان اجتماعي إلزامي "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_auth_oauth
@@ -20286,7 +20296,7 @@ msgstr ""
 #. module: base
 #: model:ir.model.fields.selection,name:base.selection__ir_module_module__license__oeel-1
 msgid "Odoo Enterprise Edition License v1.0"
-msgstr ""
+msgstr "رخصة إصدار أودو للمؤسسات V1.0 "
 
 #. module: base
 #: model:ir.model.fields,field_description:base.field_ir_module_module__to_buy
@@ -20626,12 +20636,12 @@ msgstr "تقارير التوطين المكسيكي لأودو"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_l10n_mx_reports_closing
 msgid "Odoo Mexican Localization Reports for Closing"
-msgstr ""
+msgstr "Odoo Mexican Localization Reports for Closing"
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_l10n_mx_edi_landing
 msgid "Odoo Mexico Localization for Stock/Landing"
-msgstr ""
+msgstr "Odoo Mexico Localization for Stock/Landing"
 
 #. module: base
 #: model:ir.module.module,summary:base.module_web_mobile
@@ -20818,7 +20828,7 @@ msgstr ""
 #. module: base
 #: model:ir.model.fields.selection,name:base.selection__ir_module_module__license__opl-1
 msgid "Odoo Proprietary License v1.0"
-msgstr ""
+msgstr "رخصة ملكية أودو V1.0 "
 
 #. module: base
 #: model:ir.module.module,description:base.module_purchase
@@ -21194,6 +21204,10 @@ msgid ""
 "\n"
 "Please exclude them from the selection to continue. It's possible to still retrieve those PDFs by selecting each of the affected records individually, which will avoid merging."
 msgstr ""
+"لم يتمكن أودو من دمج ملفات PDF المرفقة في السجلات التالية: \n"
+"%s\n"
+"\n"
+"يرجى استثناؤها من الخيارات للاستمرار. من الممكن إرجاع ملفات PDF تلك عن طريق تحديد كل من السجلات المتأثرة على حدة، والذي سيتجنب عملية الدمج. "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_odoo_referral
@@ -21221,7 +21235,7 @@ msgstr "OdooBot"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_im_livechat_mail_bot
 msgid "OdooBot for livechat"
-msgstr ""
+msgstr "OdooBot للدردشة المباشرة "
 
 #. module: base
 #: model:res.partner.category,name:base.res_partner_category_12
@@ -21285,6 +21299,8 @@ msgid ""
 "One or more of the selected modules have already been uninstalled, if you "
 "believe this to be an error, you may try again later or contact support."
 msgstr ""
+"لقد تم إلغاء تثبيت تطبيق واحد أو أكثر من التطبيقات المحددة. إذا كنت تظن أنه "
+"هناك خطأ ما، بوسعك المحاولة مجدداً لاحقاً أو التواصل مع الدعم. "
 
 #. module: base
 #: code:addons/base/models/res_partner.py:0
@@ -21293,6 +21309,8 @@ msgid ""
 "One2Many fields cannot be synchronized as part of `commercial_fields` or "
 "`address fields`"
 msgstr ""
+"لا يمكن مزامنة الحقول من نوع واحد إلى متعدد كجزء من `commercial_fields` و "
+"`address fields` "
 
 #. module: base
 #: model:ir.module.category,name:base.module_category_marketing_online_appointment
@@ -21312,17 +21330,17 @@ msgstr "وظائف إلكترونية"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_website_membership
 msgid "Online Members Directory"
-msgstr ""
+msgstr "دليل الأعضاء عبر الإنترنت"
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_website_form_project
 msgid "Online Task Submission"
-msgstr ""
+msgstr "تسليم المهام عبر الإنترنت "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_website_helpdesk_form
 msgid "Online Ticket Submission"
-msgstr ""
+msgstr "تسليم التذاكر عبر الإنترنت "
 
 #. module: base
 #: code:addons/base/models/res_config.py:0
@@ -21398,7 +21416,7 @@ msgstr "فتح التطبيقات"
 #. module: base
 #: model:ir.model.fields.selection,name:base.selection__res_company__font__open_sans
 msgid "Open Sans"
-msgstr ""
+msgstr "Open Sans"
 
 #. module: base
 #: model:ir.actions.client,name:base.action_client_base_menu
@@ -21420,7 +21438,7 @@ msgstr "افتح نافذةً"
 #: code:addons/base/models/ir_model.py:0 code:addons/models.py:0
 #, python-format
 msgid "Operation:"
-msgstr ""
+msgstr "العملية: "
 
 #. module: base
 #: model:ir.module.category,name:base.module_category_operations
@@ -21523,6 +21541,44 @@ msgid ""
 "\n"
 "You can activate a blog for each event allowing you to communicate on specific events. Visitors can subscribe to news to get informed."
 msgstr ""
+"نظّم الفعاليات والدورات التدريبية وندوات الويب\n"
+"-------------------------------------\n"
+"\n"
+"### قم بالجدولة والترويج والبيع والتنظيم\n"
+"\n"
+"احصل على خصائص إضافية لكل فعالية، بالإضافة إلى الصفحات المتعددة والرعاة والحوارات المتعددة واستمارة مقترحات الحوارات وجدول الأعمال والأخبار المتعلقة بالفعالية والمستندات (الشرائح  أو العروض التقديمية) والقوائم الخاصة بالفعالية.\n"
+"\n"
+"نظّم مساراتك\n"
+"--------------------\n"
+"\n"
+"### من مُقترَح الحوار وحتى النشر\n"
+"\n"
+"قم بإضافة استمارة لمقترحات الحوارات في فعالياتك لتتيح لزائريك إرسال الحوارات والمتحدثين. تمكن من تنظيم عملية تأكيد كل حوار والجدولة بسهولة.\n"
+"\n"
+"تجعل كل من الواجهة الأمامية والواجهة الخلفية الفريدة لأودو من التنظيم مهمة سهلة للغاية. تمكن من تصميم سير ذاتية رائعة للمتحدثين ووصف الحوارات.\n"
+"\n"
+"جدول الأعمال وقائمة الحوارات\n"
+"------------------------\n"
+"\n"
+"### واجهة مستخدم قوية\n"
+"\n"
+"احصل على جدول أعمال مميز لكل فعالية منشورة تلقائياً على موقعك الإلكتروني. أتح لزوارك البحث عن الحوارات وتصفحها بسهولة والتصفية حسب علامات التصنيف أو المواقع أو المتحدثين.\n"
+"\n"
+"إدارة الرعاة\n"
+"---------------\n"
+"\n"
+"### قم ببيع باقات الرعاية والترويج لرعاتك\n"
+"\n"
+"قم بإضافة الرعاة إلى فعالياتك ونشر الرعاة حسب المستوى (مثال: برونزي، فضي، ذهبي) في أسفل كل صفحة من صفحات الفعالية.\n"
+"\n"
+"بع باقات الرعاية عبر الإنترنت من خلال تطبيق التجارة الإلكترونية لدى أودو، لدمج دورة بيع كاملة.\n"
+"\n"
+"تواصل بكفاءة\n"
+"-----------------------\n"
+"\n"
+"### قم بتفعيل مدونة لبعض الفعاليات\n"
+"\n"
+"بإمكانك تفعيل مدونة لكل فعالية، مما يتيح لك التواصل في فعاليات محددة، وبوسع الزوار أيضاً الاشتراك في النشرة الإخبارية ليكونوا على دراية بكافة التحديثات."
 
 #. module: base
 #: model:ir.module.module,description:base.module_website_event
@@ -21673,7 +21729,7 @@ msgstr "العملة الأصلية"
 #. module: base
 #: model:ir.model.fields.selection,name:base.selection__res_company__font__oswald
 msgid "Oswald"
-msgstr ""
+msgstr "Oswald"
 
 #. module: base
 #: code:addons/base/models/res_users.py:0
@@ -21685,7 +21741,7 @@ msgstr "غير ذلك"
 #. module: base
 #: model:ir.model.fields.selection,name:base.selection__res_partner__type__other
 msgid "Other Address"
-msgstr ""
+msgstr "عنوان آخر "
 
 #. module: base
 #: model:ir.module.category,name:base.module_category_extra
@@ -21695,7 +21751,7 @@ msgstr "صلاحيات أخرى إضافية"
 #. module: base
 #: model:ir.model.fields.selection,name:base.selection__ir_module_module__license__other_osi_approved_licence
 msgid "Other OSI Approved License"
-msgstr ""
+msgstr "رخصة OSI معتمدة أخرى "
 
 #. module: base
 #: model:ir.actions.act_window,name:base.action_partner_other_form
@@ -21718,6 +21774,8 @@ msgid ""
 "Other features are accessible through <code>self</code>, like\n"
 "                                                <code>self.env</code>, etc."
 msgstr ""
+"يمكنك الوصول إلى الخصائص الأخرى من خلال <code>self</code>، مثل\n"
+"                                                <code>self.env</code>، إلخ. "
 
 #. module: base
 #: model_terms:ir.ui.view,arch_db:base.view_model_fields_form
@@ -21725,6 +21783,8 @@ msgid ""
 "Other features are accessible through <code>self</code>, like\n"
 "                                    <code>self.env</code>, etc."
 msgstr ""
+"يمكنك الوصول إلى الخصائص الأخرى من خلال <code>self</code>، مثل\n"
+"                                    <code>self.env</code>، إلخ. "
 
 #. module: base
 #: model_terms:ir.ui.view,arch_db:base.view_ir_mail_server_search
@@ -21765,12 +21825,12 @@ msgstr "المالك"
 #. module: base
 #: model:res.partner.industry,full_name:base.res_partner_industry_P
 msgid "P EDUCATION"
-msgstr ""
+msgstr "P التعليم "
 
 #. module: base
 #: model:ir.module.module,summary:base.module_l10n_pe
 msgid "PCGE Simplified"
-msgstr ""
+msgstr "PCGE بشكل مبسط "
 
 #. module: base
 #: model:ir.model.fields.selection,name:base.selection__ir_actions_report__report_type__qweb-pdf
@@ -21800,12 +21860,12 @@ msgstr "POEdit"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_pos_adyen
 msgid "POS Adyen"
-msgstr ""
+msgstr "نقطة بيع Adyen "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_pos_six
 msgid "POS Six"
-msgstr ""
+msgstr "نقطة البيع Six "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_pad_project
@@ -21972,7 +22032,7 @@ msgstr "ألقاب الشريك"
 #. module: base
 #: model:ir.model.fields,field_description:base.field_res_users__active_partner
 msgid "Partner is Active"
-msgstr "الشريط نشط"
+msgstr "الشريك نشط "
 
 #. module: base
 #: model:ir.module.module,summary:base.module_website_partner
@@ -21983,7 +22043,7 @@ msgstr "موديول الشريك للموقع"
 #: model:ir.model.fields,field_description:base.field_res_partner__same_vat_partner_id
 #: model:ir.model.fields,field_description:base.field_res_users__same_vat_partner_id
 msgid "Partner with same Tax ID"
-msgstr ""
+msgstr "شريك لديه نفس المعرف الضريبي "
 
 #. module: base
 #: model:ir.model.fields,help:base.field_res_users__partner_id
@@ -22034,12 +22094,12 @@ msgstr "مسار"
 #: code:addons/base/models/ir_qweb_fields.py:0
 #, python-format
 msgid "Pattern to format"
-msgstr ""
+msgstr "Pattern to format"
 
 #. module: base
 #: model:ir.module.module,summary:base.module_hr_payroll_account_sepa
 msgid "Pay your employees with SEPA payment."
-msgstr ""
+msgstr "الدفع للموظفين باستخدام دفع SEPA. "
 
 #. module: base
 #: model:ir.module.category,name:base.module_category_accounting_payment
@@ -22069,7 +22129,7 @@ msgstr "تطبيق معالج سداد Adyen"
 #. module: base
 #: model:ir.module.module,summary:base.module_payment_alipay
 msgid "Payment Acquirer: Alipay Implementation"
-msgstr ""
+msgstr "بوابة الدفع: تطبيق نظام Alipay "
 
 #. module: base
 #: model:ir.module.module,summary:base.module_payment_authorize
@@ -22094,7 +22154,7 @@ msgstr "تطبيق معالج سداد Paypal"
 #. module: base
 #: model:ir.module.module,summary:base.module_payment_payulatam
 msgid "Payment Acquirer: PayuLatam Implementation"
-msgstr ""
+msgstr "بوابة الدفع: تطبيق نظام PayuLatam "
 
 #. module: base
 #: model:ir.module.module,summary:base.module_payment_payumoney
@@ -22104,7 +22164,7 @@ msgstr "تطبيق معالج سداد PayuMoney"
 #. module: base
 #: model:ir.module.module,summary:base.module_payment_sepa_direct_debit
 msgid "Payment Acquirer: Sepa Direct Debit"
-msgstr ""
+msgstr "بوابة الدفع: خصم sepa المباشر "
 
 #. module: base
 #: model:ir.module.module,summary:base.module_payment_stripe
@@ -22129,7 +22189,7 @@ msgstr "شروط السداد"
 #. module: base
 #: model:ir.module.module,summary:base.module_website_payment
 msgid "Payment integration with website"
-msgstr ""
+msgstr "دمج الدفع مع الموقع الإلكتروني "
 
 #. module: base
 #: model:ir.module.module,description:base.module_payment_paypal
@@ -22151,12 +22211,12 @@ msgstr "محاسبة الرواتب"
 #. module: base
 #: model:ir.module.category,name:base.module_category_payroll_localization
 msgid "Payroll Localization"
-msgstr ""
+msgstr "أقلمة كشوف المرتبات "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_payment_payulatam
 msgid "PayuLatam Payment Acquirer"
-msgstr ""
+msgstr "بوابة دفع PayuLatam "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_payment_payumoney
@@ -22166,7 +22226,7 @@ msgstr "معالج سداد PayuMoney"
 #. module: base
 #: model:ir.module.module,description:base.module_payment_payulatam
 msgid "Payulatam payment acquirer"
-msgstr ""
+msgstr "بوابة دفع Payulatam "
 
 #. module: base
 #: model:res.country,name:base.pe
@@ -22205,7 +22265,7 @@ msgstr "الهاتف:"
 #. module: base
 #: model:res.country,name:base.pn
 msgid "Pitcairn Islands"
-msgstr ""
+msgstr "جزر بيتكيرن "
 
 #. module: base
 #: model:ir.model.fields.selection,name:base.selection__ir_actions_act_window_view__view_mode__pivot
@@ -22237,6 +22297,8 @@ msgid ""
 "Please configure an email on the current user to simulate sending an email "
 "message via this outgoing server"
 msgstr ""
+"يرجى تهيئة بريد إلكتروني للمستخدم الحالي لمحاكاة عملية إرسال بريد إلكتروني "
+"عبر خادم الصادر هذا "
 
 #. module: base
 #: model_terms:ir.ui.view,arch_db:base.demo_force_install_form
@@ -22262,17 +22324,18 @@ msgid ""
 "Please note that modifications will be applied for all users of the "
 "specified group"
 msgstr ""
+"يرجى العلم بأنه سيتم تطبيق التعديلات على كافة مستخدمي المجموعة المحددة"
 
 #. module: base
 #: model_terms:ir.ui.view,arch_db:base.view_server_action_form
 msgid "Please set the Model to Create before choosing values"
-msgstr ""
+msgstr "يرجى تعيين النموذج لـ \"إنشاء\" قبل اختيار القيم "
 
 #. module: base
 #: code:addons/base/models/ir_model.py:0
 #, python-format
 msgid "Please specify a valid model for the object relation"
-msgstr ""
+msgstr "يرجى تحديد نموذج صالح لعلاقة الكائن "
 
 #. module: base
 #: code:addons/base/models/res_users.py:0
@@ -22312,7 +22375,7 @@ msgstr "إعادة طباعة إيصال نقطة البيع"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_pos_enterprise
 msgid "Point of Sale enterprise"
-msgstr ""
+msgstr "نقطة البيع للمؤسسات "
 
 #. module: base
 #: model:res.country,name:base.pl
@@ -22366,7 +22429,7 @@ msgstr ""
 #. module: base
 #: model:ir.model.fields,help:base.field_ir_model_constraint__definition
 msgid "PostgreSQL constraint definition"
-msgstr ""
+msgstr "PostgreSQL constraint definition"
 
 #. module: base
 #: model:ir.model.fields,help:base.field_ir_model_constraint__name
@@ -22381,7 +22444,7 @@ msgstr "PostgreSQL table name implementing a many2many relation."
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_account_predictive_bills
 msgid "Predictive vendor bill data"
-msgstr ""
+msgstr "بيانات فاتورة المورّد التوقعية "
 
 #. module: base
 #: model_terms:ir.ui.view,arch_db:base.view_users_form
@@ -22427,7 +22490,7 @@ msgstr "معاينة مصدر ملف pdf"
 #: code:addons/base/models/ir_ui_view.py:0
 #, python-format
 msgid "Previous Arch"
-msgstr ""
+msgstr "Previous Arch"
 
 #. module: base
 #: model:ir.model.fields,field_description:base.field_ir_ui_view__arch_prev
@@ -22440,6 +22503,8 @@ msgid ""
 "Previous time the cron ran successfully, provided to the job through the "
 "context on the `lastcall` key"
 msgstr ""
+"المرة السابقة التي عمل فيها cron بشكل صحيح، مقدَّم للوظيفة من خلال السياق في"
+" مفتاح `lastcall` "
 
 #. module: base
 #: model_terms:ir.ui.view,arch_db:base.view_currency_form
@@ -22502,7 +22567,7 @@ msgstr "نموذج العنوان الخاص"
 #: code:addons/models.py:0
 #, python-format
 msgid "Private methods (such as %s) cannot be called remotely."
-msgstr ""
+msgstr "الطرق الخاصة (مثل %s) لا يمكن استدعاؤها عن بعد. "
 
 #. module: base
 #: model_terms:res.partner,website_description:base.res_partner_10
@@ -22532,7 +22597,7 @@ msgstr "إدارة دورة حياة المنتج"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_product_matrix
 msgid "Product Matrix"
-msgstr ""
+msgstr "مصفوفة المنتج "
 
 #. module: base
 #: model:ir.module.category,name:base.module_category_productivity
@@ -22583,7 +22648,7 @@ msgstr "المشروع"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_project_enterprise
 msgid "Project Enterprise"
-msgstr ""
+msgstr "مشاريع المؤسسات "
 
 #. module: base
 #: model:ir.module.module,description:base.module_project
@@ -22672,27 +22737,27 @@ msgstr "المشروع، ومكتب المساعدة، وسجل النشاط، �
 #. module: base
 #: model:ir.module.module,summary:base.module_helpdesk_account
 msgid "Project, Tasks, Account"
-msgstr ""
+msgstr "المشروع، المهام، الحساب "
 
 #. module: base
 #: model:ir.module.module,summary:base.module_helpdesk_sale
 msgid "Project, Tasks, After Sales"
-msgstr ""
+msgstr "المشروع، والمهام، وما بعد المبيعات "
 
 #. module: base
 #: model:ir.module.module,summary:base.module_helpdesk_repair
 msgid "Project, Tasks, Repair"
-msgstr ""
+msgstr "المشروع، المهام، التصليح "
 
 #. module: base
 #: model:ir.module.module,summary:base.module_helpdesk_sale_coupon
 msgid "Project, Tasks, Sale Coupon"
-msgstr ""
+msgstr "المشروع، والمهام، وكوبونات البيع "
 
 #. module: base
 #: model:ir.module.module,summary:base.module_helpdesk_stock
 msgid "Project, Tasks, Stock"
-msgstr ""
+msgstr "المشروع، والمهام، والبضاعة الموجودة في المخزون "
 
 #. module: base
 #: model:ir.module.module,summary:base.module_helpdesk_timesheet
@@ -22774,6 +22839,7 @@ msgstr "نشر دليل أعضائك"
 #: model:ir.module.module,summary:base.module_website_crm_partner_assign
 msgid "Publish your resellers/partners and forward leads to them"
 msgstr ""
+"قم بالنشر عن الباعة الوسطاء/الشركاء وقم بتوجيه العملاء المهتمين إليهم "
 
 #. module: base
 #: model:ir.model.fields,field_description:base.field_ir_module_module__published_version
@@ -22800,7 +22866,7 @@ msgstr "اتفاقيات الشراء"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_purchase_product_matrix
 msgid "Purchase Matrix"
-msgstr ""
+msgstr "مصفوفة المشتريات "
 
 #. module: base
 #: model:ir.module.module,summary:base.module_purchase_stock
@@ -22810,12 +22876,12 @@ msgstr "أوامر الشراء، والإيصالات، وفواتير المو
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_purchase_requisition_stock
 msgid "Purchase Requisition Stock"
-msgstr ""
+msgstr "مخزون طلبات الشراء "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_purchase_stock
 msgid "Purchase Stock"
-msgstr ""
+msgstr "مخزون المشتريات "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_purchase_mrp
@@ -22825,12 +22891,12 @@ msgstr "إدارة الشراء والإنتاج"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_purchase_enterprise
 msgid "Purchase enterprise"
-msgstr ""
+msgstr "المشتريات للمؤسسات "
 
 #. module: base
 #: model:ir.module.module,summary:base.module_purchase
 msgid "Purchase orders, tenders and agreements"
-msgstr ""
+msgstr "أوامر الشراء، والمناقصات، والاتفاقيات "
 
 #. module: base
 #: model:ir.model.fields,field_description:base.field_ir_actions_server__code
@@ -22847,7 +22913,7 @@ msgstr "تعبير لغة بايثون"
 #. module: base
 #: model:res.partner.industry,full_name:base.res_partner_industry_Q
 msgid "Q HUMAN HEALTH AND SOCIAL WORK ACTIVITIES"
-msgstr ""
+msgstr "Q صحة الأفراد والأنشطة الاجتماعية "
 
 #. module: base
 #: model:ir.model.fields.selection,name:base.selection__ir_ui_view__type__qweb
@@ -22868,7 +22934,7 @@ msgstr "قطر"
 #. module: base
 #: model:ir.module.module,summary:base.module_website_helpdesk_form
 msgid "Qualify helpdesk queries with a website form"
-msgstr ""
+msgstr "قم بتأهيل استفسارات مكتب المساعدة باستخدام استمارة الموقع الإلكتروني "
 
 #. module: base
 #: model:ir.module.category,name:base.module_category_manufacturing_quality
@@ -22890,7 +22956,7 @@ msgstr "التحكم في الجودة من خلال نظام تخطيط متط�
 #. module: base
 #: model:ir.module.module,summary:base.module_quality_mrp_workorder_iot
 msgid "Quality Management with MRP and IoT"
-msgstr ""
+msgstr "إدارة الجودة مع تخطيط متطلبات المواد وجهاز IoT "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_quality_iot
@@ -22900,7 +22966,7 @@ msgstr "خطوات الجودة مع إنترنت الأشياء"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_quality_control_iot
 msgid "Quality checks with IoT"
-msgstr ""
+msgstr "فحوصات الجودة مح جهاز IoT "
 
 #. module: base
 #: model:ir.module.module,summary:base.module_quality_iot
@@ -22927,7 +22993,7 @@ msgstr "مكوّن عرض السعر"
 #: model:ir.module.module,summary:base.module_sale_expense
 #: model:ir.module.module,summary:base.module_sale_stock
 msgid "Quotation, Sales Orders, Delivery & Invoicing Control"
-msgstr ""
+msgstr "مراقبة عروض الأسعار وأوامر البيع والتوصيل والفوترة "
 
 #. module: base
 #: model:ir.model,name:base.model_ir_qweb
@@ -22972,7 +23038,7 @@ msgstr "قيمة عشرية لحقل Qweb"
 #. module: base
 #: model:ir.model,name:base.model_ir_qweb_field_float_time
 msgid "Qweb Field Float Time"
-msgstr ""
+msgstr "Qweb Field Float Time"
 
 #. module: base
 #: model:ir.model,name:base.model_ir_qweb_field_html
@@ -23035,22 +23101,22 @@ msgstr ""
 #. module: base
 #: model:res.partner.industry,full_name:base.res_partner_industry_R
 msgid "R ARTS, ENTERTAINMENT AND RECREATION"
-msgstr ""
+msgstr "R الفن، الترفيه، والإنشاء "
 
 #. module: base
 #: model:res.country,vat_label:base.mx
 msgid "RFC"
-msgstr ""
+msgstr "طلب تعليقات (RFC) "
 
 #. module: base
 #: model:res.country,vat_label:base.do
 msgid "RNC"
-msgstr ""
+msgstr "RNC "
 
 #. module: base
 #: model:ir.model.fields.selection,name:base.selection__res_company__font__raleway
 msgid "Raleway"
-msgstr ""
+msgstr "Raleway "
 
 #. module: base
 #: model:ir.model.fields,field_description:base.field_res_currency_rate__rate
@@ -23124,6 +23190,8 @@ msgid ""
 "Record cannot be modified right now: This cron task is currently being "
 "executed and may not be modified Please try again in a few minutes"
 msgstr ""
+"لا يمكن تعديل السجل الآن: يتم تنفيذ مهمة cron هذه الآن ولا يمكن تعديلها. "
+"يرجى المحاولة مجدداً بعد دقائق "
 
 #. module: base
 #: code:addons/fields.py:0
@@ -23151,13 +23219,13 @@ msgstr "التوظيف"
 #. module: base
 #: model:ir.module.module,summary:base.module_documents_hr_recruitment
 msgid "Recruitment resumés and letters from documents"
-msgstr ""
+msgstr "السير الذاتية ورسائل التوظيف من المستندات "
 
 #. module: base
 #: code:addons/models.py:0
 #, python-format
 msgid "Recursion Detected."
-msgstr ""
+msgstr "Recursion Detected."
 
 #. module: base
 #: code:addons/base/models/ir_module.py:0
@@ -23221,7 +23289,7 @@ msgstr "الحقل المرتبط"
 #: code:addons/base/models/ir_model.py:0
 #, python-format
 msgid "Related field '%s' does not have comodel '%s'"
-msgstr ""
+msgstr "ليس للحقل ذي الصلة '%s' نموذج مساعد '%s' "
 
 #. module: base
 #: code:addons/base/models/ir_model.py:0
@@ -23237,7 +23305,7 @@ msgstr "حقل العلاقة"
 #. module: base
 #: model:ir.model,name:base.model_ir_model_relation
 msgid "Relation Model"
-msgstr ""
+msgstr "نموذج العلاقة "
 
 #. module: base
 #: model:ir.model.fields,field_description:base.field_ir_model_relation__name
@@ -23267,12 +23335,12 @@ msgstr "إزالة"
 #. module: base
 #: model_terms:ir.ui.view,arch_db:base.view_server_action_form
 msgid "Remove 'More' top-menu contextual action related to this action"
-msgstr ""
+msgstr "إزالة إجراء القائمة العليا 'المزيد' السياقي المتعلق بهذا الإجراء "
 
 #. module: base
 #: model_terms:ir.ui.view,arch_db:base.onboarding_container
 msgid "Remove Configuration Tips"
-msgstr ""
+msgstr "إزالة تلميحات التهيئة "
 
 #. module: base
 #: model_terms:ir.ui.view,arch_db:base.view_server_action_form
@@ -23297,12 +23365,12 @@ msgstr "تأجير "
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_sale_stock_renting
 msgid "Rental Stock Management"
-msgstr ""
+msgstr "إدارة مخزون التأجير "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_sale_renting_sign
 msgid "Rental/Sign Bridge"
-msgstr ""
+msgstr "وسيط التأجير/التوقيع الإلكتروني "
 
 #. module: base
 #: model:ir.module.module,summary:base.module_repair
@@ -23413,33 +23481,33 @@ msgstr "الوكلاء"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_partner_commission
 msgid "Resellers Commissions For Subscription"
-msgstr ""
+msgstr "عمولة الباعة الوسطاء للاشتراك "
 
 #. module: base
 #: model:ir.model.fields,field_description:base.field_reset_view_arch_wizard__reset_mode
 msgid "Reset Mode"
-msgstr ""
+msgstr "إعادة تعيين الوضع "
 
 #. module: base
 #: model_terms:ir.ui.view,arch_db:base.reset_view_arch_wizard_view
 msgid "Reset View"
-msgstr ""
+msgstr "إعادة تعيين العرض "
 
 #. module: base
 #: model:ir.actions.act_window,name:base.reset_view_arch_wizard_action
 #: model_terms:ir.ui.view,arch_db:base.reset_view_arch_wizard_view
 msgid "Reset View Architecture"
-msgstr ""
+msgstr "إعادة تعيين بنية العرض "
 
 #. module: base
 #: model:ir.model,name:base.model_reset_view_arch_wizard
 msgid "Reset View Architecture Wizard"
-msgstr ""
+msgstr "معالج إعادة تعيين بنية العرض "
 
 #. module: base
 #: model:ir.model.fields.selection,name:base.selection__reset_view_arch_wizard__reset_mode__hard
 msgid "Reset to file version (hard reset)."
-msgstr ""
+msgstr "إعادة تعيين إلى نسخة الملف (إعادة الضبط حسب إعدادات المصنع). "
 
 #. module: base
 #: model_terms:ir.ui.view,arch_db:base.view_base_document_layout
@@ -23522,7 +23590,7 @@ msgstr ""
 #. module: base
 #: model:ir.model.fields.selection,name:base.selection__res_company__font__roboto
 msgid "Roboto"
-msgstr ""
+msgstr "Roboto"
 
 #. module: base
 #: model:res.country,name:base.ro
@@ -23611,12 +23679,12 @@ msgstr "رواندا"
 #. module: base
 #: model:res.country,name:base.re
 msgid "Réunion"
-msgstr ""
+msgstr "ريونيون "
 
 #. module: base
 #: model:res.partner.industry,full_name:base.res_partner_industry_S
 msgid "S OTHER SERVICE ACTIVITIES"
-msgstr ""
+msgstr "S أنشطة الخدمات الأخرى "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_account_sepa
@@ -23631,7 +23699,7 @@ msgstr "خصم SEPA المباشر"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_hr_payroll_account_sepa
 msgid "SEPA Payments for Payroll"
-msgstr ""
+msgstr "مدفوعات SEPA لكشوف المرتبات "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_mass_mailing_sms
@@ -23641,7 +23709,7 @@ msgstr "التسويق عبر الرسائل النصية القصيرة "
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_marketing_automation_sms
 msgid "SMS Marketing in Marketing Automation"
-msgstr ""
+msgstr "التسويق عبر الرسائل النصية القصيرة في أتمتة التسويق "
 
 #. module: base
 #: model:ir.module.module,summary:base.module_sms
@@ -23656,12 +23724,12 @@ msgstr "بوابة الرسائل النصية القصيرة"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_crm_sms
 msgid "SMS in CRM"
-msgstr ""
+msgstr "الرسائل النصية القصيرة في إدارة علاقات العملاء "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_event_sms
 msgid "SMS on Events"
-msgstr ""
+msgstr "الرسائل النصية القصيرة في الفعاليات "
 
 #. module: base
 #: model:ir.model.fields,field_description:base.field_ir_mail_server__smtp_port
@@ -23696,7 +23764,7 @@ msgstr "سانت بارتيليمي"
 #. module: base
 #: model:res.country,name:base.sh
 msgid "Saint Helena, Ascension and Tristan da Cunha"
-msgstr ""
+msgstr "Saint Helena, Ascension and Tristan da Cunha"
 
 #. module: base
 #: model:res.country,name:base.kn
@@ -23721,7 +23789,7 @@ msgstr "سان بيار وميكلون"
 #. module: base
 #: model:res.country,name:base.vc
 msgid "Saint Vincent and the Grenadines"
-msgstr ""
+msgstr "Saint Vincent and the Grenadines"
 
 #. module: base
 #: model:ir.module.module,summary:base.module_hr_contract_salary
@@ -23751,7 +23819,7 @@ msgstr "الشروط التجارية للبيع"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_sale_product_matrix
 msgid "Sale Matrix"
-msgstr ""
+msgstr "مصفوفة البيع "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_sale_product_configurator
@@ -23761,7 +23829,7 @@ msgstr "مهيئ منتج المبيعات"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_sale_purchase
 msgid "Sale Purchase"
-msgstr ""
+msgstr "مشتريات البيع "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_sale_subscription_dashboard
@@ -23771,17 +23839,17 @@ msgstr "لوحة معلومات اشتراك البيع"
 #. module: base
 #: model:ir.module.module,summary:base.module_sale_purchase
 msgid "Sale based on service outsourcing."
-msgstr ""
+msgstr "البيع بناءً على الاستعانة بمصادر خارجية للخدمات. "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_sale_enterprise
 msgid "Sale enterprise"
-msgstr ""
+msgstr "البيع للمؤسسات "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_social_sale
 msgid "Sale statistics on social"
-msgstr ""
+msgstr "إحصائيات البيع على المواقع الاجتماعية  "
 
 #. module: base
 #: model:ir.module.category,name:base.module_category_sales
@@ -23796,12 +23864,12 @@ msgstr "المبيعات"
 #. module: base
 #: model_terms:ir.ui.view,arch_db:base.view_partner_form
 msgid "Sales & Purchase"
-msgstr ""
+msgstr "المبيعات والمشتريات "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_sale_expense
 msgid "Sales Expense"
-msgstr "مصاريف المبيعات"
+msgstr "نفقات المبيعات "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_sales_team
@@ -23832,12 +23900,12 @@ msgstr "إدارة المبيعات والتصنيع"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_sale_stock
 msgid "Sales and Warehouse Management"
-msgstr "إدارة المبيعات والمخازن"
+msgstr "إدارة المبيعات والمستودعات "
 
 #. module: base
 #: model:ir.module.module,summary:base.module_sale
 msgid "Sales internal machinery"
-msgstr ""
+msgstr "الآلات الداخلية للمبيعات "
 
 #. module: base
 #: model:ir.model.fields,field_description:base.field_res_partner__user_id
@@ -23891,12 +23959,12 @@ msgstr "حفظ كبادئة مرفقات"
 #. module: base
 #: model:ir.module.module,summary:base.module_barcodes
 msgid "Scan and Parse Barcodes"
-msgstr ""
+msgstr "قم بمسح وتحليل الباركودات "
 
 #. module: base
 #: model:ir.module.module,description:base.module_event_sms
 msgid "Schedule SMS in event management"
-msgstr ""
+msgstr "قم بجدولة الرسائل النصية القصيرة في إدارة الفعاليات "
 
 #. module: base
 #: model:ir.module.module,summary:base.module_mrp_maintenance
@@ -23906,7 +23974,7 @@ msgstr "جدولة وإدارة مواعيد صيانة الآلات والأد�
 #. module: base
 #: model:ir.module.module,summary:base.module_industry_fsm
 msgid "Schedule and track onsite operations, invoice time and material"
-msgstr ""
+msgstr "قم بجدولة وتتبع العمليات في موقع العمل، وتمكن من فوترة الوقت والمواد "
 
 #. module: base
 #: model:ir.module.module,summary:base.module_website_calendar
@@ -23916,12 +23984,12 @@ msgstr "جدولة مواعيد مع العملاء"
 #. module: base
 #: model:ir.module.module,summary:base.module_calendar
 msgid "Schedule employees' meetings"
-msgstr ""
+msgstr "جدوِل اجتماعات الموظفين "
 
 #. module: base
 #: model:ir.module.module,summary:base.module_project_timesheet_holidays
 msgid "Schedule timesheet when on time off"
-msgstr ""
+msgstr "جدوِل الجداول الزمنية عندمتا تكون في إجازة "
 
 #. module: base
 #: model:ir.model.fields.selection,name:base.selection__ir_actions_server__usage__ir_cron
@@ -23942,7 +24010,7 @@ msgstr "الإجراءات المعدة للتنفيذ"
 #. module: base
 #: model:ir.model.fields,field_description:base.field_ir_cron__user_id
 msgid "Scheduler User"
-msgstr ""
+msgstr "المستخدم المُجدوِل "
 
 #. module: base
 #: model:res.partner.industry,name:base.res_partner_industry_M
@@ -23963,7 +24031,7 @@ msgstr "إجراءات البحث"
 #. module: base
 #: model_terms:ir.ui.view,arch_db:base.res_bank_view_search
 msgid "Search Bank"
-msgstr ""
+msgstr "البحث عن بنك "
 
 #. module: base
 #: model_terms:ir.ui.view,arch_db:base.view_res_partner_filter
@@ -23973,12 +24041,12 @@ msgstr "بحث الشركاء"
 #. module: base
 #: model_terms:ir.ui.view,arch_db:base.res_partner_category_view_search
 msgid "Search Partner Category"
-msgstr ""
+msgstr "فئة البحث عن شريك "
 
 #. module: base
 #: model_terms:ir.ui.view,arch_db:base.res_partner_industry_view_search
 msgid "Search Partner Industry"
-msgstr ""
+msgstr "البحث عن مجال عمل الشريك "
 
 #. module: base
 #: model:ir.model.fields,field_description:base.field_ir_actions_act_window__search_view
@@ -24094,12 +24162,12 @@ msgstr "خيارات الاختيار"
 #. module: base
 #: model:ir.model.fields,field_description:base.field_ir_model_fields__selection
 msgid "Selection Options (Deprecated)"
-msgstr ""
+msgstr "خيارات الاختيار (مهمل) "
 
 #. module: base
 #: model:ir.model.constraint,message:base.constraint_ir_model_fields_selection_selection_field_uniq
 msgid "Selections values must be unique per field"
-msgstr ""
+msgstr "يجب أن تكون قيم الاختيار فريدة لكل حقل "
 
 #. module: base
 #: model:ir.model.fields,field_description:base.field_res_partner__self
@@ -24110,7 +24178,7 @@ msgstr "نفس"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_website_sale_slides
 msgid "Sell Courses"
-msgstr ""
+msgstr "بيع الدورات "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_helpdesk_sale_timesheet
@@ -24135,38 +24203,39 @@ msgstr "بيع تذاكر الفعالية أونلاين"
 #. module: base
 #: model:ir.module.module,summary:base.module_website_sale_slides
 msgid "Sell your courses online"
-msgstr ""
+msgstr "بع دوراتك عبر الإنترنت "
 
 #. module: base
 #: model:ir.module.module,description:base.module_website_sale_slides
 msgid "Sell your courses using the e-commerce features of the website."
-msgstr ""
+msgstr "قم ببيع دوراتك باستخدام خصائص التجارة الإلكترونية للموقع الإلكتروني. "
 
 #. module: base
 #: model:ir.module.module,summary:base.module_website_sale
 msgid "Sell your products online"
-msgstr "بيع منتجاتك أونلاين"
+msgstr "بع منتجاتك عبر الإنترنت "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_website_sms
 msgid "Send SMS to Visitor"
-msgstr ""
+msgstr "إرسال رسالة نصية قصيرة إلى الزائر "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_website_crm_sms
 msgid "Send SMS to Visitor with leads"
-msgstr ""
+msgstr "إرسال رسالة نصية قصيرة إلى الزائر مع معلومات العميل المهتم "
 
 #. module: base
 #: model:ir.module.module,summary:base.module_sign
 msgid "Send documents to sign online and handle filled copies"
 msgstr ""
+"أرسل المستندات ليتم التوقيع عليها عبر الإنترنت ومعالجة النسخ التي تم ملؤها "
 
 #. module: base
 #: model:ir.module.module,description:base.module_social_push_notifications
 #: model:ir.module.module,summary:base.module_social_push_notifications
 msgid "Send live notifications to your web visitors"
-msgstr ""
+msgstr "أرسل الإشعارات المباشرة إلى زائريك عبر الويب "
 
 #. module: base
 #: model:ir.module.module,description:base.module_calendar_sms
@@ -24178,7 +24247,7 @@ msgstr "إرسال رسائل نصية للتذكير بالفعاليات"
 #: model:ir.module.module,description:base.module_stock_sms
 #: model:ir.module.module,summary:base.module_stock_sms
 msgid "Send text messages when final stock move"
-msgstr ""
+msgstr "أرسل رسائل نصية عند حركة المخزون الأخيرة "
 
 #. module: base
 #: model:ir.module.module,description:base.module_delivery_easypost
@@ -24214,7 +24283,7 @@ msgstr "السنغال"
 #: model:ir.module.module,description:base.module_payment_sepa_direct_debit
 #: model:ir.module.module,shortdesc:base.module_payment_sepa_direct_debit
 msgid "Sepa Direct Debit Payment Acquirer"
-msgstr ""
+msgstr "محصل دفع خصم SEPA المباشر "
 
 #. module: base
 #: model:ir.model.fields,field_description:base.field_res_lang__grouping
@@ -24225,7 +24294,7 @@ msgstr "تنسيق الفاصل"
 #: code:addons/base/models/ir_qweb_fields.py:0
 #, python-format
 msgid "Separator use to split the address from the display_name."
-msgstr ""
+msgstr "فاصل يستخدم لفصل العناوين من display_name. "
 
 #. module: base
 #: model:ir.model,name:base.model_ir_sequence
@@ -24254,7 +24323,7 @@ msgstr "رمز التسلسل"
 #. module: base
 #: model:ir.model,name:base.model_ir_sequence_date_range
 msgid "Sequence Date Range"
-msgstr ""
+msgstr "نطاق تاريخ التسلسل "
 
 #. module: base
 #: model:ir.model.fields,field_description:base.field_ir_sequence__padding
@@ -24340,7 +24409,7 @@ msgstr "ضبط بيانات مؤسستك"
 #. module: base
 #: model_terms:ir.ui.view,arch_db:base.onboarding_company_step
 msgid "Set your company's data for documents header/footer."
-msgstr "ضبط بيانات مؤسستك لاستخدامها في رأس وتذييل المستندات."
+msgstr "قم بضبط بيانات شركتك لاستخدامها في ترويسة وتذييل المستندات. "
 
 #. module: base
 #: model:ir.model.fields,help:base.field_ir_actions_act_url__binding_model_id
@@ -24486,7 +24555,7 @@ msgstr "لا يمكن أن يكون حجم الحقل قيمة سالبة."
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_hr_skills_survey
 msgid "Skills Certification"
-msgstr ""
+msgstr "شهادة المهارات "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_hr_skills
@@ -24496,7 +24565,7 @@ msgstr "إدارة المهارات"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_hr_skills_slides
 msgid "Skills e-learning"
-msgstr ""
+msgstr "التعلم الإلكتروني للمهارات "
 
 #. module: base
 #: model_terms:ir.ui.view,arch_db:base.res_config_installer
@@ -24531,7 +24600,7 @@ msgstr "البريد العادي"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_snailmail_account_followup
 msgid "Snail Mail Follow-Up"
-msgstr ""
+msgstr "المتابعة عن طريق البريد العادي "
 
 #. module: base
 #: model:ir.module.category,name:base.module_category_marketing_social
@@ -24542,12 +24611,12 @@ msgstr "التواصل الاجتماعي "
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_social_facebook
 msgid "Social Facebook"
-msgstr ""
+msgstr "تطبيق Facebook الاجتماعي "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_social_linkedin
 msgid "Social LinkedIn"
-msgstr ""
+msgstr "تطبيق LinkedIn الاجتماعي "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_social
@@ -24562,17 +24631,17 @@ msgstr "مواقع التواصل الاجتماعي"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_social_push_notifications
 msgid "Social Push Notifications"
-msgstr ""
+msgstr "الإشعارات المنبثقة الاجتماعية "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_social_twitter
 msgid "Social Twitter"
-msgstr ""
+msgstr "تطبيق Twitter الاجتماعي "
 
 #. module: base
 #: model:ir.module.module,summary:base.module_social_media
 msgid "Social media connectors for company settings."
-msgstr ""
+msgstr "موصلي التواصل الاجتماعي لإعدادات الشركة. "
 
 #. module: base
 #: model:res.country,name:base.sb
@@ -24594,7 +24663,7 @@ msgstr "يُسمى أحيانًا BIC أو Swift."
 #: code:addons/base/models/ir_attachment.py:0
 #, python-format
 msgid "Sorry, the syntax 'name:agg(field)' is not available for attachments"
-msgstr ""
+msgstr "Sorry, the syntax 'name:agg(field)' is not available for attachments"
 
 #. module: base
 #: code:addons/base/models/ir_model.py:0
@@ -24645,7 +24714,7 @@ msgstr ""
 #: code:addons/base/models/ir_attachment.py:0
 #, python-format
 msgid "Sorry, you must provide fields to read on attachments"
-msgstr ""
+msgstr "عذراً، عليك تقديم حقول لقراءتها في المرفقات "
 
 #. module: base
 #: model:ir.model.fields,field_description:base.field_ir_filters__sort
@@ -24670,7 +24739,7 @@ msgstr "جنوب إفريقيا"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_l10n_za
 msgid "South Africa - Accounting"
-msgstr ""
+msgstr "South Africa - Accounting    "
 
 #. module: base
 #: model:res.country.group,name:base.south_america
@@ -24748,7 +24817,7 @@ msgstr "قياسي"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_account_saft
 msgid "Standard Audit File for Tax Base module"
-msgstr ""
+msgstr "ملف تدقيق قياسي لتطبيق الضرائب الأساسي "
 
 #. module: base
 #: model_terms:ir.ui.view,arch_db:base.view_base_module_upgrade_install
@@ -24824,7 +24893,7 @@ msgstr "يجب ألا تكون الخطوة صفر."
 #. module: base
 #: model:ir.module.module,summary:base.module_mrp_workorder_iot
 msgid "Steps in MRP work orders with IoT devices"
-msgstr ""
+msgstr "الخطوات في أوامر عمل تخطيط متطلبات المواد مع أجهزة IoT "
 
 #. module: base
 #: model:ir.module.module,summary:base.module_note_pad
@@ -24834,7 +24903,7 @@ msgstr "Sticky memos, Collaborative"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_stock_sms
 msgid "Stock - SMS"
-msgstr ""
+msgstr "المخزون - الرسائل النصية القصيرة "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_stock_barcode_mobile
@@ -24854,22 +24923,22 @@ msgstr "الشروط التجارية للمخزون"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_stock_account_enterprise
 msgid "Stock account enterprise"
-msgstr ""
+msgstr "حساب المخزون للمؤسسات "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_stock_enterprise
 msgid "Stock enterprise"
-msgstr ""
+msgstr "المخزون للمؤسسات "
 
 #. module: base
 #: model:ir.module.module,summary:base.module_documents_hr_contract
 msgid "Store employee contracts in the Document app"
-msgstr ""
+msgstr "قم بتخزين عقود الموظفين في تطبيق المستندات "
 
 #. module: base
 #: model:ir.module.module,summary:base.module_documents_hr_payroll
 msgid "Store employee payslips in the Document app"
-msgstr ""
+msgstr "قم بتخزين إيصالات دفع الموظفين في تطبيق المستندات "
 
 #. module: base
 #: model:ir.module.module,summary:base.module_documents_hr_holidays
@@ -24932,7 +25001,7 @@ msgstr "معالج سداد Stripe"
 #. module: base
 #: model:ir.model.fields.selection,name:base.selection__ir_translation__type__model_terms
 msgid "Structured Model Field"
-msgstr ""
+msgstr "حقل النموذج المنظم "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_web_studio
@@ -24942,12 +25011,12 @@ msgstr "الاستوديو"
 #. module: base
 #: model:ir.module.module,summary:base.module_mrp_subcontracting
 msgid "Subcontract Productions"
-msgstr ""
+msgstr "التعاقد من الباطن بشأن الإنتاج "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_mrp_subcontracting_account
 msgid "Subcontracting Management with Stock Valuation"
-msgstr ""
+msgstr "إدارة التعاقد من الباطن بتقييم المخزون "
 
 #. module: base
 #: model_terms:ir.ui.view,arch_db:base.edit_menu_access
@@ -25039,7 +25108,7 @@ msgstr "استطلاعات"
 #. module: base
 #: model:res.country,name:base.sj
 msgid "Svalbard and Jan Mayen"
-msgstr ""
+msgstr "Svalbard and Jan Mayen"
 
 #. module: base
 #: model:res.country,name:base.sz
@@ -25054,7 +25123,7 @@ msgstr "السويد"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_l10n_se_reports
 msgid "Sweden - Accounting Reports"
-msgstr ""
+msgstr "Sweden - Accounting Reports"
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_l10n_se_ocr
@@ -25135,6 +25204,8 @@ msgid ""
 "T ACTIVITIES OF HOUSEHOLDS AS EMPLOYERS;UNDIFFERENTIATED GOODS- AND "
 "SERVICES-PRODUCING ACTIVITIES OF HOUSEHOLDS FOR OWN USE"
 msgstr ""
+"T الأنشطة المنزلية للموظِّفين؛ البضائع غير المتمايزة- والأنشطة المنتجة "
+"للخدمات للمنازل للاستخدام الشخصي "
 
 #. module: base
 #: model:ir.model.fields.selection,name:base.selection__base_language_export__format__tgz
@@ -25144,7 +25215,7 @@ msgstr "ملف TGZ"
 #. module: base
 #: model_terms:ir.ui.view,arch_db:base.wizard_lang_export
 msgid "TGZ format: bundles multiple PO(T) files as a single archive"
-msgstr ""
+msgstr "صيغة TGZ: يجمع عدة ملفات PO(T) كأرشيف واحد "
 
 #. module: base
 #: model:ir.model.fields.selection,name:base.selection__ir_mail_server__smtp_encryption__starttls
@@ -25219,12 +25290,12 @@ msgstr "معرف الضريبة"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_website_sale_taxcloud_delivery
 msgid "TaxCloud and Delivery - Ecommerce"
-msgstr ""
+msgstr "TaxCloud والتوصيل - التجارة الإلكترونية "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_sale_subscription_taxcloud
 msgid "TaxCloud and Subscriptions"
-msgstr ""
+msgstr "TaxCloudوالاشتراكات "
 
 #. module: base
 #: model:ir.module.module,summary:base.module_account_taxcloud
@@ -25277,18 +25348,18 @@ msgstr "اسم القالب"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_test_new_api
 msgid "Test API"
-msgstr "اختبار API"
+msgstr "اختبار الواجهة البرمجية للتطبيق "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_test_action_bindings
 msgid "Test Action Bindings"
-msgstr ""
+msgstr "Test Action Bindings"
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_test_l10n_be_hr_payroll_account
 #: model:ir.module.module,summary:base.module_test_l10n_be_hr_payroll_account
 msgid "Test Belgian Payroll"
-msgstr ""
+msgstr "Test Belgian Payroll"
 
 #. module: base
 #: model_terms:ir.ui.view,arch_db:base.ir_mail_server_form
@@ -25298,17 +25369,17 @@ msgstr "اختبار اتصال"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_test_website_slides_full
 msgid "Test Full eLearning Flow"
-msgstr ""
+msgstr "اختبار سير عمل التعلم الإلكتروني الكامل "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_test_main_flows
 msgid "Test Main Flow"
-msgstr ""
+msgstr "اختبار سير العمل الرئيسي "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_payment_test
 msgid "Test Payment Acquirer"
-msgstr ""
+msgstr "اختبار بوابة الدفع "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_test_performance
@@ -25318,7 +25389,7 @@ msgstr "اختبار الأداء"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_test_rpc
 msgid "Test RPC"
-msgstr ""
+msgstr "اختبار نداء الإجراء البعيد (RPC) "
 
 #. module: base
 #: model:ir.module.module,summary:base.module_test_marketing_automation
@@ -25328,7 +25399,7 @@ msgstr ""
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_test_testing_utilities
 msgid "Test testing utilities"
-msgstr ""
+msgstr "اختبار أدوات الاختبار "
 
 #. module: base
 #: model:ir.module.module,description:base.module_test_access_rights
@@ -25371,7 +25442,7 @@ msgstr "تايلاند - المحاسبة"
 #: code:addons/base/models/res_users.py:0
 #, python-format
 msgid "The \"App Switcher\" action cannot be selected as home action."
-msgstr ""
+msgstr "لا يمكن تحديد إجراء \"تبديل التطبيقات\" كإجراء الصفحة الرئيسية. "
 
 #. module: base
 #: model:ir.model.fields,help:base.field_res_country__code
@@ -25404,7 +25475,7 @@ msgstr ""
 #. module: base
 #: model:ir.model.fields,help:base.field_res_lang__url_code
 msgid "The Lang Code displayed in the URL"
-msgstr ""
+msgstr "كود اللغة معروض في رابط URL "
 
 #. module: base
 #: model:ir.model.fields,help:base.field_res_lang__grouping
@@ -25414,6 +25485,10 @@ msgid ""
 " 1,06,500; [1,2,-1] will represent it to be 106,50,0;[3] will represent it "
 "as 106,500. Provided ',' as the thousand separator in each case."
 msgstr ""
+"The Separator Format should be like [,n] where 0 < n :starting from Unit "
+"digit. -1 will end the separation. e.g. [3,2,-1] will represent 106500 to be"
+" 1,06,500; [1,2,-1] will represent it to be 106,50,0;[3] will represent it "
+"as 106,500. Provided ',' as the thousand separator in each case."
 
 #. module: base
 #: code:addons/base/models/res_lang.py:0
@@ -25424,6 +25499,10 @@ msgid ""
 " 1,06,500;[1,2,-1] will represent it to be 106,50,0;[3] will represent it as"
 " 106,500. Provided as the thousand separator in each case."
 msgstr ""
+"The Separator Format should be like [,n] where 0 < n :starting from Unit "
+"digit. -1 will end the separation. e.g. [3,2,-1] will represent 106500 to be"
+" 1,06,500;[1,2,-1] will represent it to be 106,50,0;[3] will represent it as"
+" 106,500. Provided as the thousand separator in each case."
 
 #. module: base
 #: model:ir.model.fields,help:base.field_res_company__vat
@@ -25439,7 +25518,7 @@ msgstr ""
 #. module: base
 #: model:ir.model.constraint,message:base.constraint_res_lang_url_code_uniq
 msgid "The URL code of the language must be unique !"
-msgstr ""
+msgstr "يجب أن يكون كود URL الخاص باللغة فريداً! "
 
 #. module: base
 #: code:addons/base/models/ir_module.py:0
@@ -25503,6 +25582,7 @@ msgid ""
 "The corresponding related field, if any. This must be a dot-separated list "
 "of field names."
 msgstr ""
+"الحقل المقابل ذو الصلة، إن وجد. يجب أن تكون قائمة أسماء حقول مفصولة بنقاط. "
 
 #. module: base
 #: model:ir.model.constraint,message:base.constraint_res_currency_unique_name
@@ -25527,7 +25607,7 @@ msgstr "الشركة الافتراضية لهذا المستخدم. "
 #. module: base
 #: model_terms:ir.ui.view,arch_db:base.demo_failures_dialog
 msgid "The demonstration data of"
-msgstr ""
+msgstr "بيانات التوضيح لـ"
 
 #. module: base
 #: code:addons/base/models/ir_model.py:0
@@ -25570,6 +25650,11 @@ msgid ""
 "                                                fields accessible through other relational fields, for instance\n"
 "                                                <code>partner_id.company_id.name</code>."
 msgstr ""
+"الحقل <strong>التبعيات</strong> يحتوي على قائمة الحقول التي\n"
+"                                                يعتمد عليها الحقل الحالي. إنها قائمة مفصولة بفواصل\n"
+"                                                لأسماء الحقول، مثل، <code>الاسم، الحجم</code>. يمكنك أيضاً الإشارة إلى\n"
+"                                                الحقول التي يمكن الوصول إليها من خلال الحقول العلائقية، مثلاً\n"
+"                                                <code>partner_id.company_id.name</code>. "
 
 #. module: base
 #: model_terms:ir.ui.view,arch_db:base.view_model_fields_form
@@ -25580,6 +25665,11 @@ msgid ""
 "                                    fields accessible through other relational fields, for instance\n"
 "                                    <code>partner_id.company_id.name</code>."
 msgstr ""
+"الحقل <strong>التبعيات</strong> يحتوي على قائمة الحقول التي\n"
+"                                     يعتمد عليها الحقل الحالي. إنها قائمة مفصولة بفواصل\n"
+"                                     لأسماء الحقول، مثل، <code>الاسم، الحجم</code>. يمكنك أيضاً الإشارة إلى\n"
+"                                     الحقول التي يمكن الوصول إليها من خلال الحقول العلائقية، مثلاً\n"
+"                                     <code>partner_id.company_id.name</code>. "
 
 #. module: base
 #: model_terms:ir.ui.view,arch_db:base.view_base_module_uninstall
@@ -25612,7 +25702,7 @@ msgstr "المستخدم الداخلي مسئول عن هذا العقد."
 #: code:addons/base/models/res_country.py:106
 #, python-format
 msgid "The layout contains an invalid format key"
-msgstr ""
+msgstr "يحتوي المخطط على مفتاح تنسيق غير صالح "
 
 #. module: base
 #: model:ir.model.fields,help:base.field_ir_model__inherited_model_ids
@@ -25626,6 +25716,8 @@ msgid ""
 "The m2o field %s is required but declares its ondelete policy as being 'set "
 "null'. Only 'restrict' and 'cascade' make sense."
 msgstr ""
+"The m2o field %s is required but declares its ondelete policy as being 'set "
+"null'. Only 'restrict' and 'cascade' make sense."
 
 #. module: base
 #: model:ir.model.fields,help:base.field_ir_filters__action_id
@@ -25711,7 +25803,7 @@ msgstr "القيم المعرفة مسبقًا الوحيدة هي"
 #: code:addons/model.py:0
 #, python-format
 msgid "The operation cannot be completed:"
-msgstr ""
+msgstr "تعذر إكمال العملية: "
 
 #. module: base
 #: model:ir.model.fields,help:base.field_ir_model_fields__domain
@@ -25729,6 +25821,8 @@ msgid ""
 "The path to the main report file (depending on Report Type) or empty if the "
 "content is in another field"
 msgstr ""
+"المسار إلى ملف التقرير الرئيسي (بناءً على نوع التقرير) أو يكون فارغاً إذا "
+"كان المحتوى في حقل آخر "
 
 #. module: base
 #: model:ir.model.fields,help:base.field_ir_cron__priority
@@ -25760,6 +25854,9 @@ msgid ""
 "\n"
 "Can not separate file to save as attachment because the report's template does not contains the attributes 'data-oe-model' and 'data-oe-id' on the div with 'article' classname."
 msgstr ""
+"قالب التقرير '%s' غير صحيح. يرجى التواصل مع مديرك. \n"
+"\n"
+"لا يمكن فصل الملف لحفظ المرفق لأن قالب التقرير لا يحتوي على الخواص 'data-oe-model' و 'data-oe-id' مع اسم الفئة 'article'. "
 
 #. module: base
 #: code:addons/base/models/ir_rule.py:0
@@ -25783,6 +25880,13 @@ msgid ""
 "Fields:\n"
 "%(fields_list)s"
 msgstr ""
+"لا يمكن إكمال العملية المطلوبة جراء التقييدات الأمنية.\n"
+"\n"
+"نوع المستند: %(document_kind)s (%(document_model)s)\n"
+"العملية: %(operation)s\n"
+"المستخدم: %(user)s\n"
+"الحقول:\n"
+"%(fields_list)s"
 
 #. module: base
 #: code:addons/base/models/ir_rule.py:0
@@ -25811,20 +25915,20 @@ msgstr ""
 #, python-format
 msgid ""
 "The server refused the sender address (%(email_from)s) with error %(repl)s"
-msgstr ""
+msgstr "لقد رفض الخادم عنوان المرسل (%(email_from)s) مع الخطأ %(repl)s "
 
 #. module: base
 #: code:addons/base/models/ir_mail_server.py:0
 #, python-format
 msgid "The server refused the test connection with error %(repl)s"
-msgstr ""
+msgstr "لقد رفض الخادم الاتصال التجريبي مع الخطأ %(repl)s "
 
 #. module: base
 #: code:addons/base/models/ir_mail_server.py:0
 #, python-format
 msgid ""
 "The server refused the test recipient (%(email_to)s) with error %(repl)s"
-msgstr ""
+msgstr "قام الخادم برفض المستلم التجريبي (%(email_to)s) مع الخطأ %(repl)s "
 
 #. module: base
 #: model:ir.model.fields,help:base.field_res_country_state__code
@@ -25835,7 +25939,7 @@ msgstr "كود الولاية."
 #: code:addons/base/models/ir_model.py:0
 #, python-format
 msgid "The table %r if used for other, possibly incompatible fields."
-msgstr ""
+msgstr "الجدول %r إذا كان مستخدَماً لحقول أخرى غير متوافقة. "
 
 #. module: base
 #: model:ir.model.fields,help:base.field_ir_model_fields__model
@@ -25850,12 +25954,15 @@ msgid ""
 "browser PDF means the report will be rendered using Wkhtmltopdf and "
 "downloaded by the user."
 msgstr ""
+"نوع التقرير الذي سيتم تكوينه، وسيكون لكل واحد منهم طريقة تكوين خاصة. HTML "
+"تعني أنه سوف يتم فتح التقرير مباشرة في متصفحك، بينما PDF تعني أنه سيتم تكوين"
+" التقرير باستخدام Wkhtmltopdf ثم تنزيله بواسطة المستخدم. "
 
 #. module: base
 #: code:addons/base/models/res_users.py:0
 #, python-format
 msgid "The user cannot have more than one user types."
-msgstr ""
+msgstr "لا يمكن أن يكون للمستخدم أكثر من نوع مستخدم واحد. "
 
 #. module: base
 #: model:ir.model.fields,help:base.field_ir_filters__user_id
@@ -25872,13 +25979,13 @@ msgstr ""
 msgid ""
 "The value for the field '%s' already exists (this is probably '%s' in the "
 "current model)."
-msgstr ""
+msgstr "قيمة الحقل '%s' موجودة بالفعل (إنها غالباً '%s' في النموذج الحالي). "
 
 #. module: base
 #: code:addons/base/models/ir_qweb_fields.py:0
 #, python-format
 msgid "The value send to monetary field is not a number."
-msgstr ""
+msgstr "القيمة المرسلة إلى الحقل المالي ليست رقماً. "
 
 #. module: base
 #: code:addons/models.py:0
@@ -25886,7 +25993,7 @@ msgstr ""
 msgid ""
 "The values for the fields '%s' already exist (they are probably '%s' in the "
 "current model)."
-msgstr ""
+msgstr "قيم الحقل '%s' موجودة بالفعل (إنها غالباً '%s' في النموذج الحالي). "
 
 #. module: base
 #: model:ir.module.category,name:base.module_category_theme
@@ -25898,12 +26005,12 @@ msgstr "السمة/القالب"
 #: model:ir.ui.menu,name:base.menu_theme_store
 #: model:ir.ui.menu,name:base.theme_store
 msgid "Theme Store"
-msgstr ""
+msgstr "متجر السمات "
 
 #. module: base
 #: model_terms:ir.ui.view,arch_db:base.base_partner_merge_automatic_wizard_form
 msgid "There are no more contacts to merge for this request"
-msgstr ""
+msgstr "لا توجد المزيد من جهات الاتصال لدمجها في هذا الطلب "
 
 #. module: base
 #: code:addons/base/models/ir_filters.py:0
@@ -25919,7 +26026,7 @@ msgstr ""
 #: model:ir.actions.act_url,name:base.action_third_party
 #: model:ir.ui.menu,name:base.menu_third_party
 msgid "Third-Party Apps"
-msgstr ""
+msgstr "تطبيقات الطرف الثالث "
 
 #. module: base
 #: model:ir.model.fields,help:base.field_res_lang__iso_code
@@ -25942,6 +26049,7 @@ msgstr "يحتوي هذا العمود على بيانات موديول ولا �
 msgid ""
 "This field holds the image used to display a favicon for a given company."
 msgstr ""
+"يحتوي هذا الحقل على الصورة المستخدمة لعرض الأيقونة المفضلة لشركة محددة. "
 
 #. module: base
 #: model:ir.model.fields,help:base.field_ir_ui_view__arch_base
@@ -25982,7 +26090,7 @@ msgstr ""
 msgid ""
 "This file could not be decoded as an image file. Please try with a different"
 " file."
-msgstr ""
+msgstr "تعذر فك تشفير هذا الملف كملف صورة. يرجى المحاولة مع ملف آخر. "
 
 #. module: base
 #: model_terms:ir.ui.view,arch_db:base.wizard_lang_export
@@ -26034,6 +26142,9 @@ msgid ""
 "\n"
 "Updated for Odoo 9 by Bringsvor Consulting AS <www.bringsvor.com>\n"
 msgstr ""
+"This is the module to manage the accounting chart for Norway in Odoo.\n"
+"\n"
+"Updated for Odoo 9 by Bringsvor Consulting AS <www.bringsvor.com>\n"
 
 #. module: base
 #: model:ir.module.module,description:base.module_website_hr_recruitment
@@ -26042,6 +26153,8 @@ msgid ""
 "and keep track of application submissions easily. It comes as an add-on of "
 "*Recruitment* app."
 msgstr ""
+"يتيح لك هذا التطبيق نشر وظائفك المتاحة على موقعك الإلكتروني وتتبع طلبات "
+"التقدم للوظائف بكل سهولة. يأتي كوظيفة إضافية لتطبيق *التوظيف*. "
 
 #. module: base
 #: model:ir.module.module,description:base.module_test_mail
@@ -26105,6 +26218,8 @@ msgid ""
 "This module ensures that the taxes are computed on the invoice before a payment is created automatically for a subscription.\n"
 "    "
 msgstr ""
+"يضمن هذا التطبيق أن الضرائب يتم احتسابها في الفاتورة قبل إنشاء عملية الدفع تلقائياً للاشتراك.\n"
+"    "
 
 #. module: base
 #: model:ir.module.module,description:base.module_website_sale_taxcloud_delivery
@@ -26112,13 +26227,15 @@ msgid ""
 "This module ensures that when delivery price is computed online, and taxes are computed with TaxCloud, the tax computation is done correctly on both the order and delivery.\n"
 "    "
 msgstr ""
+"يضمن هذا التطبيق أنه يتم احتساب سعر التوصيل عبر الإنترنت، وأن الضرائب يتم احتسابها عن طريق TaxCloud. يتم احتساب الضرائب بشكل صحيح في كل من الطلب والتوصيل.\n"
+"    "
 
 #. module: base
 #: model:ir.module.module,description:base.module_website_slides_survey
 msgid ""
 "This module lets you use the full power of certifications within your "
 "courses."
-msgstr ""
+msgstr "يتيح لك هذا التطبيق استخدام الإمكانيات القصوى للشهادات في دوراتك. "
 
 #. module: base
 #: model_terms:ir.ui.view,arch_db:base.view_base_module_upgrade
@@ -26220,7 +26337,7 @@ msgstr "Timezone offset"
 #. module: base
 #: model:res.country,name:base.tl
 msgid "Timor-Leste"
-msgstr ""
+msgstr "Timor-Leste"
 
 #. module: base
 #: model:ir.model.fields,field_description:base.field_res_partner__title
@@ -26271,12 +26388,12 @@ msgstr "للترقية"
 #, python-format
 msgid ""
 "To enable it, make sure this directory exists and is writable on the server:"
-msgstr ""
+msgstr "لتمكينه، تأكد من أن هذا الدليل موجود ويمكن كتابته في الخادم: "
 
 #. module: base
 #: model_terms:ir.ui.view,arch_db:base.view_server_action_form
 msgid "To return an action, assign: <code>action = {...}</code>"
-msgstr ""
+msgstr "To return an action, assign: <code>action = {...}</code>"
 
 #. module: base
 #: model_terms:ir.ui.view,arch_db:base.ir_actions_todo_tree
@@ -26333,7 +26450,7 @@ msgstr "جولات"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_mass_mailing_event_track_sms
 msgid "Track Speakers SMS Marketing"
-msgstr ""
+msgstr "تتبع التسويق عبر الرسائل النصية القصيرة للمتحدثين "
 
 #. module: base
 #: model:ir.module.module,summary:base.module_hr_attendance
@@ -26363,7 +26480,7 @@ msgstr "تتبع الترشيحات وإغلاق الفرص"
 #. module: base
 #: model:ir.module.module,summary:base.module_hr_recruitment
 msgid "Track your recruitment pipeline"
-msgstr "تتبع دورة عملية التعيين"
+msgstr "تتبع مخطط سير عمل التوظيف "
 
 #. module: base
 #: model_terms:res.partner,website_description:base.res_partner_10
@@ -26548,7 +26665,7 @@ msgstr "توفالو"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_website_twitter
 msgid "Twitter Snippet"
-msgstr ""
+msgstr "قصاصة Twitter "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_website_twitter_wall
@@ -26558,7 +26675,7 @@ msgstr "حائط تويتر"
 #. module: base
 #: model:ir.module.module,summary:base.module_website_twitter
 msgid "Twitter scroller snippet in website"
-msgstr ""
+msgstr "قصاصة شريط تمرير Twitter في الموقع الإلكتروني "
 
 #. module: base
 #: model:ir.model.fields,field_description:base.field_ir_attachment__type
@@ -26611,7 +26728,7 @@ msgstr "النوع:"
 #. module: base
 #: model:res.partner.industry,full_name:base.res_partner_industry_U
 msgid "U ACTIVITIES OF EXTRA TERRITORIAL ORGANISATIONS AND BODIES"
-msgstr ""
+msgstr "U أنشطة المنظمات والكيانات الإقليمية الإضافية "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_l10n_ae
@@ -26632,7 +26749,7 @@ msgstr "تقارير المحاسبة - المملكة المتحدة"
 #: model:ir.module.module,shortdesc:base.module_product_unspsc
 #: model:ir.module.module,summary:base.module_product_unspsc
 msgid "UNSPSC product codes"
-msgstr ""
+msgstr "أكواد منتجات UNSPSC "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_delivery_ups
@@ -26654,7 +26771,7 @@ msgstr "رابط ويب"
 #. module: base
 #: model:ir.model.fields,field_description:base.field_res_lang__url_code
 msgid "URL Code"
-msgstr ""
+msgstr "كود URL "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_l10n_us_reports
@@ -26674,7 +26791,7 @@ msgstr "USA Minor Outlying Islands"
 #. module: base
 #: model:res.country,vat_label:base.at
 msgid "USt"
-msgstr ""
+msgstr "USt"
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_utm
@@ -26684,22 +26801,22 @@ msgstr "متتبعات UTM"
 #. module: base
 #: model:ir.module.module,description:base.module_mass_mailing_crm
 msgid "UTM and mass mailing on lead / opportunities"
-msgstr ""
+msgstr "UTM والمراسلات الجماعية للعملاء المهتمين / الفرص "
 
 #. module: base
 #: model:ir.module.module,description:base.module_mass_mailing_sale
 msgid "UTM and mass mailing on sale orders"
-msgstr ""
+msgstr "UTM والمراسلات الجماعية لأوامر البيع "
 
 #. module: base
 #: model:ir.module.module,description:base.module_social_sale
 msgid "UTM and post on sale orders"
-msgstr ""
+msgstr "UTM والمنشورات في أوامر البيع "
 
 #. module: base
 #: model:ir.module.module,description:base.module_social_crm
 msgid "UTM and posts on crm"
-msgstr ""
+msgstr "UTM والمنشورات في إدارة علاقات العملاء "
 
 #. module: base
 #: model:res.country,name:base.ug
@@ -26714,7 +26831,7 @@ msgstr "أوكرانيا"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_l10n_ua
 msgid "Ukraine - Accounting"
-msgstr ""
+msgstr "Ukraine - Accounting"
 
 #. module: base
 #: code:addons/models.py:0
@@ -26727,7 +26844,7 @@ msgstr "لا يمكن حذف هذا المستند لأنه مستخدم كمل�
 #: code:addons/base/models/ir_actions_report.py:0
 #, python-format
 msgid "Unable to find Wkhtmltopdf on this system. The PDF can not be created."
-msgstr ""
+msgstr "تعذّر إيجاد Wkhtmltopdf في نظامك. لا يمكن إنشاء ملف PDF. "
 
 #. module: base
 #: code:addons/base/models/ir_module.py:0
@@ -26828,7 +26945,7 @@ msgstr "غير معروف"
 #: code:addons/models.py:0
 #, python-format
 msgid "Unknown database error: '%s'"
-msgstr ""
+msgstr "خطأ غير معروف في قاعدة البيانات: '%s' "
 
 #. module: base
 #: code:addons/models.py:0
@@ -26846,7 +26963,7 @@ msgstr "خطأ غير معروف أثناء الاستيراد:"
 #: code:addons/base/models/ir_model.py:0
 #, python-format
 msgid "Unknown field %r in dependency %r"
-msgstr ""
+msgstr "حقل غير معروف %r في التبعيات %r "
 
 #. module: base
 #: code:addons/base/models/ir_model.py:0
@@ -26880,7 +26997,7 @@ msgstr ""
 #: code:addons/base/static/src/js/res_config_settings.js:0
 #, python-format
 msgid "Unsaved changes"
-msgstr ""
+msgstr "التغييرات غير المحفوظة "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_web_unsplash
@@ -26926,7 +27043,7 @@ msgstr "تحديث قائمة الوحدات البرمجية"
 #. module: base
 #: model:ir.model,name:base.model_base_update_translations
 msgid "Update Translations"
-msgstr "تحديث التراجم"
+msgstr "تحديث الترجمات "
 
 #. module: base
 #: model:ir.model.fields.selection,name:base.selection__ir_actions_server__state__object_write
@@ -27004,17 +27121,17 @@ msgstr "استخدم الكوبونات وبرامج العروض في متجر�
 #. module: base
 #: model:ir.module.module,summary:base.module_sale_coupon
 msgid "Use discount coupons in sales orders"
-msgstr ""
+msgstr "استخدم كوبونات الخصومات في أوامر البيع "
 
 #. module: base
 #: model:ir.module.module,summary:base.module_account_tax_python
 msgid "Use python code to define taxes"
-msgstr ""
+msgstr "استخدم كود بايثون لتحديد الضرائب "
 
 #. module: base
 #: model:ir.model.fields,field_description:base.field_ir_sequence__use_date_range
 msgid "Use subsequences per date_range"
-msgstr ""
+msgstr "استخدم المتتابعات لكل date_range "
 
 #. module: base
 #: model:ir.module.module,description:base.module_hr_gamification
@@ -27025,6 +27142,11 @@ msgid ""
 "This allow the user to send badges to employees instead of simple users.\n"
 "Badge received are displayed on the user profile.\n"
 msgstr ""
+"استخدم الموارد الخاصة بـ HR في عملية التلعيب. \n"
+"\n"
+"بوسع موظف الموارد البشرية الآن إدارة التحديات والشارات. \n"
+"يتيح ذلك للمستخدم إرسال الشارات إلى الموظفين عوضاً عن المستخدمين البسيطين.\n"
+"يتم عرض الشارات المستلمة في ملف المستخدم التعريفي.\n"
 
 #. module: base
 #: code:addons/base/models/ir_fields.py:0
@@ -27046,12 +27168,16 @@ msgid ""
 "display addresses (in reports for example), while this field is used to "
 "modify the input form for addresses."
 msgstr ""
+"استخدم هذا الحقل إذا كنت ترغب في استبدال الطريقة المعتادة لترميز عنوان كامل."
+" لاحظ أن الحقل address_format يُستخدم لتعديل طريقة عرض العناوين (في "
+"التقارير، على سبيل المثال)، بينما يُستخدم هذا الحقل لتعديل استمارة البيانات "
+"للعناوين. "
 
 #. module: base
 #: model:ir.model.fields,help:base.field_ir_model_fields__relation_table
 msgid ""
 "Used for custom many2many fields to define a custom relation table name"
-msgstr ""
+msgstr "يُستَخدم لحقول متعدد إلى متعدد المخصصة لتحديد اسم جدول علاقة مخصص "
 
 #. module: base
 #: model:ir.model.fields,help:base.field_ir_actions_act_window__usage
@@ -27066,7 +27192,7 @@ msgstr "يستخدم لتسجيل الدخول إلى النظام"
 #. module: base
 #: model:ir.model.fields,help:base.field_res_company__sequence
 msgid "Used to order Companies in the company switcher"
-msgstr ""
+msgstr "يُستخدم لترتيب الشركات في أدات تبديل الشركات "
 
 #. module: base
 #: model:ir.model.fields,field_description:base.field_change_password_user__user_id
@@ -27128,7 +27254,7 @@ msgstr "فلاتر يحددها المستخدم"
 #. module: base
 #: model:ir.module.module,summary:base.module_point_of_sale
 msgid "User-friendly PoS interface for shops and restaurants"
-msgstr ""
+msgstr "واجهة نقطة البيع سهلى الاستخدام للمتاجر والمطاعم "
 
 #. module: base
 #: code:addons/base/models/ir_model.py:0 code:addons/models.py:0
@@ -27218,12 +27344,12 @@ msgstr "VOIP"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_voip_onsip
 msgid "VOIP OnSIP"
-msgstr ""
+msgstr "VOIP OnSIP "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_voip_crm
 msgid "VOIP for crm"
-msgstr ""
+msgstr "VOIP لإدارة علاقات العملاء "
 
 #. module: base
 #: model:ir.module.module,summary:base.module_phone_validation
@@ -27236,6 +27362,8 @@ msgid ""
 "Validate stock moves for product added on sales orders through Field Service"
 " Management App"
 msgstr ""
+"قم بتصديق حركات المخزون للمنتجات التي تتم إضافتها في أوامر البيع من خلال "
+"تطبيق إدارة الخدمة الميدانية "
 
 #. module: base
 #: model:ir.model.fields,field_description:base.field_ir_config_parameter__value
@@ -27281,7 +27409,7 @@ msgstr "ربط القيمة"
 #. module: base
 #: model:ir.model.fields,field_description:base.field_ir_property__value_reference
 msgid "Value Reference"
-msgstr ""
+msgstr "مرجع القيمة "
 
 #. module: base
 #: model:ir.model.fields,field_description:base.field_ir_property__value_text
@@ -27291,7 +27419,7 @@ msgstr "قيمة نصية"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_pos_mercury
 msgid "Vantiv Payment Services"
-msgstr ""
+msgstr "خدمات دفع Vantiv "
 
 #. module: base
 #: model:res.country,name:base.vu
@@ -27404,7 +27532,7 @@ msgstr "عرض وضع الوراثة"
 #. module: base
 #: model:ir.module.module,summary:base.module_website_crm_livechat
 msgid "View livechat sessions for leads"
-msgstr ""
+msgstr "عرض جلسات الدردشة المباشرة للعملاء المهتمين "
 
 #. module: base
 #: code:addons/base/models/ir_model.py:0
@@ -27470,7 +27598,7 @@ msgstr "تكاليف WMS المضافة"
 #. module: base
 #: model:res.country,name:base.wf
 msgid "Wallis and Futuna"
-msgstr ""
+msgstr "Wallis and Futuna"
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_stock_picking_batch
@@ -27510,6 +27638,9 @@ msgid ""
 "enhancing solutions through the use of advanced software for our clients "
 "worldwide. At Lumber Inc we bring operational experience combined..."
 msgstr ""
+"نحن منشأة استشارة تقنية وإرشاد استراتيجي تنشئ حلولاً تحسينية عالية الجودة، "
+"من خلال استخدام البرنامج المتطور لعملائنا في كافة أنحاء العالم. في شركة "
+"Lumber المحدودة، نسعى إلى تقديم الخبرة العملية بجانب... "
 
 #. module: base
 #: model_terms:res.partner,website_description:base.res_partner_18
@@ -27530,7 +27661,7 @@ msgstr "الإنترنت"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_test_web_cohort
 msgid "Web Cohort Tests"
-msgstr ""
+msgstr "اختبارات الويب الجماعية "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_web_editor
@@ -27540,7 +27671,7 @@ msgstr "محرر الويب"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_web_enterprise
 msgid "Web Enterprise"
-msgstr ""
+msgstr "ويب المؤسسات "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_web_gantt
@@ -27566,7 +27697,7 @@ msgstr "قشلالا"
 #. module: base
 #: model:ir.module.module,summary:base.module_test_web_cohort
 msgid "Web cohort Test"
-msgstr ""
+msgstr "اختبار الويب الجماعي "
 
 #. module: base
 #: model_terms:ir.ui.view,arch_db:base.view_translation_search
@@ -27592,7 +27723,7 @@ msgstr "الموقع - إدارة المبيعات"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_website_enterprise
 msgid "Website Enterprise"
-msgstr ""
+msgstr "الموقع الإلكتروني للمؤسسات "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_website_form
@@ -27607,7 +27738,7 @@ msgstr "مكتب مساعدة الموقع"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_website_helpdesk_livechat
 msgid "Website IM Livechat Helpdesk"
-msgstr ""
+msgstr "مكتب المساعدة للرسائل الفورية للدردشة المباشرة في الموقع الإلكتروني "
 
 #. module: base
 #: model:ir.model.fields,field_description:base.field_res_company__website
@@ -27654,12 +27785,12 @@ msgstr "تقييم الموقع"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_website_sale_product_configurator
 msgid "Website Sale Product Configurator"
-msgstr ""
+msgstr "أداة تهيئة منتج الخصم في الموقع الإلكتروني "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_website_sale_stock_product_configurator
 msgid "Website Sale Stock Product Configurator"
-msgstr ""
+msgstr "أداة تهيئة منتج مخزون الخصم في الموقع الإلكتروني "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_website_sale_dashboard
@@ -27679,12 +27810,13 @@ msgstr "استديو الموقع"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_test_website
 msgid "Website Test"
-msgstr ""
+msgstr "اختبار الموقع الإلكتروني "
 
 #. module: base
 #: model:ir.module.module,summary:base.module_test_website
 msgid "Website Test, mainly for module install/uninstall tests"
 msgstr ""
+"اختبار الموقع الإلكتروني، غالباً لاختبارات تثبيت/إلغاء تثبيت التطبيقات "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_website_theme_install
@@ -27694,7 +27826,7 @@ msgstr "تثبيت سمة الموقع"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_website_profile
 msgid "Website profile"
-msgstr ""
+msgstr "الملف التعريفي للموقع الإلكتروني "
 
 #. module: base
 #: model:ir.model.fields.selection,name:base.selection__res_lang__week_start__3
@@ -27738,6 +27870,9 @@ msgid ""
 "If the timezone is not set, UTC (Coordinated Universal Time) is used.\n"
 "Anywhere else, time values are computed according to the time offset of your web client."
 msgstr ""
+"عند طباعة المستندات واستيراد/تصدير البيانات، يتم احتساب قيم الوقت وفقاً للمنطقة الزمنية. \n"
+"إذا لم تكن المنطقة الزمنية محددة، يتم استخدام UTC (التوقيت العالمي المنسق). \n"
+"في أي مكان آخر، يتم احتساب قيم الوقت بناءً على إزاحة الوقت لعميل الويب الخاص بك. "
 
 #. module: base
 #: model_terms:ir.ui.view,arch_db:base.sequence_view
@@ -27745,6 +27880,8 @@ msgid ""
 "When subsequences per date range are used, you can prefix variables with 'range_'\n"
 "                                to use the beginning of the range instead of the current date, e.g. %(range_year)s instead of %(year)s."
 msgstr ""
+"عندما يتم استخدام المتتابعات حسب نطاق التاريخ، يمكنك بدء العوامل المتغيرة بـ 'range_'\n"
+"                                لاستخدام بداية النطاق عوضاً عن التاريخ الحالي، مثال: %(range_year)s عوضاً عن %(year)s. "
 
 #. module: base
 #: model:ir.model.fields,help:base.field_ir_model_fields__copied
@@ -27760,6 +27897,7 @@ msgstr "ما إذا كانت القيمة مخزنة في قاعدة البيا�
 #: model:ir.model.fields,help:base.field_ir_module_module_dependency__auto_install_required
 msgid "Whether this dependency blocks automatic installation of the dependent"
 msgstr ""
+"ما إذا كان نظام التبعيات يحجب التثبيت التلقائي للعنصر المعتمد على غيره "
 
 #. module: base
 #: model:ir.model.fields,help:base.field_ir_model_fields__translate
@@ -27781,7 +27919,7 @@ msgstr ""
 #. module: base
 #: model:res.partner.industry,name:base.res_partner_industry_G
 msgid "Wholesale/Retail"
-msgstr ""
+msgstr "البيع بالجملة/البيع بالتجزئة "
 
 #. module: base
 #: code:addons/base/models/ir_qweb_fields.py:0
@@ -27814,6 +27952,8 @@ msgid ""
 "Wkhtmltopdf failed (error code: %s). Memory limit too low or maximum file "
 "number of subprocess reached. Message : %s"
 msgstr ""
+"Wkhtmltopdf failed (error code: %s). Memory limit too low or maximum file "
+"number of subprocess reached. Message : %s"
 
 #. module: base
 #: code:addons/base/models/ir_actions_report.py:0
@@ -27829,12 +27969,12 @@ msgstr "قيود العمل "
 #. module: base
 #: model:ir.module.module,summary:base.module_mrp_workorder
 msgid "Work Orders, Planning, Stock Reports."
-msgstr ""
+msgstr "أوامر العمل، التخطيط، تقارير البضاعة الموجودة في المخزون. "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_payment_sips
 msgid "Worldline SIPS"
-msgstr ""
+msgstr "Worldline SIPS"
 
 #. module: base
 #: model:ir.model.fields,field_description:base.field_ir_model_access__perm_write
@@ -27851,7 +27991,7 @@ msgstr "صلاحيات الكتابة"
 #: model:ir.model.fields,field_description:base.field_ir_model_constraint__write_date
 #: model:ir.model.fields,field_description:base.field_ir_model_relation__write_date
 msgid "Write Date"
-msgstr ""
+msgstr "تاريخ الكتابة "
 
 #. module: base
 #: model:ir.model.fields,help:base.field_ir_actions_server__code
@@ -28015,12 +28155,15 @@ msgid ""
 "\n"
 "(Operation: %(operation)s)"
 msgstr ""
+"لا تملك الصلاحيات الكافية للوصول إلى الحقول \"%(fields)s\" في %(document_kind)s (%(document_model)s). يرجى التواصل مع مدير النظام.\n"
+"\n"
+"(العملية: %(operation)s) "
 
 #. module: base
 #: code:addons/base/models/ir_actions.py:0
 #, python-format
 msgid "You don't have enough access rights to run this action."
-msgstr ""
+msgstr "لا تملك الصلاحيات الكافية لتنفيذ هذا الإجراء. "
 
 #. module: base
 #: code:addons/base/wizard/base_partner_merge.py:0
@@ -28045,8 +28188,8 @@ msgid ""
 "You try to install module '%s' that depends on module '%s'.\n"
 "But the latter module is not available in your system."
 msgstr ""
-"أنت تحاول تثبيت الموديول '%s' والذي يتطلب الموديول '%s'.\n"
-"ولكن الأخير غير متاح لهذا النظام."
+"أنت تحاول تثبيت التطبيق '%s' والذي يتطلب التطبيق '%s'.\n"
+"ولكن الأخير غير متاح لهذا النظام. "
 
 #. module: base
 #: code:addons/base/models/ir_module.py:0
@@ -28064,8 +28207,8 @@ msgid ""
 "You will be able to define additional access rights by editing the newly "
 "created user under the Settings / Users menu."
 msgstr ""
-"تستطيع تعريف صلاحيات وصول إضافية بتعديل المستخدم المنشأ حديثًا في قائمة "
-"إعدادات>المستخدمون."
+"ستكون قادراً على تحديد صلاحيات وصول إضافية بتحرير المستخدم المنشأ حديثاً في "
+"قائمة الإعدادات/المستخدمون. "
 
 #. module: base
 #: code:addons/base/models/ir_mail_server.py:0
@@ -28075,8 +28218,8 @@ msgid ""
 "instead. If SSL is needed, an upgrade to Python 2.6 on the server-side "
 "should do the trick."
 msgstr ""
-"سيرفر أودو لا يدعم SMTP-over-SSL. يمكنك استخدام STARTTLS بدلًا منه. إذا كنت "
-"تحتاج SSL، التحديث للإصدار 2.6 من بايثون سيحل المشكلة."
+"لا يدعم خادم أودو SMTP-over-SSL. يمكنك استخدام STARTTLS بدلاً منه. إذا كنت "
+"تحتاج إلى SSL، التحديث للإصدار 2.6 من بايثون سيحل المشكلة. "
 
 #. module: base
 #: code:addons/base/models/ir_mail_server.py:0
@@ -28158,7 +28301,7 @@ msgstr ""
 #: code:addons/models.py:0
 #, python-format
 msgid "allowed for groups %s"
-msgstr ""
+msgstr "مسموح في المجموعات %s "
 
 #. module: base
 #: code:addons/base/models/res_currency.py:0
@@ -28242,7 +28385,7 @@ msgstr "مثلًا حلول الأعمال العالمية"
 #. module: base
 #: model_terms:ir.ui.view,arch_db:base.view_partner_form
 msgid "e.g. Mister"
-msgstr ""
+msgstr "مثال: السيد "
 
 #. module: base
 #: model_terms:ir.ui.view,arch_db:base.view_partner_form
@@ -28332,18 +28475,20 @@ msgid ""
 "for record in self:\n"
 "        record['size'] = len(record.name)"
 msgstr ""
+"for record in self:\n"
+"        record['size'] = len(record.name)"
 
 #. module: base
 #: code:addons/models.py:0
 #, python-format
 msgid "forbidden for groups %s"
-msgstr ""
+msgstr "ممنوع في المجموعات %s "
 
 #. module: base
 #: code:addons/base/models/res_lang.py:0
 #, python-format
 msgid "format() must be given exactly one %char format specifier"
-msgstr ""
+msgstr "format() must be given exactly one %char format specifier"
 
 #. module: base
 #: model:ir.model.fields.selection,name:base.selection__base_language_export__state__get
@@ -28414,7 +28559,7 @@ msgstr "علاقة متعدد لواحد"
 #. module: base
 #: model:ir.model.fields.selection,name:base.selection__ir_model_fields__ttype__many2one_reference
 msgid "many2one_reference"
-msgstr ""
+msgstr "many2one_reference"
 
 #. module: base
 #: model_terms:ir.ui.view,arch_db:base.demo_failures_dialog
@@ -28429,7 +28574,7 @@ msgstr "نقدي"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_mrp_subcontracting
 msgid "mrp_subcontracting"
-msgstr ""
+msgstr "mrp_subcontracting"
 
 #. module: base
 #: code:addons/base/models/ir_ui_view.py:0
@@ -28467,17 +28612,17 @@ msgstr "pos_cache"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_pos_epson_printer
 msgid "pos_epson_printer"
-msgstr ""
+msgstr "pos_epson_printer"
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_pos_epson_printer_restaurant
 msgid "pos_epson_printer_restaurant"
-msgstr ""
+msgstr "pos_epson_printer_restaurant"
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_pos_hr
 msgid "pos_hr"
-msgstr ""
+msgstr "pos_hr"
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_pos_sale
@@ -28517,7 +28662,7 @@ msgstr "اختبار read_group"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_test_xlsx_export
 msgid "test xlsx export"
-msgstr ""
+msgstr "اختبار تصدير xlsx "
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_test_assetsbundle
@@ -28552,7 +28697,7 @@ msgstr "test-inherits"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_test_inherits_depends
 msgid "test-inherits-depends"
-msgstr ""
+msgstr "test-inherits-depends"
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_test_limits
@@ -28562,7 +28707,7 @@ msgstr "test-limits"
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_test_lint
 msgid "test-lint"
-msgstr ""
+msgstr "test-lint"
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_test_translation_import
