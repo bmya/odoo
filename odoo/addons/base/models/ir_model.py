@@ -913,10 +913,10 @@ class IrModelFields(models.Model):
 
         if vals and self:
             for item in self:
-                if item.state != 'manual':
-                    raise UserError(_('Properties of base fields cannot be altered in this manner! '
-                                      'Please modify them through Python code, '
-                                      'preferably through a custom addon!'))
+                # if item.state != 'manual':
+                #     raise UserError(_('Properties of base fields cannot be altered in this manner! '
+                #                       'Please modify them through Python code, '
+                #                       'preferably through a custom addon!'))
 
                 if vals.get('model_id', item.model_id.id) != item.model_id.id:
                     raise UserError(_("Changing the model of a field is forbidden!"))

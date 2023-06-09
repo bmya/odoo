@@ -397,9 +397,9 @@ class PurchaseOrderLine(models.Model):
         for line in self:
             if line.product_id and line.product_id.type in ('product', 'consu'):
                 # Prevent decreasing below received quantity
-                if float_compare(line.product_qty, line.qty_received, line.product_uom.rounding) < 0:
-                    raise UserError(_('You cannot decrease the ordered quantity below the received quantity.\n'
-                                      'Create a return first.'))
+                # if float_compare(line.product_qty, line.qty_received, line.product_uom.rounding) < 0:
+                #     raise UserError(_('You cannot decrease the ordered quantity below the received quantity.\n'
+                #                       'Create a return first.'))
 
                 if float_compare(line.product_qty, line.qty_invoiced, line.product_uom.rounding) == -1:
                     # If the quantity is now below the invoiced quantity, create an activity on the vendor bill

@@ -215,10 +215,10 @@ class SaleOrderLine(models.Model):
             fields = self.env['ir.model.fields'].search([
                 ('name', 'in', protected_fields_modified), ('model', '=', self._name)
             ])
-            raise UserError(
-                _('It is forbidden to modify the following fields in a locked order:\n%s')
-                % '\n'.join(fields.mapped('field_description'))
-            )
+            # raise UserError(
+            #     _('It is forbidden to modify the following fields in a locked order:\n%s')
+            #     % '\n'.join(fields.mapped('field_description'))
+            # )
 
         result = super(SaleOrderLine, self).write(values)
         return result

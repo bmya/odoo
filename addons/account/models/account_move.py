@@ -2393,16 +2393,16 @@ class AccountMove(models.Model):
 
         return res
 
-    @api.ondelete(at_uninstall=False)
-    def _unlink_forbid_parts_of_chain(self):
-        """ Moves with a sequence number can only be deleted if they are the last element of a chain of sequence.
-        If they are not, deleting them would create a gap. If the user really wants to do this, he still can
-        explicitly empty the 'name' field of the move; but we discourage that practice.
-        """
-        if not self._context.get('force_delete') and not self.filtered(lambda move: move.name != '/')._is_end_of_seq_chain():
-            raise UserError(_(
-                "You cannot delete this entry, as it has already consumed a sequence number and is not the last one in the chain. You should probably revert it instead."
-            ))
+    # @api.ondelete(at_uninstall=False)
+    # def _unlink_forbid_parts_of_chain(self):
+    #     """ Moves with a sequence number can only be deleted if they are the last element of a chain of sequence.
+    #     If they are not, deleting them would create a gap. If the user really wants to do this, he still can
+    #     explicitly empty the 'name' field of the move; but we discourage that practice.
+    #     """
+    #     if not self._context.get('force_delete') and not self.filtered(lambda move: move.name != '/')._is_end_of_seq_chain():
+    #         raise UserError(_(
+    #             "You cannot delete this entry, as it has already consumed a sequence number and is not the last one in the chain. You should probably revert it instead."
+    #         ))
 
     def unlink(self):
         self.line_ids.unlink()
@@ -4727,8 +4727,8 @@ class AccountMoveLine(models.Model):
             if line.parent_state == 'posted':
                 if line.move_id.restrict_mode_hash_table and set(vals).intersection(INTEGRITY_HASH_LINE_FIELDS):
                     raise UserError(_("You cannot edit the following fields due to restrict mode being activated on the journal: %s.") % ', '.join(INTEGRITY_HASH_LINE_FIELDS))
-                if any(key in vals for key in ('tax_ids', 'tax_line_id')):
-                    raise UserError(_('You cannot modify the taxes related to a posted journal item, you should reset the journal entry to draft to do so.'))
+                # if any(key in vals for key in ('tax_ids', 'tax_line_id')):
+                #     raise UserError(_('You cannot modify the taxes related to a posted journal item, you should reset the journal entry to draft to do so.'))
 
             # Check the lock date.
             if line.parent_state == 'posted' and any(self.env['account.move']._field_will_change(line, vals, field_name) for field_name in PROTECTED_FIELDS_LOCK_DATE):
@@ -4838,11 +4838,11 @@ class AccountMoveLine(models.Model):
         # I can't even
         return name == 'tracking' or super()._valid_field_parameter(field, name)
 
-    @api.ondelete(at_uninstall=False)
-    def _unlink_except_posted(self):
-        # Prevent deleting lines on posted entries
-        if not self._context.get('force_delete') and any(m.state == 'posted' for m in self.move_id):
-            raise UserError(_('You cannot delete an item linked to a posted entry.'))
+    # @api.ondelete(at_uninstall=False)
+    # def _unlink_except_posted(self):
+    #     # Prevent deleting lines on posted entries
+    #     if not self._context.get('force_delete') and any(m.state == 'posted' for m in self.move_id):
+    #         raise UserError(_('You cannot delete an item linked to a posted entry.'))
 
     def unlink(self):
         moves = self.mapped('move_id')

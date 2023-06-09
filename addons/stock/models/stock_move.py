@@ -361,8 +361,8 @@ class StockMove(models.Model):
         ml_quantity_done = 0
         for move_line in move_lines:
             ml_quantity_done += move_line.product_uom_id._compute_quantity(move_line.qty_done, self.product_uom, round=False)
-        if float_compare(quantity_done, ml_quantity_done, precision_rounding=self.product_uom.rounding) != 0:
-            raise UserError(_("Cannot set the done quantity from this stock move, work directly with the move lines."))
+        # if float_compare(quantity_done, ml_quantity_done, precision_rounding=self.product_uom.rounding) != 0:
+        #     raise UserError(_("Cannot set the done quantity from this stock move, work directly with the move lines."))
 
     def _set_product_qty(self):
         """ The meaning of product_qty field changed lately and is now a functional field computing the quantity
@@ -581,8 +581,8 @@ class StockMove(models.Model):
         # messages according to the state of the stock.move records.
         receipt_moves_to_reassign = self.env['stock.move']
         move_to_recompute_state = self.env['stock.move']
-        if 'product_uom' in vals and any(move.state == 'done' for move in self):
-            raise UserError(_('You cannot change the UoM for a stock move that has been set to \'Done\'.'))
+        # if 'product_uom' in vals and any(move.state == 'done' for move in self):
+        #     raise UserError(_('You cannot change the UoM for a stock move that has been set to \'Done\'.'))
         if 'product_uom_qty' in vals:
             move_to_unreserve = self.env['stock.move']
             for move in self.filtered(lambda m: m.state not in ('done', 'draft') and m.picking_id):
@@ -876,7 +876,7 @@ class StockMove(models.Model):
             # Check all the candidates that matches the same limited key, and adjust their quantites to absorb negative moves
             for pos_move in moves_by_neg_key.get(neg_key(neg_move), []):
                 currency_prec = pos_move.product_id.currency_id.decimal_places
-                rounding = min(currency_prec, price_unit_prec)
+                rounding = min(currency_prec, price_unit_prec) or price_unit_prec
                 if float_compare(pos_move.price_unit, neg_move.price_unit, precision_rounding=rounding) == 0:
                     new_total_value = pos_move.product_qty * pos_move.price_unit + neg_move.product_qty * neg_move.price_unit
                     # If quantity can be fully absorbed by a single move, update its quantity and remove the negative move

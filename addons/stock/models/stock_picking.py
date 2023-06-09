@@ -564,8 +564,8 @@ class Picking(models.Model):
 
     def _set_scheduled_date(self):
         for picking in self:
-            if picking.state in ('done', 'cancel'):
-                raise UserError(_("You cannot change the Scheduled Date on a done or cancelled transfer."))
+            # if picking.state in ('done', 'cancel'):
+            #     raise UserError(_("You cannot change the Scheduled Date on a done or cancelled transfer."))
             picking.move_lines.write({'date': picking.scheduled_date})
 
     def _has_scrap_move(self):
@@ -742,8 +742,8 @@ class Picking(models.Model):
         return res
 
     def write(self, vals):
-        if vals.get('picking_type_id') and any(picking.state != 'draft' for picking in self):
-            raise UserError(_("Changing the operation type of this record is forbidden at this point."))
+        # if vals.get('picking_type_id') and any(picking.state != 'draft' for picking in self):
+        #     raise UserError(_("Changing the operation type of this record is forbidden at this point."))
         # set partner as a follower and unfollow old partner
         if vals.get('partner_id'):
             for picking in self:
