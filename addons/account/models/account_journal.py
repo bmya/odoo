@@ -352,8 +352,8 @@ class AccountJournal(models.Model):
                             WHERE acc.id = aml.account_id AND rel.journal_id = aml.journal_id)
             AND aml.display_type IS NULL
         """, tuple(self.ids))
-        if self._cr.fetchone():
-            raise ValidationError(_('Some journal items already exist in this journal but with accounts from different types than the allowed ones.'))
+        # if self._cr.fetchone():
+        #     raise ValidationError(_('Some journal items already exist in this journal but with accounts from different types than the allowed ones.'))
 
     @api.constrains('account_control_ids')
     def _constrains_account_control_ids(self):
@@ -367,8 +367,8 @@ class AccountJournal(models.Model):
             AND NOT EXISTS (SELECT 1 FROM journal_account_control_rel rel WHERE rel.account_id = aml.account_id AND rel.journal_id = aml.journal_id)
             AND aml.display_type IS NULL
         """, tuple(self.ids))
-        if self._cr.fetchone():
-            raise ValidationError(_('Some journal items already exist in this journal but with other accounts than the allowed ones.'))
+        # if self._cr.fetchone():
+        #     raise ValidationError(_('Some journal items already exist in this journal but with other accounts than the allowed ones.'))
 
     @api.constrains('type', 'bank_account_id')
     def _check_bank_account(self):
