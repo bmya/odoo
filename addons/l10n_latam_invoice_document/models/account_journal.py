@@ -23,12 +23,12 @@ class AccountJournal(models.Model):
         self.l10n_latam_use_documents = self.type in ['sale', 'purchase'] and \
             self.l10n_latam_company_use_documents
 
-    @api.constrains('l10n_latam_use_documents')
-    def check_use_document(self):
-        for rec in self:
-            if rec.env['account.move'].search([('journal_id', '=', rec.id), ('posted_before', '=', True)], limit=1):
-                raise ValidationError(_(
-                    'You can not modify the field "Use Documents?" if there are validated invoices in this journal!'))
+    # @api.constrains('l10n_latam_use_documents')
+    # def check_use_document(self):
+    #     for rec in self:
+    #         if rec.env['account.move'].search([('journal_id', '=', rec.id), ('posted_before', '=', True)], limit=1):
+    #             raise ValidationError(_(
+    #                 'You can not modify the field "Use Documents?" if there are validated invoices in this journal!'))
 
     @api.onchange('type', 'l10n_latam_use_documents')
     def _onchange_type(self):
