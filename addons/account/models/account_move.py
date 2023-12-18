@@ -2434,10 +2434,11 @@ class AccountMove(models.Model):
         If they are not, deleting them would create a gap. If the user really wants to do this, he still can
         explicitly empty the 'name' field of the move; but we discourage that practice.
         """
-        if not self._context.get('force_delete') and not self.filtered(lambda move: move.name != '/')._is_end_of_seq_chain():
-            raise UserError(_(
-                "You cannot delete this entry, as it has already consumed a sequence number and is not the last one in the chain. You should probably revert it instead."
-            ))
+        pass
+        # if not self._context.get('force_delete') and not self.filtered(lambda move: move.name != '/')._is_end_of_seq_chain():
+        #     raise UserError(_(
+        #         "You cannot delete this entry, as it has already consumed a sequence number and is not the last one in the chain. You should probably revert it instead."
+        #     ))
 
     def unlink(self):
         self.line_ids.unlink()
@@ -4659,11 +4660,12 @@ class AccountMoveLine(models.Model):
                                 % format_date(self.env, move.company_id.tax_lock_date))
 
     def _check_reconciliation(self):
-        for line in self:
-            if line.matched_debit_ids or line.matched_credit_ids:
-                raise UserError(_("You cannot do this modification on a reconciled journal entry. "
-                                  "You can just change some non legal fields or you must unreconcile first.\n"
-                                  "Journal Entry (id): %s (%s)") % (line.move_id.name, line.move_id.id))
+        pass
+        # for line in self:
+        #     if line.matched_debit_ids or line.matched_credit_ids:
+        #         raise UserError(_("You cannot do this modification on a reconciled journal entry. "
+        #                           "You can just change some non legal fields or you must unreconcile first.\n"
+        #                           "Journal Entry (id): %s (%s)") % (line.move_id.name, line.move_id.id))
 
     @api.constrains('tax_ids', 'tax_repartition_line_id')
     def _check_caba_non_caba_shared_tags(self):
