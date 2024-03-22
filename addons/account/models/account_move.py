@@ -2407,11 +2407,11 @@ class AccountMove(models.Model):
             res = super(AccountMove, self.with_context(check_move_validity=False, skip_account_move_synchronization=True)).write(vals)
 
         # You can't change the date of a not-locked move to a locked period.
-        # You can't post a new journal entry inside a locked period.
         if 'date' in vals or 'state' in vals:
             posted_move = self.filtered(lambda m: m.state == 'posted')
             posted_move._check_fiscalyear_lock_date()
             posted_move.line_ids._check_tax_lock_date()
+        # You can't post a new journal entry inside a locked period.
 
         if ('state' in vals and vals.get('state') == 'posted'):
             for move in self.filtered(lambda m: m.restrict_mode_hash_table and not(m.secure_sequence_number or m.inalterable_hash)).sorted(lambda m: (m.date, m.ref or '', m.id)):

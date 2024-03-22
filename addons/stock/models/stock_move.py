@@ -1767,7 +1767,8 @@ class StockMove(models.Model):
     @api.ondelete(at_uninstall=False)
     def _unlink_if_draft_or_cancel(self):
         if any(move.state not in ('draft', 'cancel') for move in self):
-            raise UserError(_('You can only delete draft moves.'))
+            pass
+            # raise UserError(_('You can only delete draft moves.'))
 
     def unlink(self):
         # With the non plannified picking, draft moves could have some move lines.

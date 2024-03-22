@@ -72,15 +72,15 @@ class AccountPayment(models.Model):
             'ids': tuple(payment_checks.ids),
         })
         res = self.env.cr.dictfetchall()
-        if res:
-            raise ValidationError(_(
-                'The following numbers are already used:\n%s',
-                '\n'.join(_(
-                    '%(number)s in journal %(journal)s',
-                    number=r['check_number'],
-                    journal=self.env['account.journal'].browse(r['journal_id']).display_name,
-                ) for r in res)
-            ))
+        # if res:
+        #     raise ValidationError(_(
+        #         'The following numbers are already used:\n%s',
+        #         '\n'.join(_(
+        #             '%(number)s in journal %(journal)s',
+        #             number=r['check_number'],
+        #             journal=self.env['account.journal'].browse(r['journal_id']).display_name,
+        #         ) for r in res)
+        #     ))
 
     @api.depends('payment_method_line_id', 'currency_id', 'amount')
     def _compute_check_amount_in_words(self):
