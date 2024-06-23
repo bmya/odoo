@@ -2,8 +2,8 @@
 <odoo>
 
     <record id="res_partner_bmya" model="res.partner">
-        <field name="name">Blanco Martin &amp; Asociados EIRL</field>
-        <field name="email">info@bmya.cl</field>
+        <field name="name">Blanco Martin &amp; Asociados SpA</field>
+        <field name="email">info1@ejemplo-bmya.cl</field>
         <field name="is_company">1</field>
         <field name="city">Las Condes</field>
         <field name="country_id" ref="base.cl"/>
@@ -27,25 +27,307 @@
 
     <record id="res_partner_teksa" model="res.partner">
         <field name="name">Teksa SpA</field>
-        <field name="email">teksa@teksa.cl</field>
+        <field name="email">teksa@ejemplo-teksa.cl</field>
         <field name="is_company">1</field>
+        <field name="l10n_cl_activity_description">Venta de Mangueras y Fittings</field>
         <field name="city">Pudahuel</field>
         <field name="country_id" ref="base.cl"/>
         <field name="street">Puerto Madero 9710</field>
         <field name="street2">Of A15, Santiago (RM)</field>
         <field name="phone">+562 2840 5918</field>
-        <field name="website">http://www.teksa.cl</field>
+        <field name="website">http://www.ejemplo-teksa.cl</field>
         <field name='l10n_latam_identification_type_id' ref="it_RUT"/>
         <field name='l10n_cl_sii_taxpayer_type'>1</field>
         <field name='vat'>76882486-K</field>
         <field name="image_1920" type="base64" file="l10n_cl/demo/teksa-logo-300.png"/>
     </record>
 
-    <record id="base.res_partner_2" model="res.partner">
+    <record id="base.res_partner_cl_2" model="res.partner">
         <field name="l10n_cl_sii_taxpayer_type">4</field>
     </record>
 
-    <record id="base.res_partner_12" model="res.partner">
+    <record id="base.res_partner_cl_12" model="res.partner">
         <field name="l10n_cl_sii_taxpayer_type">4</field>
     </record>
+
+    <record id="res_partner_cl_1_constru" model="res.partner">
+        <field name="name">Constructora Los Andes S.A.</field>
+        <field name="is_company">1</field>
+        <field name="l10n_cl_activity_description">Construcción</field>
+        <field name="street">Av. Libertador Bernardo O'Higgins 1234</field>
+        <field name="city">Santiago</field>
+        <field name="country_id" ref="base.cl"/>
+        <field name="l10n_latam_identification_type_id" ref="it_RUT"/>
+        <field name="l10n_cl_sii_taxpayer_type">1</field>
+        <field name="vat">98865785-9</field>
+        <field name="email">contacto@losandesdemo.cl</field>
+        <field name="image_1920" type="base64" file="l10n_cl/demo/losandes.png"/>
+    </record>
+
+    <record id="res_partner_cl_2_agro" model="res.partner">
+        <field name="name">Agroindustrias del Sur Ltda.</field>
+        <field name="is_company">1</field>
+        <field name="l10n_cl_activity_description">Agricultura</field>
+        <field name="street">Calle Principal 567</field>
+        <field name="city">Temuco</field>
+        <field name="country_id" ref="base.cl"/>
+        <field name="l10n_latam_identification_type_id" ref="it_RUT"/>
+        <field name="l10n_cl_sii_taxpayer_type">1</field>
+        <field name="vat">96253358-2</field>
+        <field name="email">contacto@agrosur-demo.cl</field>
+        <field name="image_1920" type="base64" file="l10n_cl/demo/agroind.png"/>
+    </record>
+
+    <record id="res_partner_cl_3_tecno" model="res.partner">
+        <field name="name">Tecnología Innovadora SpA</field>
+        <field name="is_company">1</field>
+        <field name="l10n_cl_activity_description">Tecnología</field>
+        <field name="street">Calle Falsa 123</field>
+        <field name="city">Valparaíso</field>
+        <field name="country_id" ref="base.cl"/>
+        <field name="l10n_latam_identification_type_id" ref="it_RUT"/>
+        <field name="l10n_cl_sii_taxpayer_type">1</field>
+        <field name="vat">78613005-0</field>
+        <field name="email">contacto@tecnologiainnovadorademo.cl</field>
+        <field name="image_1920" type="base64" file="l10n_cl/demo/tecnologiainno.png"/>
+    </record>
+
+    <record id="res_partner_cl_4_finan" model="res.partner">
+        <field name="name">Servicios Financieros del Norte S.A.</field>
+        <field name="is_company">1</field>
+        <field name="l10n_cl_activity_description">Finanzas</field>
+        <field name="street">Av. Apoquindo 4321</field>
+        <field name="city">Las Condes</field>
+        <field name="country_id" ref="base.cl"/>
+        <field name="l10n_latam_identification_type_id" ref="it_RUT"/>
+        <field name="l10n_cl_sii_taxpayer_type">1</field>
+        <field name="vat">83210995-9</field>
+        <field name="email">contacto@financierosnortedemo.cl</field>
+        <field name="image_1920" type="base64" file="l10n_cl/demo/serviciosfinancieros.png"/>
+    </record>
+
+    <record id="res_partner_cl_5_transp" model="res.partner">
+        <field name="name">Transportes Rápidos Ltda.</field>
+        <field name="is_company">1</field>
+        <field name="l10n_cl_activity_description">Transporte</field>
+        <field name="street">Ruta 68 Km 15</field>
+        <field name="city">Pudahuel</field>
+        <field name="country_id" ref="base.cl"/>
+        <field name="l10n_latam_identification_type_id" ref="it_RUT"/>
+        <field name="l10n_cl_sii_taxpayer_type">1</field>
+        <field name="vat">75742937-3</field>
+        <field name="email">contacto@transportesrapidosdemo.cl</field>
+        <field name="image_1920" type="base64" file="l10n_cl/demo/transportesr.png"/>
+    </record>
+
+    <record id="res_partner_cl_6_moda" model="res.partner">
+        <field name="name">Retail y Moda S.A.</field>
+        <field name="is_company">1</field>
+        <field name="l10n_cl_activity_description">Comercio</field>
+        <field name="street">Calle del Comercio 678</field>
+        <field name="city">Providencia</field>
+        <field name="country_id" ref="base.cl"/>
+        <field name="l10n_latam_identification_type_id" ref="it_RUT"/>
+        <field name="l10n_cl_sii_taxpayer_type">1</field>
+        <field name="vat">74277566-6</field>
+        <field name="email">contacto@retailmodademo.cl</field>
+        <field name="image_1920" type="base64" file="l10n_cl/demo/retailymoda.png"/>
+    </record>
+
+    <record id="res_partner_cl_7_alim" model="res.partner">
+        <field name="name">Alimentos del Pacífico SpA</field>
+        <field name="is_company">1</field>
+        <field name="l10n_cl_activity_description">Alimentación</field>
+        <field name="street">Av. Vicuña Mackenna 1010</field>
+        <field name="city">Ñuñoa</field>
+        <field name="country_id" ref="base.cl"/>
+        <field name="l10n_latam_identification_type_id" ref="it_RUT"/>
+        <field name="l10n_cl_sii_taxpayer_type">1</field>
+        <field name="vat">88499596-5</field>
+        <field name="email">contacto@alimentosdemopacifico.cl</field>
+        <field name="image_1920" type="base64" file="l10n_cl/demo/alimentospacifico.png"/>
+    </record>
+
+    <record id="res_partner_cl_8_consul" model="res.partner">
+        <field name="name">Consultora Empresarial Ltda.</field>
+        <field name="is_company">1</field>
+        <field name="l10n_cl_activity_description">Consultoría</field>
+        <field name="street">Calle de las Empresas 456</field>
+        <field name="city">Vitacura</field>
+        <field name="country_id" ref="base.cl"/>
+        <field name="l10n_latam_identification_type_id" ref="it_RUT"/>
+        <field name="l10n_cl_sii_taxpayer_type">1</field>
+        <field name="vat">80847819-6</field>
+        <field name="email">contacto@consultoraempresademo.cl</field>
+        <field name="image_1920" type="base64" file="l10n_cl/demo/consultora.png"/>
+    </record>
+
+    <record id="res_partner_cl_9_energia" model="res.partner">
+        <field name="name">Energías Renovables S.A.</field>
+        <field name="is_company">1</field>
+        <field name="l10n_cl_activity_description">Energía</field>
+        <field name="street">Av. Las Industrias 789</field>
+        <field name="city">Renca</field>
+        <field name="country_id" ref="base.cl"/>
+        <field name="l10n_latam_identification_type_id" ref="it_RUT"/>
+        <field name="l10n_cl_sii_taxpayer_type">1</field>
+        <field name="vat">96035121-5</field>
+        <field name="email">contacto@energiasrenovablesdemo.cl</field>
+        <field name="image_1920" type="base64" file="l10n_cl/demo/energiasreno.png"/>
+    </record>
+
+    <record id="res_partner_cl_10_educa" model="res.partner">
+        <field name="name">Educación y Cultura Ltda.</field>
+        <field name="is_company">1</field>
+        <field name="l10n_cl_activity_description">Educación</field>
+        <field name="street">Calle del Saber 111</field>
+        <field name="city">La Reina</field>
+        <field name="country_id" ref="base.cl"/>
+        <field name="l10n_latam_identification_type_id" ref="it_RUT"/>
+        <field name="l10n_cl_sii_taxpayer_type">1</field>
+        <field name="vat">97876246-8</field>
+        <field name="email">contacto@educacionculturademo.cl</field>
+        <field name="image_1920" type="base64" file="l10n_cl/demo/educa.png"/>
+    </record>
+
+    <record id="res_partner_cl_11_salud" model="res.partner">
+        <field name="name">Salud Integral S.A.</field>
+        <field name="is_company">1</field>
+        <field name="l10n_cl_activity_description">Salud</field>
+        <field name="street">Calle de la Salud 222</field>
+        <field name="city">Puente Alto</field>
+        <field name="country_id" ref="base.cl"/>
+        <field name="l10n_latam_identification_type_id" ref="it_RUT"/>
+        <field name="l10n_cl_sii_taxpayer_type">1</field>
+        <field name="vat">72262140-9</field>
+        <field name="email">contacto@saludintegraldemo.cl</field>
+        <field name="image_1920" type="base64" file="l10n_cl/demo/saludinte.png"/>
+    </record>
+
+    <record id="res_partner_cl_12_turismo" model="res.partner">
+        <field name="name">Turismo y Aventura SpA</field>
+        <field name="is_company">1</field>
+        <field name="l10n_cl_activity_description">Turismo</field>
+        <field name="street">Av. del Mar 333</field>
+        <field name="city">Viña del Mar</field>
+        <field name="country_id" ref="base.cl"/>
+        <field name="l10n_latam_identification_type_id" ref="it_RUT"/>
+        <field name="l10n_cl_sii_taxpayer_type">1</field>
+        <field name="vat">83971552-8</field>
+        <field name="email">contacto@turismoaventurademo.cl</field>
+        <field name="image_1920" type="base64" file="l10n_cl/demo/turismo.png"/>
+    </record>
+
+    <record id="res_partner_cl_13_inmo" model="res.partner">
+        <field name="name">Inmobiliaria del Este Ltda.</field>
+        <field name="is_company">1</field>
+        <field name="l10n_cl_activity_description">Inmobiliaria</field>
+        <field name="street">Calle Central 444</field>
+        <field name="city">La Florida</field>
+        <field name="country_id" ref="base.cl"/>
+        <field name="l10n_latam_identification_type_id" ref="it_RUT"/>
+        <field name="l10n_cl_sii_taxpayer_type">1</field>
+        <field name="vat">76821713-0</field>
+        <field name="email">contacto@inmobiliariaestedemo.cl</field>
+        <field name="image_1920" type="base64" file="l10n_cl/demo/inmodeleste.png"/>
+    </record>
+
+    <record id="res_partner_cl_14_produ" model="res.partner">
+        <field name="name">Producción Audiovisual S.A.</field>
+        <field name="is_company">1</field>
+        <field name="l10n_cl_activity_description">Medios</field>
+        <field name="street">Calle de los Medios 555</field>
+        <field name="city">Macul</field>
+        <field name="country_id" ref="base.cl"/>
+        <field name="l10n_latam_identification_type_id" ref="it_RUT"/>
+        <field name="l10n_cl_sii_taxpayer_type">1</field>
+        <field name="vat">71259324-5</field>
+        <field name="email">contacto@produccionaudiovisualdemo.cl</field>
+    </record>
+
+    <record id="res_partner_cl_15_auto" model="res.partner">
+        <field name="name">Automotriz del Sur SpA</field>
+        <field name="is_company">1</field>
+        <field name="l10n_cl_activity_description">Automotriz</field>
+        <field name="street">Ruta 5 Sur Km 20</field>
+        <field name="city">San Bernardo</field>
+        <field name="country_id" ref="base.cl"/>
+        <field name="l10n_latam_identification_type_id" ref="it_RUT"/>
+        <field name="l10n_cl_sii_taxpayer_type">1</field>
+        <field name="vat">98095645-8</field>
+        <field name="email">contacto@automotrizdelsurdemo.cl</field>
+        <field name="image_1920" type="base64" file="l10n_cl/demo/prodaudiovis.png"/>
+        <field name="image_1920" type="base64" file="l10n_cl/demo/automotrizsur.png"/>
+    </record>
+
+    <record id="res_partner_cl_16_logi" model="res.partner">
+        <field name="name">Logística y Distribución Ltda.</field>
+        <field name="is_company">1</field>
+        <field name="l10n_cl_activity_description">Logística</field>
+        <field name="street">Av. del Transporte 666</field>
+        <field name="city">Quilicura</field>
+        <field name="country_id" ref="base.cl"/>
+        <field name="l10n_latam_identification_type_id" ref="it_RUT"/>
+        <field name="l10n_cl_sii_taxpayer_type">1</field>
+        <field name="vat">71724912-7</field>
+        <field name="email">contacto@logisticadistribuciondemo.cl</field>
+        <field name="image_1920" type="base64" file="l10n_cl/demo/logistica.png"/>
+    </record>
+
+    <record id="res_partner_cl_17_edit" model="res.partner">
+        <field name="name">Editorial y Publicaciones S.A.</field>
+        <field name="is_company">1</field>
+        <field name="l10n_cl_activity_description">Editorial</field>
+        <field name="street">Calle de los Libros 777</field>
+        <field name="city">San Miguel</field>
+        <field name="country_id" ref="base.cl"/>
+        <field name="l10n_latam_identification_type_id" ref="it_RUT"/>
+        <field name="l10n_cl_sii_taxpayer_type">1</field>
+        <field name="vat">99936801-8</field>
+        <field name="email">contacto@editorialpublicacionesdemo.cl</field>
+    </record>
+
+    <record id="res_partner_cl_18_recic" model="res.partner">
+        <field name="name">Reciclaje y Medioambiente Ltda.</field>
+        <field name="is_company">1</field>
+        <field name="l10n_cl_activity_description">Medioambiente</field>
+        <field name="street">Av. Verde 888</field>
+        <field name="city">Huechuraba</field>
+        <field name="country_id" ref="base.cl"/>
+        <field name="l10n_latam_identification_type_id" ref="it_RUT"/>
+        <field name="l10n_cl_sii_taxpayer_type">1</field>
+        <field name="vat">93891911-9</field>
+        <field name="email">contacto@reciclajemediambientedemo.cl</field>
+        <field name="image_1920" type="base64" file="l10n_cl/demo/medioamb.png"/>
+    </record>
+
+    <record id="res_partner_cl_19_segu" model="res.partner">
+        <field name="name">Seguridad y Vigilancia SpA</field>
+        <field name="is_company">1</field>
+        <field name="l10n_cl_activity_description">Seguridad</field>
+        <field name="street">Calle Segura 999</field>
+        <field name="city">Recoleta</field>
+        <field name="country_id" ref="base.cl"/>
+        <field name="l10n_latam_identification_type_id" ref="it_RUT"/>
+        <field name="l10n_cl_sii_taxpayer_type">1</field>
+        <field name="vat">75867375-8</field>
+        <field name="email">contacto@seguridadvigilanciademo.cl</field>
+        <field name="image_1920" type="base64" file="l10n_cl/demo/editorial.png"/>
+        <field name="image_1920" type="base64" file="l10n_cl/demo/seguridadyvigi.png"/>
+    </record>
+
+    <record id="res_partner_cl_20_raices" model="res.partner">
+        <field name="name">Bienes Raíces del Norte S.A.</field>
+        <field name="is_company">1</field>
+        <field name="l10n_cl_activity_description">Inmobiliaria</field>
+        <field name="street">Av. Norte 1000</field>
+        <field name="city">Antofagasta</field>
+        <field name="country_id" ref="base.cl"/>
+        <field name="l10n_latam_identification_type_id" ref="it_RUT"/>
+        <field name="l10n_cl_sii_taxpayer_type">1</field>
+        <field name="vat">75034638-3</field>
+        <field name="email">contacto@bienesraicesnortedemo.cl</field>
+        <field name="image_1920" type="base64" file="l10n_cl/demo/delnorte.png"/>
+    </record>
+
 </odoo>
