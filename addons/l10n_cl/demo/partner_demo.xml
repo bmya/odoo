@@ -2,8 +2,8 @@
 <odoo>
 
     <record id="res_partner_bmya" model="res.partner">
-        <field name="name">Blanco Martin &amp; Asociados EIRL</field>
-        <field name="email">info@bmya.cl</field>
+        <field name="name">Blanco Martin &amp; Asociados SpA</field>
+        <field name="email">info@bmya1.cl</field>
         <field name="is_company">1</field>
         <field name="city">Las Condes</field>
         <field name="country_id" ref="base.cl"/>
