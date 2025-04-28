@@ -223,12 +223,14 @@
         </record>
 
         <record id="account_tag_f29_077" model="account.account.tag">
-            <field name="name">(077) Remainder Fiscal Credit</field>
+            <field name="name">(077) Remaining Fiscal Credit</field>
+            <field name="name@es_419">(077) Remanente Crédito Fiscal</field>
             <field name="applicability">accounts</field>
         </record>
 
         <record id="account_tag_f29_048" model="account.account.tag">
             <field name="name">(048) Unique Workers' Tax</field>
+            <field name="name@es_419">(048) Impuesto único a los trabajadores</field>
             <field name="applicability">accounts</field>
         </record>
 
